@@ -7,8 +7,9 @@ import config
 
 
 class CollectionsHandler(RequestHandler):
-
+    """Handle collections requests."""
     def get(self):
+        """Handle a 'get collections' request."""
         mime_type, = self.get_arguments("f")
         if mime_type == "json":
             collections_path = config.config.collections_json_path()
