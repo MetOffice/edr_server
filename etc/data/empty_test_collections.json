@@ -1,0 +1,33 @@
+[
+    {
+        "id": 0,
+        "title": "Empty test collection",
+        "description": "Empty test collection",
+        "keywords": ["Test"],
+        "data_queries": {
+            "position": {
+                "link": {
+                    "href": "",
+                    "hreflang": "en",
+                    "rel": "data",
+                    "variables": {
+                        "title": "Position query",
+                        "query_type": "position",
+                        "output_formats": ["CoverageJSON"],
+                        "default_output_format": "CoverageJSON"
+                    }
+                }
+            }
+        },
+        "crs": ["CRS84"],
+        "output_formats": ["CoverageJSON"],
+        "parameter_names": {
+            "example": {
+                "type": "parameter",
+                "description": {
+                    "en": "An example parameter"
+                }
+            }
+        }
+    }
+]
