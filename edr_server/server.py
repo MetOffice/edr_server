@@ -2,11 +2,17 @@ import tornado.ioloop
 from tornado.web import Application
 
 import collection
+import items
+import location
+import position
 
 
 def make_app():
     return Application([
-        (r"/collections/", collection.CollectionsHandler),
+        (r"/collections/(.*)/position", position.PositionHandler),
+        (r"/collections/(.*)/locations", location.LocationsHandler),
+        (r"/collections/(.*)/items", items.ItemsHandler),
+        (r"/collections\/?", collection.CollectionsHandler),
     ])
 
 
