@@ -2,16 +2,19 @@ import tornado.ioloop
 from tornado.web import Application
 
 import collection
-import items
-import location
-import position
+import handlers
 
 
 def make_app():
     return Application([
-        (r"/collections/(.*)/position", position.PositionHandler),
-        (r"/collections/(.*)/locations", location.LocationsHandler),
-        (r"/collections/(.*)/items", items.ItemsHandler),
+        (r"/collections/(.*)/area", handlers.AreaHandler),
+        (r"/collections/(.*)/corridor", handlers.CorridorHandler),
+        (r"/collections/(.*)/cube", handlers.CubeHandler),
+        (r"/collections/(.*)/items", handlers.ItemsHandler),
+        (r"/collections/(.*)/locations", handlers.LocationsHandler),
+        (r"/collections/(.*)/position", handlers.PositionHandler),
+        (r"/collections/(.*)/radius", handlers.RadiusHandler),
+        (r"/collections/(.*)/trajectory", handlers.TrajectoryHandler),
         (r"/collections\/?", collection.CollectionsHandler),
     ])
 
