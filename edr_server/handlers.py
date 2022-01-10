@@ -85,7 +85,7 @@ class _Handler(RequestHandler):
         print(self.query_parameters._params_dict)
 
 
-class AreaHandler(RequestHandler):
+class AreaHandler(_Handler):
     """Handle area requests."""
     handler_type = "area"
     def get(self, collection_name):
@@ -95,7 +95,7 @@ class AreaHandler(RequestHandler):
         raise HTTPError(501, f"Get {self.handler_type} request is not implemented.")
 
 
-class CorridorHandler(RequestHandler):
+class CorridorHandler(_Handler):
     """Handle corridor requests."""
     handler_type = "corridor"
     def get(self, collection_name):
@@ -104,7 +104,7 @@ class CorridorHandler(RequestHandler):
         raise HTTPError(501, f"Get {self.handler_type} request is not implemented.")
 
 
-class CubeHandler(RequestHandler):
+class CubeHandler(_Handler):
     """Handle cube requests."""
     handler_type = "cube"
     def get(self, collection_name):
@@ -128,7 +128,7 @@ class PositionHandler(_Handler):
     handler_type = "position"
 
 
-class RadiusHandler(RequestHandler):
+class RadiusHandler(_Handler):
     """Handle radius requests."""
     handler_type = "radius"
     def get(self, collection_name):
@@ -137,7 +137,7 @@ class RadiusHandler(RequestHandler):
         raise HTTPError(501, f"Get {self.handler_type} request is not implemented.")
 
 
-class TrajectoryHandler(RequestHandler):
+class TrajectoryHandler(_Handler):
     """Handle trajectory requests."""
     handler_type = "trajectory"
     def get(self, collection_name):
