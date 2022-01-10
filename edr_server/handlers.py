@@ -31,14 +31,11 @@ class QueryParameters(object):
         Handle an individual query parameter (`key`/`values` pair) from the query string.
 
         """
-        if not len(values):
-            value = None
-        elif len(values) == 1:
-            value, = values
-        else:
-            emsg = f"Expected exactly 1 parameter for {key!r}, got {len(values)}: {values}."
-            raise ValueError(emsg)
-        if value is not None:
+        value = None if not len(values) else values[0]
+        if key == "f":
+            # We always need to handle the return type `f` to make sure we have a default.
+            self._handle_f(key, value)
+        elif value is not None:
             try:
                 meth = getattr(self, f"_handle_{key.replace('-', '_')}")
             except AttributeError:
@@ -94,7 +91,7 @@ class QueryParameters(object):
     def _handle_f(self, key, value):
         """Handle the query parameter `f` - the requested return type for the data."""
         valid_types = ["json", "coveragejson"]
-        if not len(value):
+        if value is None:
             value = "json"
         if value.lower() not in valid_types:
             HTTPError(415, f"Return type {value!r} is not supported.")
@@ -108,7 +105,7 @@ class QueryParameters(object):
         self[key] = self._intervals(value)
 
 
-class _Handler(RequestHandler):
+class Handler(RequestHandler):
     """Generic handler for EDR queries."""
     def initialize(self):
         self.query_parameters = QueryParameters()
@@ -116,7 +113,6 @@ class _Handler(RequestHandler):
     def get(self, collection_name):
         """Handle a get request for data from EDR. Returned as JSON, unless the query specifies otherwise."""
         self.handle_parameters()
-        self.write(f"Get {self.handler_type} request called for collection {collection_name!r}.")
 
     def handle_parameters(self):
         for key in self.request.query_arguments.keys():
@@ -124,7 +120,7 @@ class _Handler(RequestHandler):
             self.query_parameters.handle_parameter(key, param_vals)
 
 
-class AreaHandler(_Handler):
+class AreaHandler(Handler):
     """Handle area requests."""
     handler_type = "area"
     def get(self, collection_name):
@@ -133,7 +129,7 @@ class AreaHandler(_Handler):
         raise HTTPError(501, f"Get {self.handler_type} request is not implemented.")
 
 
-class CorridorHandler(_Handler):
+class CorridorHandler(Handler):
     """Handle corridor requests."""
     handler_type = "corridor"
     def get(self, collection_name):
@@ -142,7 +138,7 @@ class CorridorHandler(_Handler):
         raise HTTPError(501, f"Get {self.handler_type} request is not implemented.")
 
 
-class CubeHandler(_Handler):
+class CubeHandler(Handler):
     """Handle cube requests."""
     handler_type = "cube"
     def get(self, collection_name):
@@ -151,22 +147,19 @@ class CubeHandler(_Handler):
         raise HTTPError(501, f"Get {self.handler_type} request is not implemented.")
 
 
-class ItemsHandler(_Handler):
+class ItemsHandler(Handler):
     """Handle items requests."""
-    handler_type = "items"
 
 
-class LocationsHandler(_Handler):
+class LocationsHandler(Handler):
     """Handle location requests."""
-    handler_type = "location"
 
 
-class PositionHandler(_Handler):
+class PositionHandler(Handler):
     """Handle position requests."""
-    handler_type = "position"
 
 
-class RadiusHandler(_Handler):
+class RadiusHandler(Handler):
     """Handle radius requests."""
     handler_type = "radius"
     def get(self, collection_name):
@@ -175,7 +168,7 @@ class RadiusHandler(_Handler):
         raise HTTPError(501, f"Get {self.handler_type} request is not implemented.")
 
 
-class TrajectoryHandler(_Handler):
+class TrajectoryHandler(Handler):
     """Handle trajectory requests."""
     handler_type = "trajectory"
     def get(self, collection_name):
