@@ -1,8 +1,9 @@
-import os
 from pathlib import Path
 
 import yaml
 from yaml.loader import SafeLoader
+
+from .paths import app_relative_path_to_absolute
 
 
 class Config(object):
@@ -18,7 +19,7 @@ class Config(object):
         Set up site-specific configuration as defined in the config YAML file.
         Config file is relative to this file: ../etc/config.yml
         """
-        self.yaml_path = (Path(__file__).parents[1] / Path("etc/config.yml")).absolute()
+        self.yaml_path = app_relative_path_to_absolute("etc/config.yml")
         self._yaml = None
 
     @property
@@ -40,7 +41,7 @@ class Config(object):
         """Retrieve the path to the collections JSON file from the config YAML."""
         cjpath = Path(self.yaml["collections"]["json"]["path"])
         # If path relative, treat as relative to config file location
-        return cjpath if cjpath.is_absolute() else (self.yaml_path.parents[1] / cjpath).absolute()
+        return cjpath if cjpath.is_absolute() else app_relative_path_to_absolute(cjpath)
 
 
 config = Config()

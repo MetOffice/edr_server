@@ -1,20 +1,25 @@
 import json
+from pathlib import Path
 
 from tornado.web import removeslash
 
-import config
 from handlers import Handler
 
 
 class CollectionsHandler(Handler):
     """Handle collections requests."""
 
+    collections_path: Path
+
+    def initialize(self, collections_path: Path):
+        super().initialize()
+        self.collections_path = collections_path
+
     @removeslash
     def get(self):
         """Handle a 'get collections' request."""
         super().get("")
-        collections_path = config.config.collections_json_path()
-        with open(collections_path, "r") as ojfh:
+        with open(self.collections_path, "r") as ojfh:
             json_data = json.load(ojfh)
             # A Python dict will be sent with Content-Type: application/json in the headers.
             self.write(dict(json_data))

@@ -1,0 +1,11 @@
+{
+  "links": [
+    {
+      "href": "{{ reverse_url('collections').rstrip('?') }}",
+      "hreflang": "en",
+      "rel": "self",
+      "type": "application/json"
+    }
+  ],
+  "collections": []
+}

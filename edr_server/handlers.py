@@ -107,7 +107,7 @@ class QueryParameters(object):
 
 class Handler(RequestHandler):
     """Generic handler for EDR queries."""
-    def initialize(self):
+    def initialize(self, **kwargs):
         self.query_parameters = QueryParameters()
 
     def get(self, collection_name):
