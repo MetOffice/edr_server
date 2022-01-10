@@ -3,16 +3,9 @@ import json
 from tornado.web import HTTPError, RequestHandler
 
 
-class QueryParameters(RequestHandler):
-    def __init__(self) -> None:
-        self._params_dict = {
-            "coords": None,
-            "datetime": None,
-            "z": None,
-            "parameter-name": None,
-            "f": None,
-            "crs": None,
-        }
+class QueryParameters(object):
+    def __init__(self):
+        self._params_dict = {}
 
     def __getitem__(self, key):
         return self._params_dict[key]
@@ -20,10 +13,19 @@ class QueryParameters(RequestHandler):
     def __setitem__(self, key, value):
         self._params_dict[key] = value
 
+    def __repr__(self):
+        return repr(self._params_dict)
+
+    def __str__(self):
+        return str(self._params_dict)
+
     def keys(self):
         return self._params_dict.keys()
 
-    def handle_parameters(self, key, values):
+    def values(self):
+        return self._params_dict.values()
+
+    def handle_parameter(self, key, values):
         if not len(values):
             value = None
         elif len(values) == 1:
@@ -35,19 +37,18 @@ class QueryParameters(RequestHandler):
             try:
                 meth = getattr(self, f"_handle_{key.replace('-', '_')}")
             except AttributeError:
-                self._handle_generic(key, value)
-            else:
-                meth(value)
+                meth = self._handle_generic
+            meth(key, value)
 
     def _intervals(self, value):
         """
         Handle different definitions of multiple values or intervals for a parameter.
 
-        Intervals can be one of the following:
+        Intervals can be defined with one of the following:
           * `v`: a single value `v`,
-          * `v1,v2,v3`: `n` comma-separated discrete values,
-          * `Rn/v_start/interval`: repeating intervals (number, start and interval),
-          * `v_start/v_end`: a range of all values from v_start to v_end.
+          * `v1,v2,v3`: comma-separated discrete values `v1`, `v2` and `v3`,
+          * `Rn/v_start/interval`: repeated interval (number, start and interval),
+          * `v_start/v_end`: a range of all values from `v_start` to `v_end`.
 
         """
         if "," in value:
@@ -64,32 +65,25 @@ class QueryParameters(RequestHandler):
         return result
 
     def _handle_generic(self, key, value):
-        """Just write a key/value pair to `self` without modification."""
+        """Write a key/value pair to `self` without modification."""
         self[key] = value
 
-    def _handle_bbox(self, value):
+    def _handle_bbox(self, key, value):
         """Bounding box for cube queries. Of form `xmin ymin, xmax ymax`."""
-        key = "bbox"
         vmin, vmax = value.split(",")
         xmin, ymin = vmin.split(" ")
         xmax, ymax = vmax.split(" ")
         self[key] = {"xmin": xmin, "ymin": ymin, "xmax": xmax, "ymax": ymax}
 
-    def _handle_coords(self, value):
-        key = "coords"
+    def _handle_coords(self, key, value):
+        # XXX do we want to convert to a Shapely object here or later?
         self[key] = value
 
-    def _handle_crs(self, value):
-        key = "crs"
-        self[key] = value
-
-    def _handle_datetime(self, value):
-        key = "datetime"
+    def _handle_datetime(self, key, value):
         self[key] = self._intervals(value)
 
-    def _handle_f(self, value):
+    def _handle_f(self, key, value):
         """Handle the query parameter `f` - the requested return type for the data."""
-        key = "f"
         valid_types = ["json", "coveragejson"]
         if not len(value):
             value = "json"
@@ -97,21 +91,19 @@ class QueryParameters(RequestHandler):
             HTTPError(415, f"Return type {value!r} is not supported.")
         self[key] = value
 
-    def _handle_parameter_name(self, value):
-        key = "parameter-name"
+    def _handle_parameter_name(self, key, value):
         self[key] = self._intervals(value)
 
-    def _handle_width(self, value):
+    def _handle_width(self, key, value):
         """For unsupported radius queries."""
         raise NotImplementedError
 
-    def _handle_width_units(self, value):
+    def _handle_width_units(self, key, value):
         """For unsupported radius queries."""
         raise NotImplementedError
 
-    def _handle_z(self, value):
+    def _handle_z(self, key, value):
         """Handle the query parameter `z` - vertical coords."""
-        key = "z"
         self[key] = self._intervals(value)
 
 
@@ -126,10 +118,9 @@ class _Handler(RequestHandler):
         self.write(f"Get {self.handler_type} request called for collection {collection_name!r}.")
 
     def handle_parameters(self):
-        # print(self.get_query_arguments())
-        for key in self.query_parameters.keys():
+        for key in self.request.query_arguments.keys():
             param_vals = self.get_arguments(key)
-            self.query_parameters.handle_parameters(key, param_vals)
+            self.query_parameters.handle_parameter(key, param_vals)
 
 
 class AreaHandler(_Handler):
