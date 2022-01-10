@@ -1,5 +1,6 @@
 import json
 
+from shapely import wkt
 from tornado.web import HTTPError, RequestHandler
 
 
@@ -26,6 +27,10 @@ class QueryParameters(object):
         return self._params_dict.values()
 
     def handle_parameter(self, key, values):
+        """
+        Handle an individual query parameter (`key`/`values` pair) from the query string.
+
+        """
         if not len(values):
             value = None
         elif len(values) == 1:
@@ -76,8 +81,12 @@ class QueryParameters(object):
         self[key] = {"xmin": xmin, "ymin": ymin, "xmax": xmax, "ymax": ymax}
 
     def _handle_coords(self, key, value):
-        # XXX do we want to convert to a Shapely object here or later?
-        self[key] = value
+        """
+        Coordinates of the location of the request, translated from
+        well-known text (WKT) in the query string to a shapely object.
+
+        """
+        self[key] = wkt.loads(value)
 
     def _handle_datetime(self, key, value):
         self[key] = self._intervals(value)
@@ -93,14 +102,6 @@ class QueryParameters(object):
 
     def _handle_parameter_name(self, key, value):
         self[key] = self._intervals(value)
-
-    def _handle_width(self, key, value):
-        """For unsupported radius queries."""
-        raise NotImplementedError
-
-    def _handle_width_units(self, key, value):
-        """For unsupported radius queries."""
-        raise NotImplementedError
 
     def _handle_z(self, key, value):
         """Handle the query parameter `z` - vertical coords."""
