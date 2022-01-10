@@ -32,8 +32,48 @@ class QueryParameters(RequestHandler):
             emsg = f"Expected exactly 1 parameter for {key!r}, got {len(values)}: {values}."
             raise ValueError(emsg)
         if value is not None:
-            meth = getattr(self, f"_handle_{key.replace('-', '_')}")
-            meth(value)
+            try:
+                meth = getattr(self, f"_handle_{key.replace('-', '_')}")
+            except AttributeError:
+                self._handle_generic(key, value)
+            else:
+                meth(value)
+
+    def _intervals(self, value):
+        """
+        Handle different definitions of multiple values or intervals for a parameter.
+
+        Intervals can be one of the following:
+          * `v`: a single value `v`,
+          * `v1,v2,v3`: `n` comma-separated discrete values,
+          * `Rn/v_start/interval`: repeating intervals (number, start and interval),
+          * `v_start/v_end`: a range of all values from v_start to v_end.
+
+        """
+        if "," in value:
+            result = value.split(",")
+        elif "/" in value:
+            if value.startswith("R"):
+                n, start, interval = value.lstrip("R").split("/")
+                result = {"n": n, "start": start, "interval": interval}
+            else:
+                start, end = value.split("/")
+                result = {"start": start, "end": end}
+        else:
+            result = value
+        return result
+
+    def _handle_generic(self, key, value):
+        """Just write a key/value pair to `self` without modification."""
+        self[key] = value
+
+    def _handle_bbox(self, value):
+        """Bounding box for cube queries. Of form `xmin ymin, xmax ymax`."""
+        key = "bbox"
+        vmin, vmax = value.split(",")
+        xmin, ymin = vmin.split(" ")
+        xmax, ymax = vmax.split(" ")
+        self[key] = {"xmin": xmin, "ymin": ymin, "xmax": xmax, "ymax": ymax}
 
     def _handle_coords(self, value):
         key = "coords"
@@ -45,7 +85,7 @@ class QueryParameters(RequestHandler):
 
     def _handle_datetime(self, value):
         key = "datetime"
-        self[key] = value
+        self[key] = self._intervals(value)
 
     def _handle_f(self, value):
         """Handle the query parameter `f` - the requested return type for the data."""
@@ -59,12 +99,20 @@ class QueryParameters(RequestHandler):
 
     def _handle_parameter_name(self, value):
         key = "parameter-name"
-        self[key] = value.split(",")
+        self[key] = self._intervals(value)
+
+    def _handle_width(self, value):
+        """For unsupported radius queries."""
+        raise NotImplementedError
+
+    def _handle_width_units(self, value):
+        """For unsupported radius queries."""
+        raise NotImplementedError
 
     def _handle_z(self, value):
         """Handle the query parameter `z` - vertical coords."""
         key = "z"
-        self[key] = value
+        self[key] = self._intervals(value)
 
 
 class _Handler(RequestHandler):
@@ -82,7 +130,6 @@ class _Handler(RequestHandler):
         for key in self.query_parameters.keys():
             param_vals = self.get_arguments(key)
             self.query_parameters.handle_parameters(key, param_vals)
-        print(self.query_parameters._params_dict)
 
 
 class AreaHandler(_Handler):
@@ -91,7 +138,6 @@ class AreaHandler(_Handler):
     def get(self, collection_name):
         """Handle a 'get area' request."""
         # Not implemented!
-        print("In subclass get...")
         raise HTTPError(501, f"Get {self.handler_type} request is not implemented.")
 
 
