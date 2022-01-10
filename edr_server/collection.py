@@ -1,11 +1,15 @@
 import json
 
+from tornado.web import removeslash
+
 import config
 from handlers import Handler
 
 
 class CollectionsHandler(Handler):
     """Handle collections requests."""
+
+    @removeslash
     def get(self):
         """Handle a 'get collections' request."""
         super().get("")
