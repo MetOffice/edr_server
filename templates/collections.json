@@ -1,3 +1,4 @@
+{% whitespace oneline %}
 {
   "links": [
     {
@@ -6,6 +7,8 @@
       "rel": "self",
       "type": "application/json"
     }
-  ],
-  "collections": []
+  ], {% set collection_count=len(collections) %}
+  "collections": [{% for i, collection in enumerate(collections, 1) %}
+    {% include collection.json %}{% if  i < collection_count %},{% end %}
+    {% end %}]
 }

@@ -1,4 +1,5 @@
 import json
+from typing import Any
 
 from shapely import wkt
 from tornado.web import HTTPError, RequestHandler
@@ -123,6 +124,13 @@ class Handler(RequestHandler):
         for key in self.request.query_arguments.keys():
             param_vals = self.get_arguments(key)
             self.query_parameters.handle_parameter(key, param_vals)
+
+    def write_error(self, status_code: int, **kwargs: Any) -> None:
+        self.set_header("Content-Type", "application/json")
+        self.write({
+            "code": self.get_status(),
+            "description": self._reason
+        })
 
 
 class AreaHandler(Handler):

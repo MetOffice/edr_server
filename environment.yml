@@ -1,0 +1,17 @@
+name: edr_server
+channels:
+  - conda-forge
+dependencies:
+  - python=3.8
+  - ipykernel
+  - pip
+
+  - tornado=6.1
+
+  # Required for cartopy
+  - proj
+  - geos
+
+  - pip:
+#    - https://github.com/ADAQ-AQI/clean-air-project/archive/CAP-212_object_store_access.zip
+     - https://github.com/ADAQ-AQI/clean-air-project/archive/master.zip

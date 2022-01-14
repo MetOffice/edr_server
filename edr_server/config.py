@@ -17,7 +17,7 @@ class Config(object):
     def __init__(self):
         """
         Set up site-specific configuration as defined in the config YAML file.
-        Config file is relative to this file: ../etc/config.yml
+        Config file is relative to the root of the edr_server code
         """
         self.yaml_path = app_relative_path_to_absolute("etc/config.yml")
         self._yaml = None
@@ -37,11 +37,13 @@ class Config(object):
         with open(self.yaml_path, "r") as oyfh:
             self.yaml = yaml.load(oyfh, Loader=SafeLoader)
 
-    def collections_json_path(self) -> Path:
+    def collections_cache_path(self) -> Path:
         """Retrieve the path to the collections JSON file from the config YAML."""
-        cjpath = Path(self.yaml["collections"]["json"]["path"])
+        cjpath = Path(self.yaml["collections"]["json"]["cache_dir"])
         # If path relative, treat as relative to config file location
-        return cjpath if cjpath.is_absolute() else app_relative_path_to_absolute(cjpath)
+        cjpath = cjpath if cjpath.is_absolute() else app_relative_path_to_absolute(cjpath)
+        cjpath.mkdir(parents=True, exist_ok=True)
+        return cjpath
 
 
 config = Config()
