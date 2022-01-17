@@ -1,4 +1,3 @@
 collections:
   json:
-    # path: "../etc/data/empty_test_collections.json"
-    path: "/Users/dpeterk/github/informatics-lab/3DT/edr_demo/static/json/collections.json"
+    path: "../etc/data/empty_test_collections.json"

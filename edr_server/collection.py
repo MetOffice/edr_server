@@ -12,5 +12,5 @@ class CollectionsHandler(Handler):
         collections_path = config.config.collections_json_path()
         with open(collections_path, "r") as ojfh:
             json_data = json.load(ojfh)
-            # A Python dict will be sent with Content-Type: aaplication/json in the headers.
+            # A Python dict will be sent with Content-Type: application/json in the headers.
             self.write(dict(json_data))

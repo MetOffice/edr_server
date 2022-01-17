@@ -111,10 +111,15 @@ class Handler(RequestHandler):
         self.query_parameters = QueryParameters()
 
     def get(self, collection_name):
-        """Handle a get request for data from EDR. Returned as JSON, unless the query specifies otherwise."""
+        """
+        Handle a get request for data from EDR.
+        Returned as JSON, unless the query specifies otherwise.
+
+        """
         self.handle_parameters()
 
     def handle_parameters(self):
+        """Translate EDR concepts in the query arguments into standard Python objects."""
         for key in self.request.query_arguments.keys():
             param_vals = self.get_arguments(key)
             self.query_parameters.handle_parameter(key, param_vals)
