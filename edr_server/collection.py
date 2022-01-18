@@ -32,9 +32,10 @@ class CollectionsHandler(Handler):
         except FileNotFoundError as e:
             APP_LOGGER.info(f"Failed to load {cache_path}: {e}")
             if collection_id:
-                msg = f"Collection '{cache_filename}' not found. Does the collections cache require updating?"
-                msg += f" Send a POST request to {self.application.reverse_url('refresh_collections')} to"
-                msg += " refresh the cache."
+                msg = (
+                    f"Collection '{cache_filename}' not found. Does the collections cache require updating? "
+                    f"Send a POST request to {self.application.reverse_url('refresh_collections')} to refresh the cache"
+                )
                 self.send_error(404, reason=msg)
             else:
                 self.send_error(500, reason="Unable to load collections data")
