@@ -1,0 +1,38 @@
+{% whitespace oneline %}
+{
+      "id": "{{ collection.id }}",
+      "title": "{{ collection.name }}",
+      "description": "{{ collection.description }}",
+      "keywords": "",
+      "data_queries": {
+        "position": {
+          "link": {
+            "href": "{{ reverse_url("position_query", collection.id) }}",
+            "hreflang": "en",
+            "rel": "data",
+            "variables": {
+              "title": "Position query",
+              "query_type": "position",
+              "output_formats": [
+                "CoverageJSON"
+              ],
+              "default_output_format": "CoverageJSON"
+            }
+          }
+        }
+      },
+      "crs": [
+        "{{ collection.crs }}"
+      ],
+      "output_formats": [
+        "CoverageJSON"
+      ],
+      "parameter_names": {
+        "example": {
+          "type": "parameter",
+          "description": {
+            "en": "An example parameter"
+          }
+        }
+      }
+    }

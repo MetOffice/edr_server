@@ -1,0 +1,14 @@
+{% whitespace oneline %}
+{
+  "links": [
+    {
+      "href": "{{ reverse_url('collections').rstrip('?') }}",
+      "hreflang": "en",
+      "rel": "self",
+      "type": "application/json"
+    }
+  ], {% set collection_count=len(collections) %}
+  "collections": [{% for i, collection in enumerate(collections, 1) %}
+    {% include collection.json %}{% if  i < collection_count %},{% end %}
+    {% end %}]
+}

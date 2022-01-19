@@ -1,16 +1,41 @@
-import json
+import logging
+from pathlib import Path
 
-import config
-from handlers import Handler
+from tornado.web import removeslash
+
+from .handlers import Handler
+
+APP_LOGGER = logging.getLogger("tornado.application")
 
 
 class CollectionsHandler(Handler):
     """Handle collections requests."""
-    def get(self):
+
+    collections_cache_path: Path
+
+    def initialize(self, collections_cache_path: Path):
+        super().initialize()
+        self.collections_cache_path = collections_cache_path
+
+    @removeslash
+    def get(self, collection_id=None):
         """Handle a 'get collections' request."""
         super().get("")
-        collections_path = config.config.collections_json_path()
-        with open(collections_path, "r") as ojfh:
-            json_data = json.load(ojfh)
-            # A Python dict will be sent with Content-Type: application/json in the headers.
-            self.write(dict(json_data))
+
+        cache_filename = Path(f"{collection_id if collection_id else 'collections'}.json")
+        cache_path = Path(self.collections_cache_path) / cache_filename
+
+        try:
+            with open(cache_path, "r") as ojfh:
+                self.set_header("Content-Type", "application/json")
+                self.write(ojfh.read())
+        except FileNotFoundError as e:
+            APP_LOGGER.info(f"Failed to load {cache_path}: {e}")
+            if collection_id:
+                msg = (
+                    f"Collection '{cache_filename}' not found. Does the collections cache require updating? "
+                    f"Send a POST request to {self.application.reverse_url('refresh_collections')} to refresh the cache"
+                )
+                self.send_error(404, reason=msg)
+            else:
+                self.send_error(500, reason="Unable to load collections data")
