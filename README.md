@@ -21,10 +21,10 @@ pip install tornado
 
 ## Using it
 
-Execute the Python script `server.py`. This will kick off a tornado web server (running on localhost and on port 8808 by default, which was chosen at random) that runs the EDR Server. For example:
+Run the executable Python script `bin/run_server.py`. This will kick off a tornado web server (running on localhost and on port 8808 by default, which was chosen at random) that runs the EDR Server. For example:
 
 ```bash
-$ python -m edr_server.server
+$ ./bin/run_server.py
 Listening on port 8808...
 ```
 
