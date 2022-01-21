@@ -9,6 +9,7 @@ from tornado.web import HTTPError, RequestHandler
 class QueryParameters(object):
     def __init__(self):
         self._params_dict = {}
+        self._handle_f("f", None)  # Always set a return type.
 
     def __getitem__(self, key):
         return self._params_dict[key]
@@ -22,6 +23,14 @@ class QueryParameters(object):
     def __str__(self):
         return str(self._params_dict)
 
+    def get(self, key, default=None):
+        try:
+            result = self.__getitem__(key)
+        except KeyError:
+            result = default
+        finally:
+            return result
+
     def keys(self):
         return self._params_dict.keys()
 
@@ -34,10 +43,7 @@ class QueryParameters(object):
 
         """
         value = None if not len(values) else values[0]
-        if key == "f":
-            # We always need to handle the return type `f` to make sure we have a default.
-            self._handle_f(key, value)
-        elif value is not None:
+        if value is not None:
             try:
                 meth = getattr(self, f"_handle_{key.replace('-', '_')}")
             except AttributeError:
@@ -119,15 +125,17 @@ class Handler(RequestHandler):
 
         """
         self.handle_parameters()
+        if self.query_parameters.get("f") == "json":
+            self.render_template()
+
+    def _get_data(self):
+        raise NotImplemented
 
     def handle_parameters(self):
         """Translate EDR concepts in the query arguments into standard Python objects."""
         for key in self.request.query_arguments.keys():
             param_vals = self.get_arguments(key)
             self.query_parameters.handle_parameter(key, param_vals)
-        
-        if self.query_parameters["f"] == "json":
-            self.render_template()
 
     def render_template(self):
         """Render a templated EDR response with data relevant to this query."""
