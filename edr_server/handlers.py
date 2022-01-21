@@ -1,5 +1,6 @@
 import json
 from typing import Any
+from urllib.parse import urljoin
 
 from shapely import wkt
 from tornado.web import HTTPError, RequestHandler
@@ -124,6 +125,15 @@ class Handler(RequestHandler):
         for key in self.request.query_arguments.keys():
             param_vals = self.get_arguments(key)
             self.query_parameters.handle_parameter(key, param_vals)
+        
+        if self.query_parameters["f"] == "json":
+            self.render_template()
+
+    def render_template(self):
+        """Render a templated EDR response with data relevant to this query."""
+        template_file = f"{self.handler_type}.json"
+        data = self._get_data()
+        self.render(template_file, **data)
 
     def write_error(self, status_code: int, **kwargs: Any) -> None:
         self.set_header("Content-Type", "application/json")
@@ -131,6 +141,46 @@ class Handler(RequestHandler):
             "code": self.get_status(),
             "description": self._reason
         })
+
+    def reverse_url_full(self, name: str, *args: Any, **kwargs: Any):
+        """
+        Extend the functionality of `RequestHandler.reverse_url` to return the full URL
+        rather than the URL relative to the host.
+
+        Reference: https://stackoverflow.com/a/39612115/6676985.
+
+        """
+        host = "{protocol}://{host}".format(**vars(self.request))
+        return urljoin(host, self.reverse_url(name, *args, **kwargs))
+
+
+class RootHandler(Handler):
+    """Handle capabilities requests to the root of the server."""
+    handler_type = "capabilities"
+    def get(self):
+        super().get("")
+
+    def _get_data(self):
+        return {
+            "title": "A nonsense example",
+            "description": "This is a nonsense example of templating a capabilities request.",
+            "links_api_href": self.reverse_url_full("api").rstrip("?"),
+            "links_conformance_href": self.reverse_url_full("conformance").rstrip("?"),
+            "links_collections_href": self.reverse_url_full("collections").rstrip("?"),
+            "keywords": ["Example", "Nonsense"],
+            "provider_name": "Galadriel",
+            "provider_url": None,
+            "contact_email": "nonsense@example.com",
+            "contact_phone": "07987 654321",
+            "contact_fax": None,
+            "contact_hours": "9 til 5",
+            "contact_instructions": "Don't",
+            "contact_address": "Over there",
+            "contact_postcode": "ZZ99 9ZZ",
+            "contact_city": "Neverland",
+            "contact_state": "",
+            "contact_country": "Wakanda",
+        }
 
 
 class AreaHandler(Handler):

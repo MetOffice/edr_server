@@ -31,6 +31,9 @@ def make_app():
                 {"collections_cache_path": collections_cache_path,
                  "metadata_store": metadata_store},
                 name="refresh_collections"),
+            url(r"/api\/?", handlers.RootHandler, name="api"),
+            url(r"/conformance\/?", handlers.RootHandler, name="conformance"),
+            url(r"\/?", handlers.RootHandler, name="root"),
         ],
         template_path=app_relative_path_to_absolute("templates"),
     )
