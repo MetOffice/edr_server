@@ -165,35 +165,31 @@ class Handler(RequestHandler):
 class RootHandler(Handler):
     """Handle capabilities requests to the root of the server."""
     handler_type = "capabilities"
+
+    def initialize(self, data_interface):
+        super().initialize()
+        self.data_interface = data_interface
+
     def get(self):
         super().get("")
 
     def _get_data(self):
-        return {
-            "title": "A nonsense example",
-            "description": "This is a nonsense example of templating a capabilities request.",
-            "links_api_href": self.reverse_url_full("api").rstrip("?"),
-            "links_conformance_href": self.reverse_url_full("conformance").rstrip("?"),
-            "links_collections_href": self.reverse_url_full("collections").rstrip("?"),
-            "keywords": ["Example", "Nonsense"],
-            "provider_name": "Galadriel",
-            "provider_url": None,
-            "contact_email": "nonsense@example.com",
-            "contact_phone": "07987 654321",
-            "contact_fax": None,
-            "contact_hours": "9 til 5",
-            "contact_instructions": "Don't",
-            "contact_address": "Over there",
-            "contact_postcode": "ZZ99 9ZZ",
-            "contact_city": "Neverland",
-            "contact_state": "",
-            "contact_country": "Wakanda",
-        }
+        # api_link = self.reverse_url_full("api").rstrip("?"),
+        api_link = ""
+        conformance_link = self.reverse_url_full("conformance").rstrip("?")
+        collections_link = self.reverse_url_full("collections").rstrip("?")
+        interface = self.data_interface.Capabilities(api_link, collections_link, conformance_link)
+        return interface.data()
 
 
 class APIHandler(Handler):
     """Handle API requests."""
     handler_type = "api"
+
+    def initialize(self, data_interface):
+        super().initialize()
+        self.data_interface = data_interface
+
     def get(self):
         super().get("")
 
@@ -201,11 +197,17 @@ class APIHandler(Handler):
 class ConformanceHandler(Handler):
     """Handle conformance requests."""
     handler_type = "conformance"
+
+    def initialize(self, data_interface):
+        super().initialize()
+        self.data_interface = data_interface
+
     def get(self):
         super().get("")
 
     def _get_data(self):
-        return ["cf-1.7"]
+        interface = self.data_interface.Conformance()
+        return interface.data()
 
     def render_template(self):
         template = {"conformsTo": self._get_data()}
