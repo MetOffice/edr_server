@@ -118,6 +118,9 @@ class Handler(RequestHandler):
     def initialize(self, **kwargs):
         self.query_parameters = QueryParameters()
 
+    def _get_data(self):
+        raise NotImplemented
+
     def get(self, collection_name):
         """
         Handle a get request for data from EDR.
@@ -127,9 +130,6 @@ class Handler(RequestHandler):
         self.handle_parameters()
         if self.query_parameters.get("f") == "json":
             self.render_template()
-
-    def _get_data(self):
-        raise NotImplemented
 
     def handle_parameters(self):
         """Translate EDR concepts in the query arguments into standard Python objects."""
@@ -189,6 +189,27 @@ class RootHandler(Handler):
             "contact_state": "",
             "contact_country": "Wakanda",
         }
+
+
+class APIHandler(Handler):
+    """Handle API requests."""
+    handler_type = "api"
+    def get(self):
+        super().get("")
+
+
+class ConformanceHandler(Handler):
+    """Handle conformance requests."""
+    handler_type = "conformance"
+    def get(self):
+        super().get("")
+
+    def _get_data(self):
+        return ["cf-1.7"]
+
+    def render_template(self):
+        template = {"conformsTo": self._get_data()}
+        self.write(template)
 
 
 class AreaHandler(Handler):
