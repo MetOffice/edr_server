@@ -9,7 +9,7 @@ from tornado.web import HTTPError, RequestHandler
 class QueryParameters(object):
     def __init__(self):
         self._params_dict = {}
-        self._handle_f("f", None)  # Always set a return type.
+        self._handle_f("f", None)  # Always set a return type.
 
     def __getitem__(self, key):
         return self._params_dict[key]

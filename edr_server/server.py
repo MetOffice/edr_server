@@ -11,7 +11,6 @@ from .paths import app_relative_path_to_absolute
 def make_app():
     collections_cache_path = config.collections_cache_path()
     data_interface = config.data_interface()
-    metadata_store = create_metadata_store()
 
     return Application(
         [
