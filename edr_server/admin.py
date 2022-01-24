@@ -5,12 +5,14 @@ from pathlib import Path
 
 from tornado.web import RequestHandler, removeslash
 
+from .handlers import Handler
+
 APP_LOGGER = logging.getLogger("tornado.application")
 
 
 # data_received is marked as abstract, but doesn't need to be implemented
 # noinspection PyAbstractClass
-class RefreshCollectionsHandler(RequestHandler):
+class RefreshCollectionsHandler(Handler):
     """Handles requests to regenerate the static collections JSON file"""
 
     collections_cache_path: Path
@@ -33,13 +35,17 @@ class RefreshCollectionsHandler(RequestHandler):
 
         # Store the updated collections metadata.
         cache_file_path = self.collections_cache_path / Path(f"collections.json")
-        rendered_template = self.render_string("collections.json", collections=collections_metadata)
+        links_href = self.reverse_url_full('collections').rstrip('?')
+        render_kwargs = {"collections": collections_metadata, "links_href": links_href}
+        rendered_template = self.render_string("collections.json", **render_kwargs)
         self._save_cached_response("collections endpoint", rendered_template, cache_file_path)
 
         # ... and store each individual collection as well.
         for collection in collections_metadata:
             cache_file_path = self.collections_cache_path / Path(f"{collection.id}.json")
-            rendered_template = self.render_string("collection.json", collection=collection)
+            position_href = self.reverse_url_full("position_query", collection.id)
+            render_kwargs = {"collection": collection, "position_href": position_href}
+            rendered_template = self.render_string("collection.json", **render_kwargs)
             self._save_cached_response(collection.id, rendered_template, cache_file_path)
 
         self.write(f"Refreshed cache with {len(collections_metadata)} collections")
