@@ -1,4 +1,3 @@
-from clean_air.data.storage import create_metadata_store
 from tornado.web import Application, url
 
 from . import admin
@@ -29,8 +28,8 @@ def make_app():
                 {"collections_cache_path": collections_cache_path},
                 name="collections"),
             url(r"/admin/refresh_collections\/?", admin.RefreshCollectionsHandler,
-                {"collections_cache_path": collections_cache_path,
-                 "metadata_store": metadata_store},
+                {"data_interface": data_interface,
+                 "collections_cache_path": collections_cache_path},
                 name="refresh_collections"),
             # url(r"/api\/?", handlers.APIHandler,
             #     {"data_interface": data_interface},
