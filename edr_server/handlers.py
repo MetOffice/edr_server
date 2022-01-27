@@ -130,6 +130,8 @@ class Handler(RequestHandler):
         self.handle_parameters()
         if self.query_parameters.get("f") == "json":
             self.render_template()
+        else:
+            raise HTTPError(501, f"Only JSON response type is implemented.")
 
     def handle_parameters(self):
         """Translate EDR concepts in the query arguments into standard Python objects."""
