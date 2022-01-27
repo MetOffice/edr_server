@@ -1,3 +1,4 @@
+import importlib
 from pathlib import Path
 
 import yaml
@@ -44,6 +45,11 @@ class Config(object):
         cjpath = cjpath if cjpath.is_absolute() else app_relative_path_to_absolute(cjpath)
         cjpath.mkdir(parents=True, exist_ok=True)
         return cjpath
+
+    def data_interface(self):
+        data_interface_name = self.yaml["data"]["interface"]["name"]
+        data_interface = f"edr_data_interface.concrete.{data_interface_name}"
+        return importlib.import_module(data_interface)
 
 
 config = Config()

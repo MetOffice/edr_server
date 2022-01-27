@@ -1,0 +1,46 @@
+{
+  "title": "{{ title }}",
+  "description": "{{ description }}",
+  "links": [
+    {
+      "href": "{{ links_api_href }}",
+      "hreflang": "en",
+      "rel": "service",
+      "type": "application/openapi+json;version=3.0",
+      "title": ""
+    },
+    {
+      "href": "{{ links_conformance_href }}",
+      "hreflang": "en",
+      "rel": "data",
+      "type": "application/json",
+      "title": ""
+    },
+    {
+      "href": "{{ links_collections_href }}",
+      "hreflang": "en",
+      "rel": "data",
+      "type": "application/json",
+      "title": ""
+    }
+  ],
+  "keywords": [
+    {% for keyword in keywords %} {{ keyword }}, {% end %}
+  ],
+  "provider": {
+    "name": "{{ provider_name }}",
+    "url": "{{ provider_url }}"
+  },
+  "contact": {
+    "email": "{{ contact_email }}",
+    "phone": "{{ contact_phone }}",
+    "fax": "{{ contact_fax }}",
+    "hours": "{{ contact_hours }}",
+    "instructions": "{{ contact_instructions }}",
+    "address": "{{ contact_address }}",
+    "postalCode": "{{ contact_postcode }}",
+    "city": "{{ contact_city }}",
+    "stateorprovince": "{{ contact_state }}",
+    "country": "{{ contact_country }}"
+  }
+}

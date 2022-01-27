@@ -1,5 +1,6 @@
 import json
 from typing import Any
+from urllib.parse import urljoin
 
 from shapely import wkt
 from tornado.web import HTTPError, RequestHandler
@@ -8,6 +9,7 @@ from tornado.web import HTTPError, RequestHandler
 class QueryParameters(object):
     def __init__(self):
         self._params_dict = {}
+        self._handle_f("f", None)  # Always set a return type.
 
     def __getitem__(self, key):
         return self._params_dict[key]
@@ -21,6 +23,14 @@ class QueryParameters(object):
     def __str__(self):
         return str(self._params_dict)
 
+    def get(self, key, default=None):
+        try:
+            result = self.__getitem__(key)
+        except KeyError:
+            result = default
+        finally:
+            return result
+
     def keys(self):
         return self._params_dict.keys()
 
@@ -33,10 +43,7 @@ class QueryParameters(object):
 
         """
         value = None if not len(values) else values[0]
-        if key == "f":
-            # We always need to handle the return type `f` to make sure we have a default.
-            self._handle_f(key, value)
-        elif value is not None:
+        if value is not None:
             try:
                 meth = getattr(self, f"_handle_{key.replace('-', '_')}")
             except AttributeError:
@@ -111,6 +118,9 @@ class Handler(RequestHandler):
     def initialize(self, **kwargs):
         self.query_parameters = QueryParameters()
 
+    def _get_data(self):
+        raise NotImplemented
+
     def get(self, collection_name):
         """
         Handle a get request for data from EDR.
@@ -118,6 +128,10 @@ class Handler(RequestHandler):
 
         """
         self.handle_parameters()
+        if self.query_parameters.get("f") == "json":
+            self.render_template()
+        else:
+            raise HTTPError(501, f"Only JSON response type is implemented.")
 
     def handle_parameters(self):
         """Translate EDR concepts in the query arguments into standard Python objects."""
@@ -125,12 +139,81 @@ class Handler(RequestHandler):
             param_vals = self.get_arguments(key)
             self.query_parameters.handle_parameter(key, param_vals)
 
+    def render_template(self):
+        """Render a templated EDR response with data relevant to this query."""
+        template_file = f"{self.handler_type}.json"
+        data = self._get_data()
+        self.render(template_file, **data)
+
     def write_error(self, status_code: int, **kwargs: Any) -> None:
         self.set_header("Content-Type", "application/json")
         self.write({
             "code": self.get_status(),
             "description": self._reason
         })
+
+    def reverse_url_full(self, name: str, *args: Any, **kwargs: Any):
+        """
+        Extend the functionality of `RequestHandler.reverse_url` to return the full URL
+        rather than the URL relative to the host.
+
+        Reference: https://stackoverflow.com/a/39612115/6676985.
+
+        """
+        host = "{protocol}://{host}".format(**vars(self.request))
+        return urljoin(host, self.reverse_url(name, *args, **kwargs))
+
+
+class RootHandler(Handler):
+    """Handle capabilities requests to the root of the server."""
+    handler_type = "capabilities"
+
+    def initialize(self, data_interface):
+        super().initialize()
+        self.data_interface = data_interface
+
+    def get(self):
+        super().get("")
+
+    def _get_data(self):
+        # api_link = self.reverse_url_full("api").rstrip("?"),
+        api_link = ""
+        conformance_link = self.reverse_url_full("conformance").rstrip("?")
+        collections_link = self.reverse_url_full("collections").rstrip("?")
+        interface = self.data_interface.Capabilities(api_link, collections_link, conformance_link)
+        return interface.data()
+
+
+class APIHandler(Handler):
+    """Handle API requests."""
+    handler_type = "api"
+
+    def initialize(self, data_interface):
+        super().initialize()
+        self.data_interface = data_interface
+
+    def get(self):
+        super().get("")
+
+
+class ConformanceHandler(Handler):
+    """Handle conformance requests."""
+    handler_type = "conformance"
+
+    def initialize(self, data_interface):
+        super().initialize()
+        self.data_interface = data_interface
+
+    def get(self):
+        super().get("")
+
+    def _get_data(self):
+        interface = self.data_interface.Conformance()
+        return interface.data()
+
+    def render_template(self):
+        template = {"conformsTo": self._get_data()}
+        self.write(template)
 
 
 class AreaHandler(Handler):

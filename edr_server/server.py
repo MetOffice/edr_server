@@ -10,7 +10,9 @@ from .paths import app_relative_path_to_absolute
 
 def make_app():
     collections_cache_path = config.collections_cache_path()
+    data_interface = config.data_interface()
     metadata_store = create_metadata_store()
+
     return Application(
         [
             url(r"/collections/(.*)/area", handlers.AreaHandler),
@@ -31,6 +33,15 @@ def make_app():
                 {"collections_cache_path": collections_cache_path,
                  "metadata_store": metadata_store},
                 name="refresh_collections"),
+            # url(r"/api\/?", handlers.APIHandler,
+            #     {"data_interface": data_interface},
+            #     name="api"),
+            url(r"/conformance\/?", handlers.ConformanceHandler,
+                {"data_interface": data_interface},
+                name="conformance"),
+            url(r"\/?", handlers.RootHandler,
+                {"data_interface": data_interface},
+                name="root"),
         ],
         template_path=app_relative_path_to_absolute("templates"),
     )
