@@ -1,5 +1,5 @@
 {% whitespace oneline %}
-"position": {
+"corridor": {
   "link": {
     "href": "http://data.example.com/collections/monitoringsites/locations/1234",
     "rel": "alternate",
