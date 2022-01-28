@@ -63,25 +63,11 @@
       ],
       "crs": "{{ collection.crs }}",
       "name": "{{ collection.crs_name }}"
-    },
-    "temporal": {
-      "interval": [
-        [
-          "2020-11-12T12:15Z,2020-11-12T12:30Z,2020-11-12T12:45Z"
-        ]
-      ],
-      "trs": "TIMECRS[\"DateTime\",TDATUM[\"Gregorian Calendar\"],CS[TemporalDateTime,1],AXIS[\"Time (T)\",future]",
-      "name": "string"
-    },
-    "vertical": {
-      "interval": [
-        [
-          "850"
-        ]
-      ],
-      "vrs": "VERTCS[\"WGS_1984\",DATUM[\"D_WGS_1984\",SPHEROID[\"WGS_1984\",6378137.0,298.257223563]],PARAMETER[\"Vertical_Shift\",0.0],PARAMETER[\"Direction\",1.0],UNIT[\"Meter\",1.0]],AXIS[\"Up\",UP]",
-      "name": "string"
-    }
+    }{% if temporal_extent %},
+    {% include "collection_extent_temporal.json" %}
+    {% end %}{% if vertical_extent %},
+    {% include "collection_extent_vertical.json" %}
+    {% end %}
   },
   "data_queries": {
     {% if "position" in data_queries %}{% include "collection_position.json" %}{% end %}

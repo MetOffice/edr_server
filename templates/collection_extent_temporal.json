@@ -1,0 +1,10 @@
+{% whitespace oneline %}
+"temporal": {
+  "interval": [
+    [
+      "2020-11-12T12:15Z,2020-11-12T12:30Z,2020-11-12T12:45Z"
+    ]
+  ],
+  "trs": "TIMECRS[\"DateTime\",TDATUM[\"Gregorian Calendar\"],CS[TemporalDateTime,1],AXIS[\"Time (T)\",future]",
+  "name": "string"
+}
