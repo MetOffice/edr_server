@@ -1,0 +1,47 @@
+{% whitespace oneline %}
+"radius": {
+  "link": {
+    "href": "http://data.example.com/collections/monitoringsites/locations/1234",
+    "rel": "alternate",
+    "type": "application/geo+json",
+    "hreflang": "en",
+    "title": "Monitoring site name",
+    "length": 0,
+    "templated": true,
+    "variables": {
+      "title": "Position query",
+      "description": "Query to return data for a defined well known text point",
+      "query_type": "trajectory",
+      "coords": {
+        "description": "string",
+        "type": "string",
+        "example": "string"
+      },
+      "within_units": [
+        "km",
+        "miles"
+      ],
+      "width_units": [
+        "km",
+        "miles"
+      ],
+      "height_units": [
+        "m",
+        "hPa"
+      ],
+      "output_formats": [
+        "CoverageJSON",
+        "GeoJSON",
+        "IWXXM",
+        "GRIB"
+      ],
+      "default_output_format": "string",
+      "crs_details": [
+        {
+          "crs": "native",
+          "wkt": "GEOGCS[\"WGS 84\",DATUM[\"WGS_1984\",SPHEROID[\"WGS 84\",6378137,298.257223563,AUTHORITY[\"EPSG\",\"7030\"]],AUTHORITY[\"EPSG\",\"6326\"]],PRIMEM[\"Greenwich\",0,AUTHORITY[\"EPSG\",\"8901\"]],UNIT[\"degree\",0.01745329251994328,AUTHORITY[\"EPSG\",\"9122\"]],AUTHORITY[\"EPSG\",\"4326\"]]"
+        }
+      ]
+    }
+  }
+},

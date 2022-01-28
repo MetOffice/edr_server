@@ -1,3 +1,10 @@
+server:
+  capabilities:
+    data_queries:
+    - position
+    - locations
+    - items
+
 collections:
   json:
     cache_dir: "etc/data/collections_cache/"

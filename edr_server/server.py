@@ -10,6 +10,7 @@ from .paths import app_relative_path_to_absolute
 def make_app():
     collections_cache_path = config.collections_cache_path()
     data_interface = config.data_interface()
+    supported_data_queries = config.data_queries()
 
     return Application(
         [
@@ -29,6 +30,7 @@ def make_app():
                 name="collections"),
             url(r"/admin/refresh_collections\/?", admin.RefreshCollectionsHandler,
                 {"data_interface": data_interface,
+                 "data_queries": supported_data_queries,
                  "collections_cache_path": collections_cache_path},
                 name="refresh_collections"),
             # url(r"/api\/?", handlers.APIHandler,

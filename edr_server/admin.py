@@ -2,6 +2,7 @@
 import json
 import logging
 from pathlib import Path
+from typing import List
 
 from tornado.web import RequestHandler, removeslash
 
@@ -17,8 +18,9 @@ class RefreshCollectionsHandler(Handler):
 
     collections_cache_path: Path
 
-    def initialize(self, data_interface, collections_cache_path: Path):
-        self.interface = data_interface.RefreshCollections()
+    def initialize(self, data_interface, data_queries: List, collections_cache_path: Path):
+        self.data_queries = data_queries
+        self.interface = data_interface.RefreshCollections(self.data_queries)
         self.collections_cache_path = collections_cache_path
 
     def _save_cached_response(self, collection_name: str, rendered_template: bytes, cache_file_path: Path):
@@ -44,7 +46,11 @@ class RefreshCollectionsHandler(Handler):
         for collection in collections_metadata:
             cache_file_path = self.collections_cache_path / Path(f"{collection.id}.json")
             position_href = self.reverse_url_full("position_query", collection.id)
-            render_kwargs = {"collection": collection, "position_href": position_href}
+            render_kwargs = {
+                "collection": collection,
+                "position_href": position_href,
+                "data_queries": self.data_queries,
+            }
             rendered_template = self.render_string("collection.json", **render_kwargs)
             print(rendered_template)
             self._save_cached_response(collection.id, rendered_template, cache_file_path)
