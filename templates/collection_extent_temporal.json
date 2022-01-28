@@ -2,9 +2,9 @@
 "temporal": {
   "interval": [
     [
-      "2020-11-12T12:15Z,2020-11-12T12:30Z,2020-11-12T12:45Z"
+      "{{ collection.temporal_interval }}"
     ]
   ],
-  "trs": "TIMECRS[\"DateTime\",TDATUM[\"Gregorian Calendar\"],CS[TemporalDateTime,1],AXIS[\"Time (T)\",future]",
-  "name": "string"
+  "trs": "{{ collection.trs }}",
+  "name": "{{ collection.temporal_name }}"
 }

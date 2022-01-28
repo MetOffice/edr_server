@@ -50,8 +50,8 @@ class RefreshCollectionsHandler(Handler):
                 "collection": collection,
                 "position_href": position_href,
                 "data_queries": self.data_queries,
-                "temporal_extent": self.interface.has_temporal(),
-                "vertical_extent": self.interface.has_vertical(),
+                "temporal_extent": self.interface.has_temporal_extent(),
+                "vertical_extent": self.interface.has_vertical_extent(),
             }
             rendered_template = self.render_string("collection.json", **render_kwargs)
             print(rendered_template)

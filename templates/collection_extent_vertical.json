@@ -1,10 +1,13 @@
 {% whitespace oneline %}
 "vertical": {
   "interval": [
+    {% set v_level_ct = len(collection.vertical_interval) %}
     [
-      "850"
+      {% for i, v_level in enumerate(collection.vertical_interval, 1) %}
+      {{ v_level }}{% if i < v_level_ct %},{% end %}
+      {% end %}
     ]
   ],
-  "vrs": "VERTCS[\"WGS_1984\",DATUM[\"D_WGS_1984\",SPHEROID[\"WGS_1984\",6378137.0,298.257223563]],PARAMETER[\"Vertical_Shift\",0.0],PARAMETER[\"Direction\",1.0],UNIT[\"Meter\",1.0]],AXIS[\"Up\",UP]",
-  "name": "string"
+  "vrs": "{{ collection.vrs }}",
+  "name": "{{ collection.vertical_name }}"
 }
