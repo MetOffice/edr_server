@@ -1,38 +1,476 @@
 {% whitespace oneline %}
 {
+  "links": [
+    {
+      "href": "https://www.example.org/service/description.html",
+      "hreflang": "en",
+      "rel": "service-doc",
+      "type": "text/html",
+      "title": ""
+    },
+    {
+      "href": "https://www.example.org/service/licence.html",
+      "hreflang": "en",
+      "rel": "licence",
+      "type": "text/html",
+      "title": ""
+    },
+    {
+      "href": "https://www.example.org/service/terms-and-conditions.html",
+      "hreflang": "en",
+      "rel": "restrictions",
+      "type": "text/html",
+      "title": ""
+    },
+    {
+      "href": "http://www.example.org/edr/collections/the_collection_id/",
+      "hreflang": "en",
+      "rel": "collection",
+      "type": "collection",
+      "title": "Collection"
+    },
+    {
+      "href": "http://www.example.org/edr/collections/the_collection_id/position",
+      "hreflang": "en",
+      "rel": "data",
+      "type": "position",
+      "title": "Position"
+    },
+    {
+      "href": "http://www.example.org/edr/collections/the_collection_id/area",
+      "hreflang": "en",
+      "rel": "data",
+      "type": "area",
+      "title": "Area"
+    }
+  ],
   "id": "{{ collection.id }}",
   "title": "{{ collection.name }}",
   "description": "{{ collection.description }}",
-  "keywords": "",
+  {% set kw_count = len(collection.keywords) %}
+  "keywords": [
+    {% for i, keyword in enumerate(collection.keywords, 1) %}
+    "{{ keyword }}"{%if i < kw_count %},{% end %}
+    {% end %}
+  ],
+  "extent": {
+    "spatial": {
+      {% set corner_count = len(collection.bbox) %}
+      "bbox": [
+        {% for i, corner in enumerate(collection.bbox, 1) %}
+        {{ corner }}{% if i < corner_count %},{% end %}
+        {% end %}
+      ],
+      "crs": "{{ collection.crs }}",
+      "name": "{{ collection.crs_name }}"
+    },
+    "temporal": {
+      "interval": [
+        [
+          "2020-11-12T12:15Z,2020-11-12T12:30Z,2020-11-12T12:45Z"
+        ]
+      ],
+      "trs": "TIMECRS[\"DateTime\",TDATUM[\"Gregorian Calendar\"],CS[TemporalDateTime,1],AXIS[\"Time (T)\",future]",
+      "name": "string"
+    },
+    "vertical": {
+      "interval": [
+        [
+          "850"
+        ]
+      ],
+      "vrs": "VERTCS[\"WGS_1984\",DATUM[\"D_WGS_1984\",SPHEROID[\"WGS_1984\",6378137.0,298.257223563]],PARAMETER[\"Vertical_Shift\",0.0],PARAMETER[\"Direction\",1.0],UNIT[\"Meter\",1.0]],AXIS[\"Up\",UP]",
+      "name": "string"
+    }
+  },
   "data_queries": {
-    "position": {
+    {% include "collection_position.json" %}
+    "radius": {
       "link": {
-        "href": "{{ position_href }}",
+        "href": "http://data.example.com/collections/monitoringsites/locations/1234",
+        "rel": "alternate",
+        "type": "application/geo+json",
         "hreflang": "en",
-        "rel": "data",
+        "title": "Monitoring site name",
+        "length": 0,
+        "templated": true,
         "variables": {
           "title": "Position query",
-          "query_type": "position",
-          "output_formats": [
-            "CoverageJSON"
+          "description": "Query to return data for a defined well known text point",
+          "query_type": "trajectory",
+          "coords": {
+            "description": "string",
+            "type": "string",
+            "example": "string"
+          },
+          "within_units": [
+            "km",
+            "miles"
           ],
-          "default_output_format": "CoverageJSON"
+          "width_units": [
+            "km",
+            "miles"
+          ],
+          "height_units": [
+            "m",
+            "hPa"
+          ],
+          "output_formats": [
+            "CoverageJSON",
+            "GeoJSON",
+            "IWXXM",
+            "GRIB"
+          ],
+          "default_output_format": "string",
+          "crs_details": [
+            {
+              "crs": "native",
+              "wkt": "GEOGCS[\"WGS 84\",DATUM[\"WGS_1984\",SPHEROID[\"WGS 84\",6378137,298.257223563,AUTHORITY[\"EPSG\",\"7030\"]],AUTHORITY[\"EPSG\",\"6326\"]],PRIMEM[\"Greenwich\",0,AUTHORITY[\"EPSG\",\"8901\"]],UNIT[\"degree\",0.01745329251994328,AUTHORITY[\"EPSG\",\"9122\"]],AUTHORITY[\"EPSG\",\"4326\"]]"
+            }
+          ]
+        }
+      }
+    },
+    "area": {
+      "link": {
+        "href": "http://data.example.com/collections/monitoringsites/locations/1234",
+        "rel": "alternate",
+        "type": "application/geo+json",
+        "hreflang": "en",
+        "title": "Monitoring site name",
+        "length": 0,
+        "templated": true,
+        "variables": {
+          "title": "Position query",
+          "description": "Query to return data for a defined well known text point",
+          "query_type": "trajectory",
+          "coords": {
+            "description": "string",
+            "type": "string",
+            "example": "string"
+          },
+          "within_units": [
+            "km",
+            "miles"
+          ],
+          "width_units": [
+            "km",
+            "miles"
+          ],
+          "height_units": [
+            "m",
+            "hPa"
+          ],
+          "output_formats": [
+            "CoverageJSON",
+            "GeoJSON",
+            "IWXXM",
+            "GRIB"
+          ],
+          "default_output_format": "string",
+          "crs_details": [
+            {
+              "crs": "native",
+              "wkt": "GEOGCS[\"WGS 84\",DATUM[\"WGS_1984\",SPHEROID[\"WGS 84\",6378137,298.257223563,AUTHORITY[\"EPSG\",\"7030\"]],AUTHORITY[\"EPSG\",\"6326\"]],PRIMEM[\"Greenwich\",0,AUTHORITY[\"EPSG\",\"8901\"]],UNIT[\"degree\",0.01745329251994328,AUTHORITY[\"EPSG\",\"9122\"]],AUTHORITY[\"EPSG\",\"4326\"]]"
+            }
+          ]
+        }
+      }
+    },
+    "cube": {
+      "link": {
+        "href": "http://data.example.com/collections/monitoringsites/locations/1234",
+        "rel": "alternate",
+        "type": "application/geo+json",
+        "hreflang": "en",
+        "title": "Monitoring site name",
+        "length": 0,
+        "templated": true,
+        "variables": {
+          "title": "Position query",
+          "description": "Query to return data for a defined well known text point",
+          "query_type": "trajectory",
+          "coords": {
+            "description": "string",
+            "type": "string",
+            "example": "string"
+          },
+          "within_units": [
+            "km",
+            "miles"
+          ],
+          "width_units": [
+            "km",
+            "miles"
+          ],
+          "height_units": [
+            "m",
+            "hPa"
+          ],
+          "output_formats": [
+            "CoverageJSON",
+            "GeoJSON",
+            "IWXXM",
+            "GRIB"
+          ],
+          "default_output_format": "string",
+          "crs_details": [
+            {
+              "crs": "native",
+              "wkt": "GEOGCS[\"WGS 84\",DATUM[\"WGS_1984\",SPHEROID[\"WGS 84\",6378137,298.257223563,AUTHORITY[\"EPSG\",\"7030\"]],AUTHORITY[\"EPSG\",\"6326\"]],PRIMEM[\"Greenwich\",0,AUTHORITY[\"EPSG\",\"8901\"]],UNIT[\"degree\",0.01745329251994328,AUTHORITY[\"EPSG\",\"9122\"]],AUTHORITY[\"EPSG\",\"4326\"]]"
+            }
+          ]
+        }
+      }
+    },
+    "trajectory": {
+      "link": {
+        "href": "http://data.example.com/collections/monitoringsites/locations/1234",
+        "rel": "alternate",
+        "type": "application/geo+json",
+        "hreflang": "en",
+        "title": "Monitoring site name",
+        "length": 0,
+        "templated": true,
+        "variables": {
+          "title": "Position query",
+          "description": "Query to return data for a defined well known text point",
+          "query_type": "trajectory",
+          "coords": {
+            "description": "string",
+            "type": "string",
+            "example": "string"
+          },
+          "within_units": [
+            "km",
+            "miles"
+          ],
+          "width_units": [
+            "km",
+            "miles"
+          ],
+          "height_units": [
+            "m",
+            "hPa"
+          ],
+          "output_formats": [
+            "CoverageJSON",
+            "GeoJSON",
+            "IWXXM",
+            "GRIB"
+          ],
+          "default_output_format": "string",
+          "crs_details": [
+            {
+              "crs": "native",
+              "wkt": "GEOGCS[\"WGS 84\",DATUM[\"WGS_1984\",SPHEROID[\"WGS 84\",6378137,298.257223563,AUTHORITY[\"EPSG\",\"7030\"]],AUTHORITY[\"EPSG\",\"6326\"]],PRIMEM[\"Greenwich\",0,AUTHORITY[\"EPSG\",\"8901\"]],UNIT[\"degree\",0.01745329251994328,AUTHORITY[\"EPSG\",\"9122\"]],AUTHORITY[\"EPSG\",\"4326\"]]"
+            }
+          ]
+        }
+      }
+    },
+    "corridor": {
+      "link": {
+        "href": "http://data.example.com/collections/monitoringsites/locations/1234",
+        "rel": "alternate",
+        "type": "application/geo+json",
+        "hreflang": "en",
+        "title": "Monitoring site name",
+        "length": 0,
+        "templated": true,
+        "variables": {
+          "title": "Position query",
+          "description": "Query to return data for a defined well known text point",
+          "query_type": "trajectory",
+          "coords": {
+            "description": "string",
+            "type": "string",
+            "example": "string"
+          },
+          "within_units": [
+            "km",
+            "miles"
+          ],
+          "width_units": [
+            "km",
+            "miles"
+          ],
+          "height_units": [
+            "m",
+            "hPa"
+          ],
+          "output_formats": [
+            "CoverageJSON",
+            "GeoJSON",
+            "IWXXM",
+            "GRIB"
+          ],
+          "default_output_format": "string",
+          "crs_details": [
+            {
+              "crs": "native",
+              "wkt": "GEOGCS[\"WGS 84\",DATUM[\"WGS_1984\",SPHEROID[\"WGS 84\",6378137,298.257223563,AUTHORITY[\"EPSG\",\"7030\"]],AUTHORITY[\"EPSG\",\"6326\"]],PRIMEM[\"Greenwich\",0,AUTHORITY[\"EPSG\",\"8901\"]],UNIT[\"degree\",0.01745329251994328,AUTHORITY[\"EPSG\",\"9122\"]],AUTHORITY[\"EPSG\",\"4326\"]]"
+            }
+          ]
+        }
+      }
+    },
+    "locations": {
+      "link": {
+        "href": "http://data.example.com/collections/monitoringsites/locations/1234",
+        "rel": "alternate",
+        "type": "application/geo+json",
+        "hreflang": "en",
+        "title": "Monitoring site name",
+        "length": 0,
+        "templated": true,
+        "variables": {
+          "title": "Position query",
+          "description": "Query to return data for a defined well known text point",
+          "query_type": "trajectory",
+          "coords": {
+            "description": "string",
+            "type": "string",
+            "example": "string"
+          },
+          "within_units": [
+            "km",
+            "miles"
+          ],
+          "width_units": [
+            "km",
+            "miles"
+          ],
+          "height_units": [
+            "m",
+            "hPa"
+          ],
+          "output_formats": [
+            "CoverageJSON",
+            "GeoJSON",
+            "IWXXM",
+            "GRIB"
+          ],
+          "default_output_format": "string",
+          "crs_details": [
+            {
+              "crs": "native",
+              "wkt": "GEOGCS[\"WGS 84\",DATUM[\"WGS_1984\",SPHEROID[\"WGS 84\",6378137,298.257223563,AUTHORITY[\"EPSG\",\"7030\"]],AUTHORITY[\"EPSG\",\"6326\"]],PRIMEM[\"Greenwich\",0,AUTHORITY[\"EPSG\",\"8901\"]],UNIT[\"degree\",0.01745329251994328,AUTHORITY[\"EPSG\",\"9122\"]],AUTHORITY[\"EPSG\",\"4326\"]]"
+            }
+          ]
+        }
+      }
+    },
+    "items": {
+      "link": {
+        "href": "http://data.example.com/collections/monitoringsites/locations/1234",
+        "rel": "alternate",
+        "type": "application/geo+json",
+        "hreflang": "en",
+        "title": "Monitoring site name",
+        "length": 0,
+        "templated": true,
+        "variables": {
+          "title": "Position query",
+          "description": "Query to return data for a defined well known text point",
+          "query_type": "trajectory",
+          "coords": {
+            "description": "string",
+            "type": "string",
+            "example": "string"
+          },
+          "within_units": [
+            "km",
+            "miles"
+          ],
+          "width_units": [
+            "km",
+            "miles"
+          ],
+          "height_units": [
+            "m",
+            "hPa"
+          ],
+          "output_formats": [
+            "CoverageJSON",
+            "GeoJSON",
+            "IWXXM",
+            "GRIB"
+          ],
+          "default_output_format": "string",
+          "crs_details": [
+            {
+              "crs": "native",
+              "wkt": "GEOGCS[\"WGS 84\",DATUM[\"WGS_1984\",SPHEROID[\"WGS 84\",6378137,298.257223563,AUTHORITY[\"EPSG\",\"7030\"]],AUTHORITY[\"EPSG\",\"6326\"]],PRIMEM[\"Greenwich\",0,AUTHORITY[\"EPSG\",\"8901\"]],UNIT[\"degree\",0.01745329251994328,AUTHORITY[\"EPSG\",\"9122\"]],AUTHORITY[\"EPSG\",\"4326\"]]"
+            }
+          ]
         }
       }
     }
   },
   "crs": [
-    "{{ collection.crs }}"
+    "string"
   ],
   "output_formats": [
-    "CoverageJSON"
+    "CoverageJSON",
+    "GeoJSON",
+    "IWXXM",
+    "GRIB"
   ],
   "parameter_names": {
-    "example": {
-      "type": "parameter",
-      "description": {
-        "en": "An example parameter"
+    "additionalProp1": [
+      {
+        "type": "Parameter",
+        "id": "sea_ice",
+        "description": "Sea Ice concentration (ice=1;no ice=0)",
+        "unit": {
+          "label": "Ratio",
+          "symbol": {
+            "value": "1",
+            "type": "http://www.opengis.net/def/uom/UCUM/"
+          }
+        },
+        "observedProperty": {
+          "id": "http://vocab.nerc.ac.uk/standard_name/sea_ice_area_fraction/",
+          "label": "Sea Ice Concentration"
+        }
       }
-    }
+    ],
+    "additionalProp2": [
+      {
+        "type": "Parameter",
+        "id": "sea_ice",
+        "description": "Sea Ice concentration (ice=1;no ice=0)",
+        "unit": {
+          "label": "Ratio",
+          "symbol": {
+            "value": "1",
+            "type": "http://www.opengis.net/def/uom/UCUM/"
+          }
+        },
+        "observedProperty": {
+          "id": "http://vocab.nerc.ac.uk/standard_name/sea_ice_area_fraction/",
+          "label": "Sea Ice Concentration"
+        }
+      }
+    ],
+    "additionalProp3": [
+      {
+        "type": "Parameter",
+        "id": "sea_ice",
+        "description": "Sea Ice concentration (ice=1;no ice=0)",
+        "unit": {
+          "label": "Ratio",
+          "symbol": {
+            "value": "1",
+            "type": "http://www.opengis.net/def/uom/UCUM/"
+          }
+        },
+        "observedProperty": {
+          "id": "http://vocab.nerc.ac.uk/standard_name/sea_ice_area_fraction/",
+          "label": "Sea Ice Concentration"
+        }
+      }
+    ]
   }
 }

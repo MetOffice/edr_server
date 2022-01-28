@@ -34,11 +34,11 @@ class RefreshCollectionsHandler(Handler):
         collections_metadata = self.interface.data()
 
         # Store the updated collections metadata.
-        cache_file_path = self.collections_cache_path / Path(f"collections.json")
-        links_href = self.reverse_url_full('collections').rstrip('?')
-        render_kwargs = {"collections": collections_metadata, "links_href": links_href}
-        rendered_template = self.render_string("collections.json", **render_kwargs)
-        self._save_cached_response("collections endpoint", rendered_template, cache_file_path)
+        # cache_file_path = self.collections_cache_path / Path(f"collections.json")
+        # links_href = self.reverse_url_full('collections').rstrip('?')
+        # render_kwargs = {"collections": collections_metadata, "links_href": links_href}
+        # rendered_template = self.render_string("collections.json", **render_kwargs)
+        # self._save_cached_response("collections endpoint", rendered_template, cache_file_path)
 
         # ... and store each individual collection as well.
         for collection in collections_metadata:
@@ -46,6 +46,7 @@ class RefreshCollectionsHandler(Handler):
             position_href = self.reverse_url_full("position_query", collection.id)
             render_kwargs = {"collection": collection, "position_href": position_href}
             rendered_template = self.render_string("collection.json", **render_kwargs)
+            print(rendered_template)
             self._save_cached_response(collection.id, rendered_template, cache_file_path)
 
         self.write(f"Refreshed cache with {len(collections_metadata)} collections")
