@@ -80,65 +80,15 @@
     {% if "items" in data_queries %}{% include "collection_items.json" %}{% end %}
   },
   "crs": [
-    "string"
+    "{{ collection.crs }}"
   ],
   "output_formats": [
     "CoverageJSON"
   ],
+  {% set param_count = len(parameters.keys()) %}
   "parameter_names": {
-    "additionalProp1": [
-      {
-        "type": "Parameter",
-        "id": "sea_ice",
-        "description": "Sea Ice concentration (ice=1;no ice=0)",
-        "unit": {
-          "label": "Ratio",
-          "symbol": {
-            "value": "1",
-            "type": "http://www.opengis.net/def/uom/UCUM/"
-          }
-        },
-        "observedProperty": {
-          "id": "http://vocab.nerc.ac.uk/standard_name/sea_ice_area_fraction/",
-          "label": "Sea Ice Concentration"
-        }
-      }
-    ],
-    "additionalProp2": [
-      {
-        "type": "Parameter",
-        "id": "sea_ice",
-        "description": "Sea Ice concentration (ice=1;no ice=0)",
-        "unit": {
-          "label": "Ratio",
-          "symbol": {
-            "value": "1",
-            "type": "http://www.opengis.net/def/uom/UCUM/"
-          }
-        },
-        "observedProperty": {
-          "id": "http://vocab.nerc.ac.uk/standard_name/sea_ice_area_fraction/",
-          "label": "Sea Ice Concentration"
-        }
-      }
-    ],
-    "additionalProp3": [
-      {
-        "type": "Parameter",
-        "id": "sea_ice",
-        "description": "Sea Ice concentration (ice=1;no ice=0)",
-        "unit": {
-          "label": "Ratio",
-          "symbol": {
-            "value": "1",
-            "type": "http://www.opengis.net/def/uom/UCUM/"
-          }
-        },
-        "observedProperty": {
-          "id": "http://vocab.nerc.ac.uk/standard_name/sea_ice_area_fraction/",
-          "label": "Sea Ice Concentration"
-        }
-      }
-    ]
+    {% for i, parameter in enumerate(parameters.values(), 1) %}
+    {% module Template("parameter.json", param=parameter) %}{% if i < param_count %},{% end %}
+    {% end %}
   }
 }
