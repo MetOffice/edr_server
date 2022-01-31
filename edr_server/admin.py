@@ -54,9 +54,7 @@ class RefreshCollectionsHandler(Handler):
 
         # Store the updated metadata for all collections as well.
         cache_file_path = self.collections_cache_path / Path(f"collections.json")
-        links_href = self.reverse_url_full('collections').rstrip('?')
-        render_kwargs = {"collection_files": collection_files, "links_href": links_href}
-        rendered_template = self.render_string("collections.json", **render_kwargs)
+        rendered_template = self.render_string("collections.json", collection_files=collection_files)
         self._save_cached_response("collections endpoint", rendered_template, cache_file_path)
 
         self.write(f"Refreshed cache with {len(collections_metadata)} collections")

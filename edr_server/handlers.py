@@ -1,5 +1,5 @@
 import json
-from typing import Any
+from typing import Any, Dict
 from urllib.parse import urljoin
 
 from shapely import wkt
@@ -132,6 +132,17 @@ class Handler(RequestHandler):
             self.render_template()
         else:
             raise HTTPError(501, f"Only JSON response type is implemented.")
+
+    def get_template_namespace(self) -> Dict[str, Any]:
+        """
+        The template namespace is the scope within which `tornado` renders templates.
+        Overriding it like this allows us to add extra functionality to the namespace,
+        notably adding the full URL reversal method `self.reverse_url_full`.
+
+        """
+        namespace = super().get_template_namespace()
+        namespace["reverse_url_full"] = self.reverse_url_full
+        return namespace
 
     def handle_parameters(self):
         """Translate EDR concepts in the query arguments into standard Python objects."""
