@@ -23,26 +23,21 @@
       "title": ""
     },
     {
-      "href": "http://www.example.org/edr/collections/the_collection_id/",
+      "href": "{{ reverse_url_full('collection', collection.id) }}",
       "hreflang": "en",
       "rel": "collection",
       "type": "collection",
       "title": "Collection"
     },
     {
-      "href": "http://www.example.org/edr/collections/the_collection_id/position",
+      "href": "{{ reverse_url_full('position_query', collection.id) }}",
       "hreflang": "en",
       "rel": "data",
       "type": "position",
       "title": "Position"
-    },
-    {
-      "href": "http://www.example.org/edr/collections/the_collection_id/area",
-      "hreflang": "en",
-      "rel": "data",
-      "type": "area",
-      "title": "Area"
-    }
+    }{% if "area" in data_queries %},
+    {% include "collection_links_area.json" %}
+    {% end %}
   ],
   "id": "{{ collection.id }}",
   "title": "{{ collection.name }}",

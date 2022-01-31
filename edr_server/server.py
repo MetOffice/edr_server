@@ -14,7 +14,7 @@ def make_app():
 
     return Application(
         [
-            url(r"/collections/(.*)/area", handlers.AreaHandler),
+            url(r"/collections/(.*)/area", handlers.AreaHandler, name="area_query"),
             url(r"/collections/(.*)/corridor", handlers.CorridorHandler),
             url(r"/collections/(.*)/cube", handlers.CubeHandler),
             url(r"/collections/(.*)/items", handlers.ItemsHandler),
