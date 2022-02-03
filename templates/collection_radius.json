@@ -1,41 +1,29 @@
 {% whitespace oneline %}
 "radius": {
   "link": {
-    "href": "http://data.example.com/collections/monitoringsites/locations/1234",
-    "rel": "alternate",
-    "type": "application/geo+json",
+    "href": "http://www.example.org/edr/collections/{collection_name}/radius?coords={coords}",
     "hreflang": "en",
-    "title": "Monitoring site name",
-    "length": 0,
+    "rel": "data",
+    "type": "application/geo+json",
+    "title": "{{ collection.name }}",
     "templated": true,
     "variables": {
-      "title": "Position query",
-      "description": "Query to return data for a defined well known text point",
-      "query_type": "trajectory",
+      "title": "Radius query",
+      "description": "Query to return data within a radius around a defined well known text point",
+      "query_type": "radius",
       "coords": {
-        "description": "string",
-        "type": "string",
-        "example": "string"
+        "description": "Well Known Text POINT value i.e. POINT(-120, 55)",
+        "type": "string"
       },
       "within_units": [
         "km",
         "miles"
       ],
-      "width_units": [
-        "km",
-        "miles"
-      ],
-      "height_units": [
-        "m",
-        "hPa"
-      ],
       "output_formats": [
         "CoverageJSON",
-        "GeoJSON",
-        "IWXXM",
-        "GRIB"
+        "GeoJSON"
       ],
-      "default_output_format": "string",
+      "default_output_format": "CoverageJSON",
       "crs_details": [
         {
           "crs": "native",
