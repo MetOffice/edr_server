@@ -29,8 +29,8 @@ class CollectionsHandler(Handler):
     @removeslash
     def get(self, collection_id=None):
         """Handle a 'get collections' request."""
-        super().get("")
         self.collection_id = collection_id
+        super().get("")
 
     def render_template(self):
         cache_filename = Path(f"{self.collection_id if self.collection_id else 'collections'}.json")
