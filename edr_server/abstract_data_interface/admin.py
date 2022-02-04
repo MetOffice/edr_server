@@ -1,44 +1,60 @@
+from dataclasses import dataclass, field
+from typing import List
+
 from .core import Interface
+
+
+@dataclass
+class Collection:
+    id: str
+    name: str
+    description: str
+    keywords: list
+    bbox: list
+    crs: str
+    crs_name: str
+    temporal_interval: str = ""
+    trs: str = ""
+    temporal_name: str = ""
+    vertical_interval: list = field(default_factory=list)
+    vrs: str = ""
+    vertical_name: str = ""
+
+    def has_temporal_extent(self):
+        return bool(len(self.temporal_interval))
+
+    def has_vertical_extent(self):
+        return bool(len(self.vertical_interval))
+
+
+@dataclass
+class Parameter:
+    pass
 
 
 class RefreshCollections(Interface):
     def __init__(self, supported_data_queries) -> None:
         self.supported_data_queries = supported_data_queries
-        self.temporal_extent = False
-        self.vertical_extent = False
 
-        self._get_temporal_extent()
-        self._get_vertical_extent()
-
-    def _get_temporal_extent(self):
+    def _get_temporal_extent(self, name):
         """
-        Determine if the collection's data has a temporal extent.
+        Determine if the data for the collection described by `name` has a temporal extent.
 
-        Must set `self.temporal_extent`, and also determine `interval`, `trs` and `name`
-        for the temporal extent JSON response. The `trs` variable must be provided
-        as well-known text (WKT).
-        
+        Must set `interval`, `trs` and `name` for the temporal extent JSON response.
+        The `trs` variable must be provided as well-known text (WKT).
+
         """
-        self.temporal_extent = False
+        raise NotImplementedError
 
-    def _get_vertical_extent(self):
+    def _get_vertical_extent(self, name):
         """
-        Determine if the collection's data has a vertical extent.
+        Determine if the data for the collection described by `name` has a vertical extent.
 
-        Must set `self.vertical_extent`, and also determine `interval`, `vrs` and `name`
-        for the vertical extent JSON response. The `vrs` variable must be provided
-        as well-known text (WKT).
-        
+        Must set `interval`, `vrs` and `name` for the vertical extent JSON response.
+        The `vrs` variable must be provided as well-known text (WKT).
+
         """
-        self.vertical_extent = False
-
-    def has_temporal_extent(self):
-        """Define if the collection has a temporal extent."""
-        return self.temporal_extent
-
-    def has_vertical_extent(self):
-        """Define if the collection has a vertical extent."""
-        return self.vertical_extent
+        raise NotImplementedError
 
     def get_parameters(self, collection_id):
         """
@@ -48,10 +64,10 @@ class RefreshCollections(Interface):
         """
         raise NotImplementedError
 
-    def make_collection(self, name):
+    def make_collection(self, name) -> Collection:
         raise NotImplementedError
 
-    def make_collections(self):
+    def make_collections(self) -> List[Collection]:
         raise NotImplementedError
 
     def data(self):

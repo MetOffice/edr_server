@@ -58,9 +58,9 @@
       ],
       "crs": "{{ collection.crs }}",
       "name": "{{ collection.crs_name }}"
-    }{% if temporal_extent %},
+    }{% if collection.has_temporal_extent() %},
     {% include "collection_extent_temporal.json" %}
-    {% end %}{% if vertical_extent %},
+    {% end %}{% if collection.has_vertical_extent() %},
     {% include "collection_extent_vertical.json" %}
     {% end %}
   },
