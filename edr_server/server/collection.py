@@ -16,13 +16,24 @@ class CollectionsHandler(Handler):
     def initialize(self, collections_cache_path: Path):
         super().initialize()
         self.collections_cache_path = collections_cache_path
+        self._collection_id = None
+
+    @property
+    def collection_id(self):
+        return self._collection_id
+
+    @collection_id.setter
+    def collection_id(self, value):
+        self._collection_id = value
 
     @removeslash
     def get(self, collection_id=None):
         """Handle a 'get collections' request."""
+        self.collection_id = collection_id
         super().get("")
 
-        cache_filename = Path(f"{collection_id if collection_id else 'collections'}.json")
+    def render_template(self):
+        cache_filename = Path(f"{self.collection_id if self.collection_id else 'collections'}.json")
         cache_path = Path(self.collections_cache_path) / cache_filename
 
         try:
@@ -31,7 +42,7 @@ class CollectionsHandler(Handler):
                 self.write(ojfh.read())
         except FileNotFoundError as e:
             APP_LOGGER.info(f"Failed to load {cache_path}: {e}")
-            if collection_id:
+            if self.collection_id:
                 msg = (
                     f"Collection '{cache_filename}' not found. Does the collections cache require updating? "
                     f"Send a POST request to {self.application.reverse_url('refresh_collections')} to refresh the cache"

@@ -12,3 +12,4 @@ collections:
 data:
   interface:
     name: "dummy"
+    path: null
