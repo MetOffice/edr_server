@@ -1,46 +1,50 @@
+{% whitespace oneline %}
 {
-  "title": "{{ title }}",
-  "description": "{{ description }}",
+  "title": "{{ capability.title }}",
+  "description": "{{ capability.description }}",
   "links": [
     {
-      "href": "{{ links_api_href }}",
+      "href": "http://www.example.org/edr/api",
       "hreflang": "en",
       "rel": "service",
       "type": "application/openapi+json;version=3.0",
       "title": ""
     },
     {
-      "href": "{{ links_conformance_href }}",
+      "href": "{{ reverse_url_full('conformance').rstrip('?') }}",
       "hreflang": "en",
       "rel": "data",
       "type": "application/json",
       "title": ""
     },
     {
-      "href": "{{ links_collections_href }}",
+      "href": "{{ reverse_url_full('collections').rstrip('?') }}",
       "hreflang": "en",
       "rel": "data",
       "type": "application/json",
       "title": ""
     }
   ],
+  {% set kw_count = len(capability.keywords) %}
   "keywords": [
-    {% for keyword in keywords %} {{ keyword }}, {% end %}
+    {% for i, keyword in enumerate(capability.keywords, 1) %}
+    "{{ keyword }}"{%if i < kw_count %},{% end %}
+    {% end %}
   ],
   "provider": {
-    "name": "{{ provider_name }}",
-    "url": "{{ provider_url }}"
+    "name": "{{ capability.provider_name }}",
+    "url": "{{ capability.provider_url }}"
   },
   "contact": {
-    "email": "{{ contact_email }}",
-    "phone": "{{ contact_phone }}",
-    "fax": "{{ contact_fax }}",
-    "hours": "{{ contact_hours }}",
-    "instructions": "{{ contact_instructions }}",
-    "address": "{{ contact_address }}",
-    "postalCode": "{{ contact_postcode }}",
-    "city": "{{ contact_city }}",
-    "stateorprovince": "{{ contact_state }}",
-    "country": "{{ contact_country }}"
+    "email": "{{ capability.contact_email }}",
+    "phone": "{{ capability.contact_phone }}",
+    "fax": "{{ capability.contact_fax }}",
+    "hours": "{{ capability.contact_hours }}",
+    "instructions": "{{ capability.contact_instructions }}",
+    "address": "{{ capability.contact_address }}",
+    "postalCode": "{{ capability.contact_postcode }}",
+    "city": "{{ capability.contact_city }}",
+    "stateorprovince": "{{ capability.contact_state }}",
+    "country": "{{ capability.contact_country }}"
   }
 }

@@ -1,4 +1,30 @@
+from dataclasses import dataclass
+
 from .core import Interface
+
+
+@dataclass
+class APIData:
+    pass
+
+
+@dataclass
+class CapabilitiesData:
+    title: str
+    description: str
+    keywords: list
+    provider_name: str
+    provider_url: str
+    contact_email: str
+    contact_phone: str
+    contact_fax: str
+    contact_hours: str
+    contact_instructions: str
+    contact_address: str
+    contact_postcode: str
+    contact_city: str
+    contact_state: str
+    contact_country: str
 
 
 class API(Interface):
@@ -6,15 +32,7 @@ class API(Interface):
 
 
 class Capabilities(Interface):
-    def __init__(
-        self,
-        api_link_href: str,
-        collections_link_href: str,
-        conformance_link_href: str,
-    ) -> None:
-        self.api_link_href = api_link_href
-        self.collections_link_href = collections_link_href
-        self.conformance_link_href = conformance_link_href
+    pass
 
 
 class Conformance(Interface):
