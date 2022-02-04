@@ -4,7 +4,7 @@ import logging
 from pathlib import Path
 from typing import List
 
-from tornado.web import RequestHandler, removeslash
+from tornado.web import removeslash
 
 from .handlers import Handler
 
