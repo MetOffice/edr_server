@@ -80,9 +80,9 @@
   "output_formats": [
     "CoverageJSON"
   ],
-  {% set param_count = len(parameters.keys()) %}
+  {% set param_count = len(parameters) %}
   "parameter_names": {
-    {% for i, parameter in enumerate(parameters.values(), 1) %}
+    {% for i, parameter in enumerate(parameters, 1) %}
     {% module Template("parameter.json", param=parameter) %}{% if i < param_count %},{% end %}
     {% end %}
   }

@@ -6,8 +6,8 @@ from .core import Interface
 
 @dataclass
 class Collection:
-    id: str
     name: str
+    id: str
     description: str
     keywords: list
     bbox: list
@@ -29,7 +29,14 @@ class Collection:
 
 @dataclass
 class Parameter:
-    pass
+    name: str
+    id: str
+    description: str
+    unit_label: str
+    unit_value: str
+    unit_defn: str
+    property_id: str
+    property_label: str
 
 
 class RefreshCollections(Interface):
@@ -56,7 +63,7 @@ class RefreshCollections(Interface):
         """
         raise NotImplementedError
 
-    def get_parameters(self, collection_id):
+    def get_parameters(self, collection_id) -> List[Parameter]:
         """
         Return metadata for all the parameters (~physical quantities)
         associated with the collection specified by its ID `collection_id`.
