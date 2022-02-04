@@ -1,4 +1,3 @@
-from clean_air.data.storage import create_metadata_store
 from tornado.web import Application, url
 
 from . import admin
@@ -11,15 +10,15 @@ from .paths import app_relative_path_to_absolute
 def make_app():
     collections_cache_path = config.collections_cache_path()
     data_interface = config.data_interface()
-    metadata_store = create_metadata_store()
+    supported_data_queries = config.data_queries()
 
     return Application(
         [
-            url(r"/collections/(.*)/area", handlers.AreaHandler),
+            url(r"/collections/(.*)/area", handlers.AreaHandler, name="area_query"),
             url(r"/collections/(.*)/corridor", handlers.CorridorHandler),
             url(r"/collections/(.*)/cube", handlers.CubeHandler),
-            url(r"/collections/(.*)/items", handlers.ItemsHandler),
-            url(r"/collections/(.*)/locations", handlers.LocationsHandler),
+            url(r"/collections/(.*)/items", handlers.ItemsHandler, name="items_query"),
+            url(r"/collections/(.*)/locations", handlers.LocationsHandler, name="locations_query"),
             url(r"/collections/(.*)/position", handlers.PositionHandler, name="position_query"),
             url(r"/collections/(.*)/radius", handlers.RadiusHandler),
             url(r"/collections/(.*)/trajectory", handlers.TrajectoryHandler),
@@ -30,8 +29,9 @@ def make_app():
                 {"collections_cache_path": collections_cache_path},
                 name="collections"),
             url(r"/admin/refresh_collections\/?", admin.RefreshCollectionsHandler,
-                {"collections_cache_path": collections_cache_path,
-                 "metadata_store": metadata_store},
+                {"data_interface": data_interface,
+                 "data_queries": supported_data_queries,
+                 "collections_cache_path": collections_cache_path},
                 name="refresh_collections"),
             # url(r"/api\/?", handlers.APIHandler,
             #     {"data_interface": data_interface},

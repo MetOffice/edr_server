@@ -1,0 +1,10 @@
+{% whitespace oneline %}
+"temporal": {
+  "interval": [
+    [
+      "{{ collection.temporal_interval }}"
+    ]
+  ],
+  "trs": "{{ collection.trs }}",
+  "name": "{{ collection.temporal_name }}"
+}

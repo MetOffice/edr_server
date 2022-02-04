@@ -1,38 +1,89 @@
 {% whitespace oneline %}
 {
-      "id": "{{ collection.id }}",
-      "title": "{{ collection.name }}",
-      "description": "{{ collection.description }}",
-      "keywords": "",
-      "data_queries": {
-        "position": {
-          "link": {
-            "href": "{{ reverse_url("position_query", collection.id) }}",
-            "hreflang": "en",
-            "rel": "data",
-            "variables": {
-              "title": "Position query",
-              "query_type": "position",
-              "output_formats": [
-                "CoverageJSON"
-              ],
-              "default_output_format": "CoverageJSON"
-            }
-          }
-        }
-      },
-      "crs": [
-        "{{ collection.crs }}"
+  "links": [
+    {
+      "href": "https://www.example.org/service/description.html",
+      "hreflang": "en",
+      "rel": "service-doc",
+      "type": "text/html",
+      "title": ""
+    },
+    {
+      "href": "https://www.example.org/service/licence.html",
+      "hreflang": "en",
+      "rel": "licence",
+      "type": "text/html",
+      "title": ""
+    },
+    {
+      "href": "https://www.example.org/service/terms-and-conditions.html",
+      "hreflang": "en",
+      "rel": "restrictions",
+      "type": "text/html",
+      "title": ""
+    },
+    {
+      "href": "{{ reverse_url_full('collection', collection.id) }}",
+      "hreflang": "en",
+      "rel": "collection",
+      "type": "collection",
+      "title": "Collection"
+    },
+    {
+      "href": "{{ reverse_url_full('position_query', collection.id) }}",
+      "hreflang": "en",
+      "rel": "data",
+      "type": "position",
+      "title": "Position"
+    }{% if "area" in data_queries %},
+    {% include "collection_links_area.json" %}
+    {% end %}
+  ],
+  "id": "{{ collection.id }}",
+  "title": "{{ collection.name }}",
+  "description": "{{ collection.description }}",
+  {% set kw_count = len(collection.keywords) %}
+  "keywords": [
+    {% for i, keyword in enumerate(collection.keywords, 1) %}
+    "{{ keyword }}"{%if i < kw_count %},{% end %}
+    {% end %}
+  ],
+  "extent": {
+    "spatial": {
+      {% set corner_count = len(collection.bbox) %}
+      "bbox": [
+        {% for i, corner in enumerate(collection.bbox, 1) %}
+        {{ corner }}{% if i < corner_count %},{% end %}
+        {% end %}
       ],
-      "output_formats": [
-        "CoverageJSON"
-      ],
-      "parameter_names": {
-        "example": {
-          "type": "parameter",
-          "description": {
-            "en": "An example parameter"
-          }
-        }
-      }
-    }
+      "crs": "{{ collection.crs }}",
+      "name": "{{ collection.crs_name }}"
+    }{% if temporal_extent %},
+    {% include "collection_extent_temporal.json" %}
+    {% end %}{% if vertical_extent %},
+    {% include "collection_extent_vertical.json" %}
+    {% end %}
+  },
+  "data_queries": {
+    {% if "position" in data_queries %}{% include "collection_position.json" %}{% end %}
+    {% if "radius" in data_queries %}{% include "collection_radius.json" %}{% end %}
+    {% if "area" in data_queries %}{% include "collection_area.json" %}{% end %}
+    {% if "cube" in data_queries %}{% include "collection_cube.json" %}{% end %}
+    {% if "trajectory" in data_queries %}{% include "collection_trajectory.json" %}{% end %}
+    {% if "corridor" in data_queries %}{% include "collection_corridor.json" %}{% end %}
+    {% if "locations" in data_queries %}{% include "collection_locations.json" %}{% end %}
+    {% if "items" in data_queries %}{% include "collection_items.json" %}{% end %}
+  },
+  "crs": [
+    "{{ collection.crs }}"
+  ],
+  "output_formats": [
+    "CoverageJSON"
+  ],
+  {% set param_count = len(parameters.keys()) %}
+  "parameter_names": {
+    {% for i, parameter in enumerate(parameters.values(), 1) %}
+    {% module Template("parameter.json", param=parameter) %}{% if i < param_count %},{% end %}
+    {% end %}
+  }
+}

@@ -1,0 +1,13 @@
+{% whitespace oneline %}
+"vertical": {
+  "interval": [
+    {% set v_level_ct = len(collection.vertical_interval) %}
+    [
+      {% for i, v_level in enumerate(collection.vertical_interval, 1) %}
+      {{ v_level }}{% if i < v_level_ct %},{% end %}
+      {% end %}
+    ]
+  ],
+  "vrs": "{{ collection.vrs }}",
+  "name": "{{ collection.vertical_name }}"
+}

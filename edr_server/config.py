@@ -1,5 +1,6 @@
 import importlib
 from pathlib import Path
+from typing import List
 
 import yaml
 from yaml.loader import SafeLoader
@@ -37,6 +38,10 @@ class Config(object):
         """Load the config YAML file for parsing."""
         with open(self.yaml_path, "r") as oyfh:
             self.yaml = yaml.load(oyfh, Loader=SafeLoader)
+
+    def data_queries(self) -> List:
+        """Interrogate the config to determine the types of data queries the server supports."""
+        return self.yaml["server"]["capabilities"]["data_queries"]
 
     def collections_cache_path(self) -> Path:
         """Retrieve the path to the collections JSON file from the config YAML."""

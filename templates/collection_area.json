@@ -1,0 +1,31 @@
+{% whitespace oneline %}
+"area": {
+  "link": {
+    "href": "{{ reverse_url_full('area_query', collection.id) }}?coords={coords}",
+    "hreflang": "en",
+    "rel": "data",
+    "type": "application/geo+json",
+    "title": "{{ collection.name }}",
+    "templated": true,
+    "variables": {
+      "title": "Area query",
+      "description": "Query to return data within a defined well known text area",
+      "query_type": "area",
+      "coords": {
+        "description": "Well Known Text POLYGON value i.e. POLYGON((-79 40,-79 38,-75 38,-75 41,-79 40))",
+        "type": "string"
+      },
+      "output_formats": [
+        "CoverageJSON",
+        "GeoJSON"
+      ],
+      "default_output_format": "CoverageJSON",
+      "crs_details": [
+        {
+        "crs": "native",
+        "wkt": "GEOGCS[\"WGS 84\",DATUM[\"WGS_1984\",SPHEROID[\"WGS 84\",6378137,298.257223563,AUTHORITY[\"EPSG\",\"7030\"]],AUTHORITY[\"EPSG\",\"6326\"]],PRIMEM[\"Greenwich\",0,AUTHORITY[\"EPSG\",\"8901\"]],UNIT[\"degree\",0.01745329251994328,AUTHORITY[\"EPSG\",\"9122\"]],AUTHORITY[\"EPSG\",\"4326\"]]"
+        }
+      ]
+    }
+  }
+},
