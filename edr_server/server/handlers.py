@@ -118,7 +118,12 @@ class Handler(RequestHandler):
     def initialize(self, **kwargs):
         self.query_parameters = QueryParameters()
 
-    def _get_data(self):
+    def _get_render_args(self):
+        """
+        Request data from the data interface and form it into arguments to pass
+        to `self.render_string` when rendering the response JSON.
+
+        """
         raise NotImplementedError
 
     def get(self, collection_name):
@@ -157,7 +162,7 @@ class Handler(RequestHandler):
 
         """
         template_file = f"{self.handler_type}.json"
-        render_kwargs = self._get_data()
+        render_kwargs = self._get_render_args()
         rendered_template = self.render_string(template_file, **render_kwargs)
         minified_rendered_template = json.dumps(json.loads(rendered_template)).encode("utf-8")
         self.write(minified_rendered_template)
@@ -192,7 +197,7 @@ class RootHandler(Handler):
     def get(self):
         super().get("")
 
-    def _get_data(self) -> Dict:
+    def _get_render_args(self) -> Dict:
         interface = self.data_interface.Capabilities()
         data = interface.data()
         return {"capability": data}
@@ -221,12 +226,12 @@ class ConformanceHandler(Handler):
     def get(self):
         super().get("")
 
-    def _get_data(self) -> List:
+    def _get_render_args(self) -> List:
         interface = self.data_interface.Conformance()
         return interface.data()
 
     def render_template(self) -> None:
-        template = {"conformsTo": self._get_data()}
+        template = {"conformsTo": self._get_render_args()}
         self.write(template)
 
 
