@@ -226,6 +226,35 @@ class ConformanceHandler(Handler):
         self.write(template)
 
 
+class ServiceHandler(Handler):
+    """
+    Handle EDR service requests:
+      * description
+      * license
+      * terms and conditions.
+
+    As these are all HTML documents, we redirect to the location where
+    they are found rather than templating HTML documents here.
+
+    """
+    def initialize(self, data_interface):
+        self.data_interface = data_interface
+
+    def get(self):
+        webdoc = self.request.path.split("/")[-1]
+        print(webdoc)
+        data = self.data_interface.Service().data()
+        if "description" in webdoc:
+            redir_url = data.description_url
+        elif "license" in webdoc:
+            redir_url = data.license_url
+        elif "terms" in webdoc:
+            redir_url = data.terms_url
+        else:
+            raise HTTPError(404, "Not found")
+        self.redirect(redir_url, permanent=True)
+
+
 class AreaHandler(Handler):
     """Handle area requests."""
     handler_type = "area"
