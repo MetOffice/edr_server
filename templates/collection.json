@@ -2,21 +2,21 @@
 {
   "links": [
     {
-      "href": "https://www.example.org/service/description.html",
+      "href": "{{ reverse_url_full('service-desc') }}",
       "hreflang": "en",
       "rel": "service-doc",
       "type": "text/html",
       "title": ""
     },
     {
-      "href": "https://www.example.org/service/licence.html",
+      "href": "{{ reverse_url_full('service-license') }}",
       "hreflang": "en",
       "rel": "licence",
       "type": "text/html",
       "title": ""
     },
     {
-      "href": "https://www.example.org/service/terms-and-conditions.html",
+      "href": "{{ reverse_url_full('service-terms') }}",
       "hreflang": "en",
       "rel": "restrictions",
       "type": "text/html",
