@@ -1,4 +1,5 @@
-from typing import Any, Dict
+import json
+from typing import Any, Dict, List
 from urllib.parse import urljoin
 
 from shapely import wkt
@@ -117,8 +118,13 @@ class Handler(RequestHandler):
     def initialize(self, **kwargs):
         self.query_parameters = QueryParameters()
 
-    def _get_data(self):
-        raise NotImplemented
+    def _get_render_args(self):
+        """
+        Request data from the data interface and form it into arguments to pass
+        to `self.render_string` when rendering the response JSON.
+
+        """
+        raise NotImplementedError
 
     def get(self, collection_name):
         """
@@ -150,10 +156,16 @@ class Handler(RequestHandler):
             self.query_parameters.handle_parameter(key, param_vals)
 
     def render_template(self):
-        """Render a templated EDR response with data relevant to this query."""
+        """
+        Render a templated EDR response with data relevant to this query.
+        We dump and load the templated result to get inline JSON verification from the JSON library.
+
+        """
         template_file = f"{self.handler_type}.json"
-        data = self._get_data()
-        self.render(template_file, **data)
+        render_kwargs = self._get_render_args()
+        rendered_template = self.render_string(template_file, **render_kwargs)
+        minified_rendered_template = json.dumps(json.loads(rendered_template)).encode("utf-8")
+        self.write(minified_rendered_template)
 
     def write_error(self, status_code: int, **kwargs: Any) -> None:
         self.set_header("Content-Type", "application/json")
@@ -185,13 +197,10 @@ class RootHandler(Handler):
     def get(self):
         super().get("")
 
-    def _get_data(self):
-        # api_link = self.reverse_url_full("api").rstrip("?"),
-        api_link = ""
-        conformance_link = self.reverse_url_full("conformance").rstrip("?")
-        collections_link = self.reverse_url_full("collections").rstrip("?")
-        interface = self.data_interface.Capabilities(api_link, collections_link, conformance_link)
-        return interface.data()
+    def _get_render_args(self) -> Dict:
+        interface = self.data_interface.Capabilities()
+        data = interface.data()
+        return {"capability": data}
 
 
 class APIHandler(Handler):
@@ -217,12 +226,12 @@ class ConformanceHandler(Handler):
     def get(self):
         super().get("")
 
-    def _get_data(self):
+    def _get_render_args(self) -> List:
         interface = self.data_interface.Conformance()
         return interface.data()
 
-    def render_template(self):
-        template = {"conformsTo": self._get_data()}
+    def render_template(self) -> None:
+        template = {"conformsTo": self._get_render_args()}
         self.write(template)
 
 

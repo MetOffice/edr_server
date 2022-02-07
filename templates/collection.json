@@ -58,9 +58,9 @@
       ],
       "crs": "{{ collection.crs }}",
       "name": "{{ collection.crs_name }}"
-    }{% if temporal_extent %},
+    }{% if collection.has_temporal_extent() %},
     {% include "collection_extent_temporal.json" %}
-    {% end %}{% if vertical_extent %},
+    {% end %}{% if collection.has_vertical_extent() %},
     {% include "collection_extent_vertical.json" %}
     {% end %}
   },
@@ -80,9 +80,9 @@
   "output_formats": [
     "CoverageJSON"
   ],
-  {% set param_count = len(parameters.keys()) %}
+  {% set param_count = len(parameters) %}
   "parameter_names": {
-    {% for i, parameter in enumerate(parameters.values(), 1) %}
+    {% for i, parameter in enumerate(parameters, 1) %}
     {% module Template("parameter.json", param=parameter) %}{% if i < param_count %},{% end %}
     {% end %}
   }

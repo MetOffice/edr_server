@@ -40,13 +40,9 @@ class RefreshCollectionsHandler(Handler):
         for collection in collections_metadata:
             cache_file_path = self.collections_cache_path / Path(f"{collection.id}.json")
             collection_files.append(cache_file_path)
-            position_href = self.reverse_url_full("position_query", collection.id)
             render_kwargs = {
                 "collection": collection,
-                "position_href": position_href,
                 "data_queries": self.data_queries,
-                "temporal_extent": self.interface.has_temporal_extent(),
-                "vertical_extent": self.interface.has_vertical_extent(),
                 "parameters": self.interface.get_parameters(collection.id),
             }
             rendered_template = self.render_string("collection.json", **render_kwargs)
