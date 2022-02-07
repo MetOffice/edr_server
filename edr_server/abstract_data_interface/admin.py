@@ -13,10 +13,12 @@ class Collection:
     bbox: list
     crs: str
     crs_name: str
-    temporal_interval: str = ""
+    temporal_interval: list = field(default_factory=list)
+    temporal_values: list = field(default_factory=list)
     trs: str = ""
     temporal_name: str = ""
     vertical_interval: list = field(default_factory=list)
+    vertical_values: list = field(default_factory=list)
     vrs: str = ""
     vertical_name: str = ""
 
