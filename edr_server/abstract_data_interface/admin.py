@@ -23,10 +23,16 @@ class Collection:
     vertical_name: str = ""
 
     def has_temporal_extent(self):
-        return bool(len(self.temporal_interval))
+        has_extent = bool(len(self.temporal_interval))
+        if has_extent and not len(self.trs):
+            raise ValueError("At minimum the temporal interval and TRS must be specified.")
+        return has_extent
 
     def has_vertical_extent(self):
-        return bool(len(self.vertical_interval))
+        has_extent = bool(len(self.vertical_interval))
+        if has_extent and not len(self.vrs):
+            raise ValueError("At minimum the vertical interval and VRS must be specified.")
+        return has_extent
 
 
 @dataclass
