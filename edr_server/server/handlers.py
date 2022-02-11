@@ -23,6 +23,10 @@ class QueryParameters(object):
     def __str__(self):
         return str(self._params_dict)
 
+    @property
+    def parameters(self):
+        return self._params_dict
+
     def get(self, key, default=None):
         try:
             result = self.__getitem__(key)
@@ -126,12 +130,13 @@ class Handler(RequestHandler):
         """
         raise NotImplementedError
 
-    def get(self, collection_name):
+    def get(self, collection_id):
         """
         Handle a get request for data from EDR.
         Returned as JSON, unless the query specifies otherwise.
 
         """
+        self.collection_id = collection_id
         self.handle_parameters()
         if self.query_parameters.get("f") == "json":
             self.render_template()
@@ -164,6 +169,7 @@ class Handler(RequestHandler):
         template_file = f"{self.handler_type}.json"
         render_kwargs = self._get_render_args()
         rendered_template = self.render_string(template_file, **render_kwargs)
+        print(rendered_template)
         minified_rendered_template = json.dumps(json.loads(rendered_template)).encode("utf-8")
         self.write(minified_rendered_template)
 
@@ -297,6 +303,19 @@ class ItemsHandler(Handler):
 
 class LocationsHandler(Handler):
     """Handle location requests."""
+    handler_type = "locations"
+
+    def initialize(self, data_interface, **kwargs):
+        super().initialize(**kwargs)
+        self.data_interface = data_interface
+
+    def _get_render_args(self) -> Dict:
+        interface = self.data_interface.Locations(
+            self.collection_id,
+            self.query_parameters.parameters
+        )
+        locs_list = interface.data()
+        return {"locations": locs_list}
 
 
 class PositionHandler(Handler):

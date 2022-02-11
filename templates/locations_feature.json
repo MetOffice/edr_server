@@ -1,0 +1,20 @@
+{% whitespace oneline %}
+{
+  "type": "Feature",
+  "id": "{{ location.id }}",
+  "geometry": {
+    "type": "{{ location.geometry_type }}",
+    {% set n_coord_vals = len(location.coords) %}
+    "coordinates": [
+    {% for i, coord in enumerate(location.coords, 1) %}
+      "{{ coord }}"{% if i < n_coord_vals %},{% end %}
+    {% end %}
+    ]
+  },
+  {% set prop_count = len(location.properties.keys()) %}
+  "properties": {
+  {% for n, (key, value) in enumerate(location.properties.items(), 1) %}
+    "{{ key }}": "{{ value }}"{% if n < prop_count %},{% end %}
+  {% end %}
+  }
+}
