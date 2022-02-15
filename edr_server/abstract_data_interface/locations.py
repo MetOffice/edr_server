@@ -18,6 +18,12 @@ class Locations(Interface):
         self.query_parameters = query_parameters
         self.supported_query_params = ["bbox", "datetime"]
 
+    def _bbox_filter(self, location: Location) -> bool:
+        raise NotImplementedError
+
+    def _datetime_filter(self, location: Location) -> bool:
+        raise NotImplementedError
+
     def all_locations(self) -> List[Location]:
         raise NotImplementedError
 

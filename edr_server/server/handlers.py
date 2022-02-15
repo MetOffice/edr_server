@@ -3,6 +3,7 @@ from typing import Any, Dict, List
 from urllib.parse import urljoin
 
 from shapely import wkt
+from tornado.escape import url_unescape
 from tornado.web import HTTPError, RequestHandler
 
 
@@ -46,7 +47,7 @@ class QueryParameters(object):
         Handle an individual query parameter (`key`/`values` pair) from the query string.
 
         """
-        value = None if not len(values) else values[0]
+        value = None if not len(values) else url_unescape(values[0])
         if value is not None:
             try:
                 meth = getattr(self, f"_handle_{key.replace('-', '_')}")
@@ -83,11 +84,16 @@ class QueryParameters(object):
         self[key] = value
 
     def _handle_bbox(self, key, value):
-        """Bounding box for cube queries. Of form `xmin ymin, xmax ymax`."""
+        """Bounding box for cube queries. Of form `xmin ymin,xmax ymax`."""
         vmin, vmax = value.split(",")
         xmin, ymin = vmin.split(" ")
         xmax, ymax = vmax.split(" ")
-        self[key] = {"xmin": xmin, "ymin": ymin, "xmax": xmax, "ymax": ymax}
+        self[key] = {
+            "xmin": float(xmin),
+            "ymin": float(ymin),
+            "xmax": float(xmax),
+            "ymax": float(ymax),
+        }
 
     def _handle_coords(self, key, value):
         """
