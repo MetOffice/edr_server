@@ -17,7 +17,7 @@
   "observedProperty": {
     "id": "{{ parameter.phenomenon_id }}",
     "label": {
-      "en": "{{ paramter.phenomenon }}"
+      "en": "{{ parameter.phenomenon }}"
     }
   }{% if len(parameter.measurement_type_method) %},
   "measurementType": {

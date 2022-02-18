@@ -25,7 +25,7 @@ class Location:
     geometry_type: str
     coords: list
     properties: dict
-    parameters: list[Parameter]
+    parameters: "list[Parameter]"
 
 
 class Locations(Interface):
