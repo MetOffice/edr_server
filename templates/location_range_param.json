@@ -1,0 +1,30 @@
+{% whitespace oneline %}
+"{{ parameter.name }}": {
+  "type": "{{ parameter.type }}",
+  "dataType": "{{ parameter.dtype }}",
+  {% set axes_count = len(parameter.axes) %}
+  "axisNames": [
+    {% for i, axis_name in enumerate(parameter.axes.keys(), 1) %}
+    "{{ axis_name }}"{% if i < axes_count %},{% end %}
+    {% end %}
+  ],
+  "shape": [
+    {% for i, shape in enumerate(parameter.axes.values(), 1) %}
+    "{{ shape }}"{% if i < axes_count %},{% end %}
+    {% end %}
+  ],
+  {% set values_count = len(parameter.values) %}
+  {% if parameter.value_type == "values" %}
+  "values": [
+    {% for i, value in enumerate(parameter.values, 1) %}
+    "{{ value }}"{% if i < values_count %},{% end %}
+    {% end %}
+  ]
+  {% elif parameter.value_type == "tilesets" %}
+  "tileSets": [
+    {% for i, value in enumerate(parameter.values, 1) %}
+    {% module Template("location_range_param_tileset.json", tileset=value) %}
+    {% end %}
+  ]
+  {% end %}
+}

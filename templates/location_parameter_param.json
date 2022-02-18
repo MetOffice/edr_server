@@ -1,0 +1,43 @@
+{% whitespace oneline %}
+"{{ parameter.name }}": {
+  "type": "Parameter",
+  "id": "{{ parameter.id }}",
+  "description": {
+    "en": "{{ parameter.description }}"
+  },
+  "unit": {
+    "label": {
+      "en": "{{ parameter.unit_label }}"
+    },
+    "symbol": {
+      "value": "{{ parameter.unit }}",
+      "type": "{{ parameter.unit_type }}"
+    }
+  },
+  "observedProperty": {
+    "id": "{{ parameter.phenomenon_id }}",
+    "label": {
+      "en": "{{ paramter.phenomenon }}"
+    }
+  }{% if len(parameter.measurement_type_method) %},
+  "measurementType": {
+    "method": "{{ parameter.measurement_type_method }}",
+    "period": "{{ parameter.measurement_type_period }}"
+  }
+  {% end %}
+  {% set colour_count = len(parameter.category_encoding) %}
+  {% if colour_count %},
+  "categoryEncoding": {
+    {% for i, (colour, value) in enumerate(parameter.category_encoding.items(), 1) %}
+    "{{ colour }}": "{{ value }}"{% if i < colour_count %},{% end %}
+    {% end %}
+  },
+  "preferredPalette": {
+    "colors": [
+      {% for i, colour in enumerate(parameter.category_encoding.keys(), 1) %}
+      "{{ colour }}"{% if i < colour_count %},{% end %}
+      {% end %}
+    ]
+  }
+  {% end %}
+}

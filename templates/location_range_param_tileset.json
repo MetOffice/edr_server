@@ -1,0 +1,9 @@
+{
+  {% set shape_count = len(tileset.shape) %}
+  "tileShape": [
+    {% for i, val in enumerate(tileset.shape, 1) %}
+    "{{ val }}"{% if i < shape_count %},{% end %}
+    {% end %}
+  ],
+  "urlTemplate": "{{ tileset.url_template }}"
+}

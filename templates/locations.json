@@ -1,6 +1,7 @@
 {% whitespace oneline %}
 {
   "type": "FeatureCollection",
+  "bbox": [],
   {% set feature_count = len(locations) %}
   "features": [
     {% for i, location in enumerate(locations, 1) %}
