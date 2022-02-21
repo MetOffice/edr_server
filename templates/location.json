@@ -13,7 +13,26 @@
       {% end %}{% if "t" in location.axes %},
       {% module Template("location_domain_axis.json", axis_name="t", points=location.axis_t_values) %}
       {% end %}
-    }
+    },
+    {% set ref_count = len(location.referencing) %}
+    "referencing": [
+      {% for i, reference in enumerate(location.referencing, 1) %}
+      {
+        {% set coord_count = len(reference.coords) %}
+        "coordinates": [
+          {% for j, coord in enumerate(reference.coords) %}
+          "{{ coord }}"{% if j < coord_count %},{% end %}
+          {% end %}
+        ],
+        "system": {
+          "type": "{{ reference.system_type }}"{% if len(reference.system_id) %},
+          "id": "{{ reference.system_id }}"{% end %}{% if len(reference.system_calendar) %},
+          "calendar": "{{ reference.system_calendar }}"
+          {% end %}
+        }
+      }{% if i < ref_count %},{% end %}
+      {% end %}
+    ]
   },
   {% set param_count = len(location.parameters} %}
   "parameters": {

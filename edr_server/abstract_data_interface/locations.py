@@ -6,6 +6,7 @@ from .core import Interface
 
 @dataclass
 class Parameter:
+    """An individual, data-describing phenomenon reported against a Location."""
     id: str
     name: str
     description: str
@@ -20,12 +21,25 @@ class Parameter:
 
 
 @dataclass
+class Referencing:
+    """Definitions of reference systems for one or more coordinates of a Location."""
+    coords: list
+    system_type: str
+    system_id: str = ""
+    system_calendar: str = ""
+
+
+@dataclass
 class Location:
+    """Data for an EDR Location instance."""
     id: str
     geometry_type: str
     coords: list
+    bbox: list
+    temporal_interval: str
     properties: dict
     parameters: "list[Parameter]"
+    referencing: "list[Referencing]"
 
 
 class Locations(Interface):
@@ -38,6 +52,10 @@ class Locations(Interface):
         raise NotImplementedError
 
     def _datetime_filter(self, location: Location) -> bool:
+        raise NotImplementedError
+
+    def get_collection_bbox(self):
+        """Get the bounding box for the collection that holds these locations."""
         raise NotImplementedError
 
     def parameters(self) -> List[Parameter]:

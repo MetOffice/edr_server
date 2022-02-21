@@ -17,13 +17,18 @@
   {% end %}
     "extent": {
       "spatial": {
+        {% set bbox_point_ct = len(location.bbox) %}
         "bbox": [
-          []
+          {% for i, value in enumerate(location.bbox, 1) %}
+          "{{ value }}"{% if i < bbox_point_ct %},{% end %}
+          {% end %}
         ]
       },
       "temporal": {
         "interval": [
-          []
+          [
+            "{{ location.temporal_interval }}"
+          ]
         ]
       }
     },

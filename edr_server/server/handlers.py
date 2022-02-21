@@ -321,7 +321,8 @@ class LocationsHandler(Handler):
             self.query_parameters.parameters
         )
         locs_list = interface.data()
-        return {"locations": locs_list}
+        collection_bbox = interface.get_collection_bbox()
+        return {"locations": locs_list, "collection_bbox": collection_bbox}
 
 
 class PositionHandler(Handler):
