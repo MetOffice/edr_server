@@ -20,7 +20,7 @@
       {
         {% set coord_count = len(reference.coords) %}
         "coordinates": [
-          {% for j, coord in enumerate(reference.coords) %}
+          {% for j, coord in enumerate(reference.coords, 1) %}
           "{{ coord }}"{% if j < coord_count %},{% end %}
           {% end %}
         ],
@@ -34,7 +34,7 @@
       {% end %}
     ]
   },
-  {% set param_count = len(location.parameters} %}
+  {% set param_count = len(location.parameters) %}
   "parameters": {
   {% for i, parameter in enumerate(location.parameters, 1) %}
     {% module Template("location_parameter_param.json", parameter=parameter) %}{% if i < param_count %},{% end %}

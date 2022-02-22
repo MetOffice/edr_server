@@ -4,13 +4,13 @@
   "dataType": "{{ parameter.dtype }}",
   {% set axes_count = len(parameter.axes) %}
   "axisNames": [
-    {% for i, axis_name in enumerate(parameter.axes.keys(), 1) %}
+    {% for i, axis_name in enumerate(parameter.axes, 1) %}
     "{{ axis_name }}"{% if i < axes_count %},{% end %}
     {% end %}
   ],
   "shape": [
-    {% for i, shape in enumerate(parameter.axes.values(), 1) %}
-    "{{ shape }}"{% if i < axes_count %},{% end %}
+    {% for i, dim_len in enumerate(parameter.shape, 1) %}
+    "{{ dim_len }}"{% if i < axes_count %},{% end %}
     {% end %}
   ],
   {% set values_count = len(parameter.values) %}

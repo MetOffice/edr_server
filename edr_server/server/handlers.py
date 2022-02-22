@@ -325,6 +325,30 @@ class LocationsHandler(Handler):
         return {"locations": locs_list, "collection_bbox": collection_bbox}
 
 
+class LocationHandler(Handler):
+    """Handle location requests."""
+    handler_type = "location"
+
+    def initialize(self, data_interface, **kwargs):
+        super().initialize(**kwargs)
+        self.data_interface = data_interface
+
+    def get(self, collection_id, location_id):
+        self.location_id = location_id
+        super().get(collection_id)
+
+    def _get_render_args(self) -> Dict:
+        items_url = self.reverse_url_full("items_query", self.collection_id)
+        interface = self.data_interface.Location(
+            self.collection_id,
+            self.location_id,
+            self.query_parameters.parameters,
+            items_url
+        )
+        location = interface.data()
+        return {"location": location}
+
+
 class PositionHandler(Handler):
     """Handle position requests."""
 

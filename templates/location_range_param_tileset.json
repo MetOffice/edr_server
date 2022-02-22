@@ -1,7 +1,8 @@
+{% whitespace oneline %}
 {
-  {% set shape_count = len(tileset.shape) %}
+  {% set shape_count = len(tileset.tile_shape) %}
   "tileShape": [
-    {% for i, val in enumerate(tileset.shape, 1) %}
+    {% for i, val in enumerate(tileset.tile_shape, 1) %}
     "{{ val }}"{% if i < shape_count %},{% end %}
     {% end %}
   ],
