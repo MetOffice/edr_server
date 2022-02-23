@@ -1,0 +1,59 @@
+{% whitespace oneline %}
+{
+  "domain": {
+    "type": "Domain",
+    "domainType": "Grid",
+    {% set axes_count = len(location.axes) %}
+    {% set i = 1 %}
+    "axes": {
+      {% if "x" in location.axes %}
+      {% module Template("location_domain_axis.json", axis_name="x", points=location.axis_x_values) %}
+      {% if i < axes_count %},{% end %}
+      {% set i += 1 %}
+      {% end %}
+      {% if "y" in location.axes %}
+      {% module Template("location_domain_axis.json", axis_name="y", points=location.axis_y_values) %}
+      {% if i < axes_count %},{% end %}
+      {% set i += 1 %}
+      {% end %}
+      {% if "z" in location.axes %}
+      {% module Template("location_domain_axis.json", axis_name="z", points=location.axis_z_values) %}
+      {% if i < axes_count %},{% end %}
+      {% set i += 1 %}
+      {% end %}
+      {% if "t" in location.axes %}
+      {% module Template("location_domain_axis.json", axis_name="t", points=location.axis_t_values) %}
+      {% end %}
+    },
+    {% set ref_count = len(location.referencing) %}
+    "referencing": [
+      {% for i, reference in enumerate(location.referencing, 1) %}
+      {
+        {% set coord_count = len(reference.coords) %}
+        "coordinates": [
+          {% for j, coord in enumerate(reference.coords, 1) %}
+          "{{ coord }}"{% if j < coord_count %},{% end %}
+          {% end %}
+        ],
+        "system": {
+          "type": "{{ reference.system_type }}"{% if len(reference.system_id) %},
+          "id": "{{ reference.system_id }}"{% end %}{% if len(reference.system_calendar) %},
+          "calendar": "{{ reference.system_calendar }}"
+          {% end %}
+        }
+      }{% if i < ref_count %},{% end %}
+      {% end %}
+    ]
+  },
+  {% set param_count = len(location.parameters) %}
+  "parameters": {
+  {% for i, parameter in enumerate(location.parameters, 1) %}
+    {% module Template("location_parameter_param.json", parameter=parameter) %}{% if i < param_count %},{% end %}
+  {% end %}
+  },
+  "ranges": {
+  {% for i, parameter in enumerate(location.parameters, 1) %}
+    {% module Template("location_range_param.json", parameter=parameter) %}{% if i < param_count %},{% end %}
+  {% end %}
+  }
+}
