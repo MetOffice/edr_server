@@ -1,0 +1,42 @@
+{% whitespace oneline %}
+{
+  "type": "Feature",
+  "id": "{{ location.id }}",
+  "geometry": {
+    "type": "{{ location.geometry_type }}",
+    {% set n_coord_vals = len(location.coords) %}
+    "coordinates": [
+    {% for i, coord in enumerate(location.coords, 1) %}
+      "{{ coord }}"{% if i < n_coord_vals %},{% end %}
+    {% end %}
+    ]
+  },
+  "properties": {
+  {% for key, value in location.properties.items() %}
+    "{{ key }}": "{{ value }}",
+  {% end %}
+    "extent": {
+      "spatial": {
+        {% set bbox_point_ct = len(location.bbox) %}
+        "bbox": [
+          {% for i, value in enumerate(location.bbox, 1) %}
+          "{{ value }}"{% if i < bbox_point_ct %},{% end %}
+          {% end %}
+        ]
+      },
+      "temporal": {
+        "interval": [
+          [
+            "{{ location.temporal_interval }}"
+          ]
+        ]
+      }
+    },
+    {% set param_count = len(location.parameters) %}
+    "parameter_names": {
+      {% for i, parameter in enumerate(location.parameters, 1) %}
+        {% module Template("location_parameter_param.json", parameter=parameter) %}{% if i < param_count %},{% end %}
+      {% end %}
+    }
+  }
+}
