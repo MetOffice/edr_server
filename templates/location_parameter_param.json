@@ -29,7 +29,7 @@
   {% if colour_count %},
   "categoryEncoding": {
     {% for i, (colour, value) in enumerate(parameter.category_encoding.items(), 1) %}
-    "{{ colour }}": "{{ value }}"{% if i < colour_count %},{% end %}
+    "{{ colour }}": {{ value }}{% if i < colour_count %},{% end %}
     {% end %}
   },
   "preferredPalette": {

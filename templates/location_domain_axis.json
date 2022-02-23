@@ -1,15 +1,18 @@
 {% whitespace oneline %}
-{% set points_count = len(points) %}
 "{{ axis_name }}": {
   {% if "values" in points.keys() %}
+  {% set values = points['values'] %}
+  {% set values_count = len(values) %}
   "values": [
-    {% for i, value in enumerate(points.values(), 1) %}
-    "{{ value }}"{% if i < points_count %},{% end %}
+    {% for i, value in enumerate(values, 1) %}
+    {% if axis_name == 't' %}"{{ value }}"{% else %}{{ value }}{% end %}
+    {% if i < values_count %},{% end %}
     {% end %}
   ]
   {% elif "start" in points.keys() %}
+  {% set points_count = len(points) %}
   {% for i, (key, value) in enumerate(points.items(), 1) %}
-    "{{ key }}": "{{ value }}"{% if i < points_count %},{% end %}
+    "{{ key }}": {{ value }}{% if i < points_count %},{% end %}
   {% end %}
   {% end %}
 }
