@@ -4,10 +4,18 @@
     {% set v_level_ct = len(collection.vertical_interval) %}
     [
       {% for i, v_level in enumerate(collection.vertical_interval, 1) %}
-      {{ v_level }}{% if i < v_level_ct %},{% end %}
+      "{{ v_level }}"{% if i < v_level_ct %},{% end %}
       {% end %}
     ]
   ],
   "vrs": "{{ collection.vrs }}",
+  {% set v_vals_ct = len(collection.vertical_values) %}
+  {% if v_vals_ct %}
+  "values": [
+    {% for i, v_value in enumerate(collection.vertical_values, 1) %}
+    "{{ v_value }}"{% if i < v_vals_ct %},{% end %}
+    {% end %}
+  ],
+  {% end %}
   "name": "{{ collection.vertical_name }}"
 }

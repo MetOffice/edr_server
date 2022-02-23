@@ -1,10 +1,21 @@
 {% whitespace oneline %}
 "temporal": {
   "interval": [
+    {% set t_level_ct = len(collection.temporal_interval) %}
     [
-      "{{ collection.temporal_interval }}"
+      {% for i, t_level in enumerate(collection.temporal_interval, 1) %}
+      "{{ t_level }}"{% if i < t_level_ct %},{% end %}
+      {% end %}
     ]
   ],
   "trs": "{{ collection.trs }}",
+  {% set t_vals_ct = len(collection.temporal_values) %}
+  {% if t_vals_ct %}
+  "values": [
+    {% for i, t_value in enumerate(collection.temporal_values, 1) %}
+    "{{ t_value }}"{% if i < t_vals_ct %},{% end %}
+    {% end %}
+  ],
+  {% end %}
   "name": "{{ collection.temporal_name }}"
 }
