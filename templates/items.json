@@ -1,0 +1,41 @@
+{% whitespace oneline %}
+{
+  "type": "FeatureCollection",
+  "links": [],
+  "numberReturned": {{ items.number_returned }},
+  "numberMatched": {{ items.number_matched }},
+  "timeStamp": "{{ items.timestamp }}",
+  {% set item_length = len(items.items) %}
+  "features": [
+    {% for i, item in enumerate(items.items, 1) %}
+    {
+      "type": "Feature",
+      "id": "{{ item.id }}",
+      "geometry": {
+        "type": "{{ item.geometry_type }}",
+        {% set n_coord_vals = len(item.coords) %}
+        "coordinates": [
+        {% for i, coord in enumerate(item.coords, 1) %}
+          "{{ coord }}"{% if i < n_coord_vals %},{% end %}
+        {% end %}
+        ]
+      },
+      {% set props_length = len(item.properties) %}
+      "properties": {
+        {% for j, (key, value) in enumerate(item.properties.items(), 1) %}
+        "{{ key }}": "{{ value }}"{% if j < props_length %},{% end %}
+        {% end %}
+      }{% if len(item.link_href) %},
+      "links": [
+        {
+          "href": "{{ item.link_href }}",
+          "rel": "data",
+          "type": "application/cov+json",
+          "hreflang": "en"
+        }
+      ]
+      {% end %}
+    }{% if i < item_length %},{% end %}
+    {% end %}
+  ]
+}
