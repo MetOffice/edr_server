@@ -305,6 +305,20 @@ class CubeHandler(Handler):
 
 class ItemsHandler(Handler):
     """Handle items requests."""
+    handler_type = "items"
+
+    def initialize(self, data_interface, **kwargs):
+        super().initialize(**kwargs)
+        self.data_interface = data_interface
+
+    def _get_render_args(self) -> Dict:
+        collection_url = self.reverse_url_full("collection", self.collection_id)
+        interface = self.data_interface.Items(
+            self.collection_id,
+            self.query_parameters.parameters,
+            collection_url
+        )
+        return {"items": interface.data()}
 
 
 class LocationsHandler(Handler):

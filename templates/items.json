@@ -1,7 +1,14 @@
 {% whitespace oneline %}
 {
   "type": "FeatureCollection",
-  "links": [],
+  {% set links_length = len(items.links) %}
+  {% if links_length %}
+  "links": [
+    {% for i, link in enumerate(items.links) %}
+    "{{ link }}"{% if i < links_length %},{% end %}
+    {% end %}
+  ],
+  {% end %}
   "numberReturned": {{ items.number_returned }},
   "numberMatched": {{ items.number_matched }},
   "timeStamp": "{{ items.timestamp }}",
@@ -15,15 +22,15 @@
         "type": "{{ item.geometry_type }}",
         {% set n_coord_vals = len(item.coords) %}
         "coordinates": [
-        {% for i, coord in enumerate(item.coords, 1) %}
-          "{{ coord }}"{% if i < n_coord_vals %},{% end %}
+        {% for j, coord in enumerate(item.coords, 1) %}
+          "{{ coord }}"{% if j < n_coord_vals %},{% end %}
         {% end %}
         ]
       },
       {% set props_length = len(item.properties) %}
       "properties": {
-        {% for j, (key, value) in enumerate(item.properties.items(), 1) %}
-        "{{ key }}": "{{ value }}"{% if j < props_length %},{% end %}
+        {% for k, (key, value) in enumerate(item.properties.items(), 1) %}
+        "{{ key }}": "{{ value }}"{% if k < props_length %},{% end %}
         {% end %}
       }{% if len(item.link_href) %},
       "links": [
