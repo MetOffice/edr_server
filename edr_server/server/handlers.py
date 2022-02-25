@@ -176,7 +176,6 @@ class Handler(RequestHandler):
         template_file = f"{self.handler_type}.{fileformat}"
         render_kwargs = self._get_render_args()
         rendered_template = self.render_string(template_file, **render_kwargs)
-        print(rendered_template)
         minified_rendered_template = json.dumps(json.loads(rendered_template)).encode("utf-8")
         self.write(minified_rendered_template)
 
@@ -264,7 +263,6 @@ class ServiceHandler(Handler):
 
     def get(self):
         webdoc = self.request.path.split("/")[-1]
-        print(webdoc)
         data = self.data_interface.Service().data()
         if "description" in webdoc:
             redir_url = data.description_url
