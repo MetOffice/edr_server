@@ -172,7 +172,8 @@ class Handler(RequestHandler):
         We dump and load the templated result to get inline JSON verification from the JSON library.
 
         """
-        template_file = f"{self.handler_type}.json"
+        fileformat = "covjson" if self.handler_type == "item" else "json"
+        template_file = f"{self.handler_type}.{fileformat}"
         render_kwargs = self._get_render_args()
         rendered_template = self.render_string(template_file, **render_kwargs)
         print(rendered_template)
@@ -319,6 +320,27 @@ class ItemsHandler(Handler):
             collection_url
         )
         return {"items": interface.data()}
+
+
+class ItemHandler(Handler):
+    """Handle items requests."""
+    handler_type = "item"
+
+    def initialize(self, data_interface, **kwargs):
+        super().initialize(**kwargs)
+        self.data_interface = data_interface
+
+    def get(self, collection_id, item_id):
+        self.collection_id = collection_id
+        self.item_id = item_id
+        super().get(collection_id)
+
+    def _get_render_args(self) -> Dict:
+        interface = self.data_interface.Item(self.collection_id, self.item_id)
+        parameter = interface.data()
+        if parameter is None:
+            raise HTTPError(404, f"Item {self.item_id} was not found.")
+        return {"parameter": interface.data()}
 
 
 class LocationsHandler(Handler):

@@ -1,3 +1,4 @@
+{% whitespace oneline %}
 {
   "type": "{{ parameter.type }}",
   "dataType": "{{ parameter.dtype }}",
@@ -15,7 +16,8 @@
   {% set value_count = len(parameter.values) %}
   "values": [
     {% for i, value in enumerate(parameter.values, 1) %}
-    {{ value }}{% if i < axes_count %},{% end %}
+    {% if value is None %}null{% else %}{{ value }}{% end %}
+    {% if i < value_count %},{% end %}
     {% end %}
   ]
 }

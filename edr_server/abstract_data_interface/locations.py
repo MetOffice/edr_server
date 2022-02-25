@@ -14,8 +14,8 @@ class Tileset:
 @dataclass
 class Parameter:
     """An individual, data-describing phenomenon reported against a Location."""
-    id: str
     name: str
+    id: str
     description: str
     type: str
     dtype: str

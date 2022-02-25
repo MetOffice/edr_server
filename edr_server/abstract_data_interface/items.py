@@ -1,6 +1,8 @@
 from dataclasses import dataclass
 import datetime
-from typing import List
+from typing import List, Union
+
+import numpy.ma as ma
 
 from .core import Interface
 
@@ -9,7 +11,7 @@ from .core import Interface
 class Parameter:
     """A cut-back description of an EDR parameter, specifically for populating `item.covjson`."""
     type: str
-    dataType: str
+    dtype: str
     axes: list
     shape: list
     values: list
@@ -65,4 +67,40 @@ class Items(Interface):
         return datetime.datetime.strftime(timestamp, "%Y-%m-%dT%H:%M:%SZ")
 
     def data(self) -> FeatureCollection:
+        raise NotImplementedError
+
+
+class Item(Interface):
+    def __init__(self, collection_id, item_id) -> None:
+        self.collection_id = collection_id
+        self.item_id = item_id
+        self.param_name, *axes_inds = self.item_id.split("_")
+
+        # Cast inds to int if possible but ignore errors to pick them up later.
+        self.axes_inds = []
+        for ind in axes_inds:
+            try:
+                self.axes_inds.append(int(ind))
+            except ValueError:
+                self.axes_inds.append(ind)
+
+    def _has_item(self) -> bool:
+        """Determine whether the server can provide the requested item."""
+        raise NotImplementedError
+
+    def _prepare_data(self, data) -> List:
+        """
+        Prepare the data for being templated into a coverageJSON file:
+          * reshape the data to a flat list
+          * replace any missing / masked data with None, which will be converted
+            to JSON `null` in the template.
+
+        """
+        if ma.isMaskedArray(data):
+            flat_data = [d if d != data.fill_value else None for d in data.filled().reshape(-1)]
+        else:
+            flat_data = list(data.reshape(-1))
+        return flat_data
+
+    def data(self) -> Union[Parameter, None]:
         raise NotImplementedError
