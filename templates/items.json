@@ -1,0 +1,48 @@
+{% whitespace oneline %}
+{
+  "type": "FeatureCollection",
+  {% set links_length = len(items.links) %}
+  {% if links_length %}
+  "links": [
+    {% for i, link in enumerate(items.links) %}
+    "{{ link }}"{% if i < links_length %},{% end %}
+    {% end %}
+  ],
+  {% end %}
+  "numberReturned": {{ items.number_returned }},
+  "numberMatched": {{ items.number_matched }},
+  "timeStamp": "{{ items.timestamp }}",
+  {% set item_length = len(items.items) %}
+  "features": [
+    {% for i, item in enumerate(items.items, 1) %}
+    {
+      "type": "Feature",
+      "id": "{{ item.id }}",
+      "geometry": {
+        "type": "{{ item.geometry_type }}",
+        {% set n_coord_vals = len(item.coords) %}
+        "coordinates": [
+        {% for j, coord in enumerate(item.coords, 1) %}
+          "{{ coord }}"{% if j < n_coord_vals %},{% end %}
+        {% end %}
+        ]
+      },
+      {% set props_length = len(item.properties) %}
+      "properties": {
+        {% for k, (key, value) in enumerate(item.properties.items(), 1) %}
+        "{{ key }}": "{{ value }}"{% if k < props_length %},{% end %}
+        {% end %}
+      }{% if len(item.link_href) %},
+      "links": [
+        {
+          "href": "{{ item.link_href }}",
+          "rel": "data",
+          "type": "application/cov+json",
+          "hreflang": "en"
+        }
+      ]
+      {% end %}
+    }{% if i < item_length %},{% end %}
+    {% end %}
+  ]
+}

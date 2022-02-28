@@ -1,0 +1,23 @@
+{% whitespace oneline %}
+{
+  "type": "{{ parameter.type }}",
+  "dataType": "{{ parameter.dtype }}",
+  {% set axes_count = len(parameter.axes) %}
+  "axisNames": [
+    {% for i, axis_name in enumerate(parameter.axes, 1) %}
+    "{{ axis_name }}"{% if i < axes_count %},{% end %}
+    {% end %}
+  ],
+  "shape": [
+    {% for i, dim_len in enumerate(parameter.shape, 1) %}
+    {{ dim_len }}{% if i < axes_count %},{% end %}
+    {% end %}
+  ],
+  {% set value_count = len(parameter.values) %}
+  "values": [
+    {% for i, value in enumerate(parameter.values, 1) %}
+    {% if value is None %}null{% else %}{{ value }}{% end %}
+    {% if i < value_count %},{% end %}
+    {% end %}
+  ]
+}

@@ -172,10 +172,10 @@ class Handler(RequestHandler):
         We dump and load the templated result to get inline JSON verification from the JSON library.
 
         """
-        template_file = f"{self.handler_type}.json"
+        fileformat = "covjson" if self.handler_type == "item" else "json"
+        template_file = f"{self.handler_type}.{fileformat}"
         render_kwargs = self._get_render_args()
         rendered_template = self.render_string(template_file, **render_kwargs)
-        print(rendered_template)
         minified_rendered_template = json.dumps(json.loads(rendered_template)).encode("utf-8")
         self.write(minified_rendered_template)
 
@@ -263,7 +263,6 @@ class ServiceHandler(Handler):
 
     def get(self):
         webdoc = self.request.path.split("/")[-1]
-        print(webdoc)
         data = self.data_interface.Service().data()
         if "description" in webdoc:
             redir_url = data.description_url
@@ -305,6 +304,41 @@ class CubeHandler(Handler):
 
 class ItemsHandler(Handler):
     """Handle items requests."""
+    handler_type = "items"
+
+    def initialize(self, data_interface, **kwargs):
+        super().initialize(**kwargs)
+        self.data_interface = data_interface
+
+    def _get_render_args(self) -> Dict:
+        collection_url = self.reverse_url_full("collection", self.collection_id)
+        interface = self.data_interface.Items(
+            self.collection_id,
+            self.query_parameters.parameters,
+            collection_url
+        )
+        return {"items": interface.data()}
+
+
+class ItemHandler(Handler):
+    """Handle items requests."""
+    handler_type = "item"
+
+    def initialize(self, data_interface, **kwargs):
+        super().initialize(**kwargs)
+        self.data_interface = data_interface
+
+    def get(self, collection_id, item_id):
+        self.collection_id = collection_id
+        self.item_id = item_id
+        super().get(collection_id)
+
+    def _get_render_args(self) -> Dict:
+        interface = self.data_interface.Item(self.collection_id, self.item_id)
+        parameter = interface.data()
+        if parameter is None:
+            raise HTTPError(404, f"Item {self.item_id} was not found.")
+        return {"parameter": interface.data()}
 
 
 class LocationsHandler(Handler):
