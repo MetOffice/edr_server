@@ -20,17 +20,34 @@
         {% set bbox_point_ct = len(location.bbox) %}
         "bbox": [
           {% for i, value in enumerate(location.bbox, 1) %}
-          "{{ value }}"{% if i < bbox_point_ct %},{% end %}
+          {{ value }}{% if i < bbox_point_ct %},{% end %}
           {% end %}
         ]
-      },
+      }
+      {% set t_interval_ct = len(location.temporal_interval) %}
+      {% if t_interval_ct %},
       "temporal": {
         "interval": [
           [
-            "{{ location.temporal_interval }}"
+            {% for i, interval in enumerate(location.temporal_interval, 1) %}
+            "{{ interval }}"{% if i < t_interval_ct %},{% end %}
+            {% end %}
           ]
         ]
       }
+      {% end %}
+      {% set v_interval_ct = len(location.vertical_interval) %}
+      {% if v_interval_ct %},
+      "vertical": {
+        "interval": [
+          [
+            {% for i, interval in enumerate(location.vertical_interval, 1) %}
+            {{ interval }}{% if i < v_interval_ct %},{% end %}
+            {% end %}
+          ]
+        ]
+      }
+      {% end %}
     },
     {% set param_count = len(location.parameters) %}
     "parameter_names": {

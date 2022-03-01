@@ -2,6 +2,7 @@ from dataclasses import dataclass, field
 from typing import List
 
 from .core import Interface
+from .locations import Parameter
 
 
 @dataclass
@@ -33,18 +34,6 @@ class Collection:
         if has_extent and not len(self.vrs):
             raise ValueError("At minimum the vertical interval and VRS must be specified.")
         return has_extent
-
-
-@dataclass
-class Parameter:
-    name: str
-    id: str
-    description: str
-    unit_label: str
-    unit_value: str
-    unit_defn: str
-    property_id: str
-    property_label: str
 
 
 class RefreshCollections(Interface):

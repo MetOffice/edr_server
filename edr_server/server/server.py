@@ -32,7 +32,7 @@ def make_app():
             url(r"/collections/(.*)/position", handlers.PositionHandler, name="position_query"),
             url(r"/collections/(.*)/radius", handlers.RadiusHandler),
             url(r"/collections/(.*)/trajectory", handlers.TrajectoryHandler),
-            url(r"/collections/([^/]*)\/?", collection.CollectionsHandler,
+            url(r"/collections/([^/.]*)\/?", collection.CollectionsHandler,
                 {"collections_cache_path": collections_cache_path},
                 name="collection"),
             url(r"/collections\/?", collection.CollectionsHandler,

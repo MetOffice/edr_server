@@ -54,10 +54,11 @@ class Feature:
     axis_y_values: dict
     axis_z_values: dict
     axis_t_values: dict
-    temporal_interval: str
     properties: dict
     parameters: "list[Parameter]"
     referencing: "list[Referencing]"
+    temporal_interval: list = field(default_factory=list)
+    vertical_interval: list = field(default_factory=list)
 
 
 class Locations(Interface):
