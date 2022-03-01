@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import List
+from typing import List, Union
 
 from .core import Interface
 
@@ -127,5 +127,5 @@ class Location(Interface):
         """
         raise NotImplementedError
 
-    def data(self) -> Feature:
+    def data(self) -> Union[Feature, None]:
         raise NotImplementedError
