@@ -88,6 +88,10 @@ class Item(Interface):
         """Determine whether the server can provide the requested item."""
         raise NotImplementedError
 
+    def _can_provide_data(self, parameter: Parameter) -> bool:
+        """Confirm the requested parameter provides TileSet data and that the requested indices are valid."""
+        raise NotImplementedError
+
     def _prepare_data(self, data) -> List:
         """
         Prepare the data for being templated into a coverageJSON file:
