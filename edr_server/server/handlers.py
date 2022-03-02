@@ -182,10 +182,15 @@ class Handler(RequestHandler):
     def write_error(self, status_code: int, **kwargs: Any) -> None:
         self.set_header("Content-Type", "application/json")
         error_obj = kwargs["exc_info"][1]
+        try:
+            message = error_obj.log_message
+        except AttributeError:
+            print(error_obj)
+            message = f"{error_obj.__class__.__name__}: {error_obj}"
         self.write({
             "code": self.get_status(),
             "description": self._reason,
-            "message": error_obj.log_message,
+            "message": message,
         })
 
     def reverse_url_full(self, name: str, *args: Any, **kwargs: Any):
@@ -381,9 +386,11 @@ class LocationHandler(Handler):
             self.query_parameters.parameters,
             items_url
         )
-        location = interface.data()
+        location, error_msg = interface.data()
         if location is None:
-            emsg = f"Location {self.location_id!r} not found in collection with ID {self.collection_id!r}."
+            if error_msg is None:
+                error_msg = "Location not found"
+            emsg = f"{error_msg} for {self.location_id!r} in collection with ID {self.collection_id!r}."
             raise HTTPError(404, emsg)
         return {"location": location}
 

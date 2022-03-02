@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import List, Union
+from typing import List, Tuple, Union
 
 from .core import Interface
 
@@ -122,6 +122,10 @@ class Location(Interface):
         """Define tilesets metadata for a specific parameter."""
         raise NotImplementedError
 
+    def _check_location(self) -> bool:
+        """Confirm the supplied location ID is valid."""
+        raise NotImplementedError
+
     def parameters(self) -> List[Parameter]:
         """
         Build a `Parameter` instance for each of the filtered parameters
@@ -130,5 +134,5 @@ class Location(Interface):
         """
         raise NotImplementedError
 
-    def data(self) -> Union[Feature, None]:
+    def data(self) -> Tuple[Union[Feature, None], Union[str, None]]:
         raise NotImplementedError
