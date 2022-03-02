@@ -109,8 +109,11 @@ class Location(Interface):
 
         """
         if self.query_parameters.get("parameter-name") is not None:
-            query_location_parameters = set(self.query_parameters["parameter-name"])
-            result = list(set(all_location_parameters) & query_location_parameters)
+            param_names = self.query_parameters["parameter-name"]
+            if isinstance(param_names, str):
+                param_names = [param_names]
+            result = list(set(all_location_parameters) & set(param_names))
+            print(result)
         else:
             result = all_location_parameters
         return result
