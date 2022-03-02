@@ -185,7 +185,6 @@ class Handler(RequestHandler):
         try:
             message = error_obj.log_message
         except AttributeError:
-            print(error_obj)
             message = f"{error_obj.__class__.__name__}: {error_obj}"
         self.write({
             "code": self.get_status(),

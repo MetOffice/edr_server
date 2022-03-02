@@ -113,7 +113,6 @@ class Location(Interface):
             if isinstance(param_names, str):
                 param_names = [param_names]
             result = list(set(all_location_parameters) & set(param_names))
-            print(result)
         else:
             result = all_location_parameters
         return result
