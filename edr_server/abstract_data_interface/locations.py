@@ -109,7 +109,8 @@ class Location(Interface):
 
         """
         if self.query_parameters.get("parameter-name") is not None:
-            param_names = self.query_parameters["parameter-name"]
+            params_dict = self.query_parameters["parameter-name"]
+            param_names, = list(params_dict.values())
             if isinstance(param_names, str):
                 param_names = [param_names]
             result = list(set(all_location_parameters) & set(param_names))
@@ -123,6 +124,7 @@ class Location(Interface):
         query arguments, if any.
 
         """
+        print(self.query_parameters)
         if "z" in self.query_parameters.keys():
             z_extents = self.query_parameters["z"]
             z_values = location.axis_z_values
