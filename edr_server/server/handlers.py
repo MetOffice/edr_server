@@ -67,7 +67,7 @@ class QueryParameters(object):
 
         """
         if "," in value:
-            result = value.split(",")
+            result = {"values": value.split(",")}
         elif "/" in value:
             if value.startswith("R"):
                 n, start, interval = value.lstrip("R").split("/")
@@ -76,7 +76,7 @@ class QueryParameters(object):
                 start, end = value.split("/")
                 result = {"start": start, "end": end}
         else:
-            result = value
+            result = {"value": value}
         return result
 
     def _handle_generic(self, key, value):

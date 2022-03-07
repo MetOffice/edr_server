@@ -131,7 +131,6 @@ class Item(Interface):
         """
         # XXX not done: subsetting along the horizontal (non-free) dimensions.
         tile_shape = []
-        print(f"Parameter axes: {param.axes}\nShape: {param.shape}")
         for i, axis in enumerate(param.axes):
             shape = 1 if axis in self.free_axes else param.shape[i]
             tile_shape.append(shape)

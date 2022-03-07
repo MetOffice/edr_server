@@ -117,6 +117,23 @@ class Location(Interface):
             result = all_location_parameters
         return result
 
+    def _z_filter(self, location: Feature) -> Feature:
+        """
+        Filter the vertical `z` values returned in the feature based on limits provided in the
+        query arguments, if any.
+
+        """
+        if "z" in self.query_parameters.keys():
+            z_extents = self.query_parameters["z"]
+            z_values = location.axis_z_values
+            if "end" in z_extents.keys() and "values" in z_values.keys():
+                zvals = z_values["values"]
+                z_start_ind = zvals.index(z_extents["start"])
+                z_end_ind = zvals.index(z_extents["end"])
+                filtered_z_values = zvals[z_start_ind:z_end_ind+1]
+                location.axis_z_values = {"values": filtered_z_values}
+        return location
+
     def _tilesets(self, param_name) -> List[Tileset]:
         """Define tilesets metadata for a specific parameter."""
         raise NotImplementedError
