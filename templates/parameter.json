@@ -1,19 +1,17 @@
 {% whitespace oneline %}
-"{{ parameter.name }}": [
-  {
-    "type": "Parameter",
-    "id": "{{ parameter.id }}",
-    "description": "{{ parameter.description }}",
-    "unit": {
-      "label": "{{ parameter.unit_label }}",
-      "symbol": {
-        "value": "{{ parameter.unit }}",
-        "type": "{{ parameter.unit_type }}"
-      }
-    },
-    "observedProperty": {
-      "id": "{{ parameter.phenomenon_id }}",
-      "label": "{{ parameter.phenomenon }}"
+"{{ parameter.name }}": {
+  "type": "Parameter",
+  "id": "{{ parameter.id }}",
+  "description": "{{ parameter.description }}",
+  "unit": {
+    "label": "{{ parameter.unit_label }}",
+    "symbol": {
+      "value": "{{ parameter.unit }}",
+      "type": "{{ parameter.unit_type }}"
     }
+  },
+  "observedProperty": {
+    "id": "{{ parameter.phenomenon_id }}",
+    "label": "{{ parameter.phenomenon }}"
   }
-]
+}

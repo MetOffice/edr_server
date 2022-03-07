@@ -75,6 +75,7 @@ class Item(Interface):
         self.collection_id = collection_id
         self.item_id = item_id
         self.param_name, *axes_inds = self.item_id.split("_")
+        self._free_axes = None
 
         # Cast inds to int if possible but ignore errors to pick them up later.
         self.axes_inds = []
@@ -83,6 +84,20 @@ class Item(Interface):
                 self.axes_inds.append(int(ind))
             except ValueError:
                 self.axes_inds.append(ind)
+
+    @property
+    def free_axes(self):
+        """
+        The item's free axes are the axes on which a length-1 tile can be requested,
+        and are the axes with indices embedded in the item ID passed in the query string.
+        Typically these are either or both of `(z, t)`.
+        
+        """
+        return self._free_axes
+
+    @free_axes.setter
+    def free_axes(self, value):
+        self._free_axes = value
 
     def _has_item(self) -> bool:
         """Determine whether the server can provide the requested item."""
@@ -105,6 +120,22 @@ class Item(Interface):
         else:
             flat_data = list(data.reshape(-1))
         return flat_data
+
+    def _tile_shape(self, param) -> List:
+        """
+        The shape of a tile should not equal the shape of the parameter.
+        In the simple case, it is likely to be only of length 1 in the free axis dimensions.
+        In more complex cases where the horizontal axes are also tiled, the non-free
+        axes dimensions will be a subset of the total length in each dimension.
+
+        """
+        # XXX not done: subsetting along the horizontal (non-free) dimensions.
+        tile_shape = []
+        print(f"Parameter axes: {param.axes}\nShape: {param.shape}")
+        for i, axis in enumerate(param.axes):
+            shape = 1 if axis in self.free_axes else param.shape[i]
+            tile_shape.append(shape)
+        return tile_shape
 
     def data(self) -> Union[Parameter, None]:
         raise NotImplementedError
