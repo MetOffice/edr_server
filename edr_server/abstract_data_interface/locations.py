@@ -2,6 +2,7 @@ from dataclasses import dataclass, field
 from typing import List, Tuple, Union
 
 from .core import Interface
+from .filter import Filter
 
 
 @dataclass
@@ -68,9 +69,11 @@ class Locations(Interface):
         self.supported_query_params = ["bbox", "datetime"]
 
     def _bbox_filter(self, location: Feature) -> bool:
+        """Determine whether `location` is within the bounding box specified."""
         raise NotImplementedError
 
     def _datetime_filter(self, location: Feature) -> bool:
+        """Determine whether `location` is within the datetime boundaries requested."""
         raise NotImplementedError
 
     def get_collection_bbox(self):
@@ -118,22 +121,38 @@ class Location(Interface):
             result = all_location_parameters
         return result
 
+    def _datetime_filter(self, location: Feature) -> Feature:
+        """
+        Filter the datetime values returned in the feature based on limits provided in the
+        query arguments, if any.
+
+        """
+        # print(self.query_parameters)
+        if "datetime" in self.query_parameters.keys():
+            extents = self.query_parameters["datetime"]
+            values = location.axis_t_values
+            if len(values):
+                filterer = Filter(values, extents)
+                filtered_values = filterer.filter()
+                if filtered_values is not None:
+                    location.axis_t_values = {"values": filtered_values}
+        return location
+
     def _z_filter(self, location: Feature) -> Feature:
         """
         Filter the vertical `z` values returned in the feature based on limits provided in the
         query arguments, if any.
 
         """
-        print(self.query_parameters)
+        # print(self.query_parameters)
         if "z" in self.query_parameters.keys():
             z_extents = self.query_parameters["z"]
             z_values = location.axis_z_values
-            if "end" in z_extents.keys() and "values" in z_values.keys():
-                zvals = z_values["values"]
-                z_start_ind = zvals.index(z_extents["start"])
-                z_end_ind = zvals.index(z_extents["end"])
-                filtered_z_values = zvals[z_start_ind:z_end_ind+1]
-                location.axis_z_values = {"values": filtered_z_values}
+            if len(z_values):
+                filterer = Filter(z_values, z_extents)
+                filtered_z_values = filterer.filter()
+                if filtered_z_values is not None:
+                    location.axis_z_values = {"values": filtered_z_values}
         return location
 
     def _tilesets(self, param_name) -> List[Tileset]:
