@@ -1,7 +1,6 @@
 server:
   capabilities:
     data_queries:
-    - position
     - locations
     - items
 

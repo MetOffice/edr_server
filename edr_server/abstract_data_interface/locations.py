@@ -1,7 +1,8 @@
 from dataclasses import dataclass, field
-from typing import List
+from typing import List, Tuple, Union
 
 from .core import Interface
+from .filter import Filter
 
 
 @dataclass
@@ -54,10 +55,11 @@ class Feature:
     axis_y_values: dict
     axis_z_values: dict
     axis_t_values: dict
-    temporal_interval: str
     properties: dict
     parameters: "list[Parameter]"
     referencing: "list[Referencing]"
+    temporal_interval: list = field(default_factory=list)
+    vertical_interval: list = field(default_factory=list)
 
 
 class Locations(Interface):
@@ -67,9 +69,11 @@ class Locations(Interface):
         self.supported_query_params = ["bbox", "datetime"]
 
     def _bbox_filter(self, location: Feature) -> bool:
+        """Determine whether `location` is within the bounding box specified."""
         raise NotImplementedError
 
     def _datetime_filter(self, location: Feature) -> bool:
+        """Determine whether `location` is within the datetime boundaries requested."""
         raise NotImplementedError
 
     def get_collection_bbox(self):
@@ -108,14 +112,55 @@ class Location(Interface):
 
         """
         if self.query_parameters.get("parameter-name") is not None:
-            query_location_parameters = set(self.query_parameters["parameter-name"])
-            result = list(set(all_location_parameters) & query_location_parameters)
+            params_dict = self.query_parameters["parameter-name"]
+            param_names, = list(params_dict.values())
+            if isinstance(param_names, str):
+                param_names = [param_names]
+            result = list(set(all_location_parameters) & set(param_names))
         else:
             result = all_location_parameters
         return result
 
+    def _datetime_filter(self, location: Feature) -> Feature:
+        """
+        Filter the datetime values returned in the feature based on limits provided in the
+        query arguments, if any.
+
+        """
+        # print(self.query_parameters)
+        if "datetime" in self.query_parameters.keys():
+            extents = self.query_parameters["datetime"]
+            values = location.axis_t_values
+            if len(values):
+                filterer = Filter(values, extents)
+                filtered_values = filterer.filter()
+                if filtered_values is not None:
+                    location.axis_t_values = {"values": filtered_values}
+        return location
+
+    def _z_filter(self, location: Feature) -> Feature:
+        """
+        Filter the vertical `z` values returned in the feature based on limits provided in the
+        query arguments, if any.
+
+        """
+        # print(self.query_parameters)
+        if "z" in self.query_parameters.keys():
+            z_extents = self.query_parameters["z"]
+            z_values = location.axis_z_values
+            if len(z_values):
+                filterer = Filter(z_values, z_extents)
+                filtered_z_values = filterer.filter()
+                if filtered_z_values is not None:
+                    location.axis_z_values = {"values": filtered_z_values}
+        return location
+
     def _tilesets(self, param_name) -> List[Tileset]:
         """Define tilesets metadata for a specific parameter."""
+        raise NotImplementedError
+
+    def _check_location(self) -> bool:
+        """Confirm the supplied location ID is valid."""
         raise NotImplementedError
 
     def parameters(self) -> List[Parameter]:
@@ -126,5 +171,5 @@ class Location(Interface):
         """
         raise NotImplementedError
 
-    def data(self) -> Feature:
+    def data(self) -> Tuple[Union[Feature, None], Union[str, None]]:
         raise NotImplementedError

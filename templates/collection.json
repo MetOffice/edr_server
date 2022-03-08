@@ -83,7 +83,7 @@
   {% set param_count = len(parameters) %}
   "parameter_names": {
     {% for i, parameter in enumerate(parameters, 1) %}
-    {% module Template("parameter.json", param=parameter) %}{% if i < param_count %},{% end %}
+    {% module Template("parameter.json", parameter=parameter) %}{% if i < param_count %},{% end %}
     {% end %}
   }
 }
