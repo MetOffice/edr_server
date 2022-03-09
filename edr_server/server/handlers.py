@@ -181,16 +181,24 @@ class Handler(RequestHandler):
 
     def write_error(self, status_code: int, **kwargs: Any) -> None:
         self.set_header("Content-Type", "application/json")
-        error_obj = kwargs["exc_info"][1]
-        try:
-            message = error_obj.log_message
-        except AttributeError:
-            message = f"{error_obj.__class__.__name__}: {error_obj}"
-        self.write({
-            "code": self.get_status(),
-            "description": self._reason,
-            "message": message,
-        })
+        exc_info = kwargs.get("exc_info")
+        if exc_info is not None:
+            error_obj = exc_info[1]
+            try:
+                message = error_obj.log_message
+            except AttributeError:
+                message = f"{error_obj.__class__.__name__}: {error_obj}"
+            self.write({
+                "code": self.get_status(),
+                "description": self._reason,
+                "message": message,
+            })
+        else:
+            self.write({
+                "code": status_code,
+                "description": self._reason,
+                "message": kwargs["reason"],
+            })
 
     def reverse_url_full(self, name: str, *args: Any, **kwargs: Any):
         """
