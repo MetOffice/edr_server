@@ -14,7 +14,9 @@ def make_app():
 
     return Application(
         [
-            url(r"/collections/(.*)/area", handlers.AreaHandler, name="area_query"),
+            url(r"/collections/(.*)/area", handlers.AreaHandler,
+                {"data_interface": data_interface},
+                name="area_query"),
             url(r"/collections/(.*)/corridor", handlers.CorridorHandler),
             url(r"/collections/(.*)/cube", handlers.CubeHandler),
             url(r"/collections/(.*)/items/(.*)", handlers.ItemHandler,
@@ -30,7 +32,9 @@ def make_app():
                 {"data_interface": data_interface},
                 name="locations_query"),
             url(r"/collections/(.*)/position", handlers.PositionHandler, name="position_query"),
-            url(r"/collections/(.*)/radius", handlers.RadiusHandler),
+            url(r"/collections/(.*)/radius",
+                {"data_interface": data_interface},
+                handlers.RadiusHandler),
             url(r"/collections/(.*)/trajectory", handlers.TrajectoryHandler),
             url(r"/collections/([^/.]*)\/?", collection.CollectionsHandler,
                 {"collections_cache_path": collections_cache_path},

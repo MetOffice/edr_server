@@ -292,10 +292,19 @@ class ServiceHandler(Handler):
 class AreaHandler(Handler):
     """Handle area requests."""
     handler_type = "area"
-    def get(self, collection_name):
-        """Handle a 'get area' request."""
-        # Not implemented!
-        raise HTTPError(501, f"Get {self.handler_type} request is not implemented.")
+
+    def initialize(self, data_interface, **kwargs):
+        super().initialize(**kwargs)
+        self.data_interface = data_interface
+
+    def _get_render_args(self) -> Dict:
+        interface = self.data_interface.Area(
+            self.collection_id,
+            self.query_parameters.parameters
+        )
+        features_list = interface.data()
+        collection_bbox = interface.get_collection_bbox()
+        return {"features": features_list, "collection_bbox": collection_bbox}
 
 
 class CorridorHandler(Handler):
@@ -409,10 +418,19 @@ class PositionHandler(Handler):
 class RadiusHandler(Handler):
     """Handle radius requests."""
     handler_type = "radius"
-    def get(self, collection_name):
-        """Handle a 'get radius' request."""
-        # Not implemented!
-        raise HTTPError(501, f"Get {self.handler_type} request is not implemented.")
+
+    def initialize(self, data_interface, **kwargs):
+        super().initialize(**kwargs)
+        self.data_interface = data_interface
+
+    def _get_render_args(self) -> Dict:
+        interface = self.data_interface.Radius(
+            self.collection_id,
+            self.query_parameters.parameters
+        )
+        features_list = interface.data()
+        collection_bbox = interface.get_collection_bbox()
+        return {"features": features_list, "collection_bbox": collection_bbox}
 
 
 class TrajectoryHandler(Handler):
