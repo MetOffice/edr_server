@@ -7,10 +7,10 @@
     "{{ value }}"{% if i < bbox_point_ct %},{% end %}
     {% end %}
   ],
-  {% set feature_count = len(locations) %}
+  {% set feature_count = len(features) %}
   "features": [
-    {% for i, location in enumerate(locations, 1) %}
-    {% module Template("locations_feature.json", location=location) %}{% if i < feature_count %},{% end %}
+    {% for i, feature in enumerate(features, 1) %}
+    {% module Template("locations_feature.json", feature=feature) %}{% if i < feature_count %},{% end %}
     {% end %}
   ]
 }

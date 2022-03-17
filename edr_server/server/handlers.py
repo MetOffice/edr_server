@@ -11,6 +11,7 @@ class QueryParameters(object):
     def __init__(self):
         self._params_dict = {}
         self._handle_f("f", None)  # Always set a return type.
+        self._handle_crs("crs", None)  # Always set a CRS.
 
     def __getitem__(self, key):
         return self._params_dict[key]
@@ -103,6 +104,12 @@ class QueryParameters(object):
         """
         self[key] = wkt.loads(value)
 
+    def _handle_crs(self, key, value):
+        """Handle the query parameter `crs` - the coordinate reference system for the data."""
+        if value is None:
+            value = "WGS84"
+        self[key] = value
+
     def _handle_datetime(self, key, value):
         self[key] = self._intervals(value)
 
@@ -112,7 +119,7 @@ class QueryParameters(object):
         if value is None:
             value = "json"
         if value.lower() not in valid_types:
-            HTTPError(415, f"Return type {value!r} is not supported.")
+            raise HTTPError(415, f"Return type {value!r} is not supported.")
         self[key] = value
 
     def _handle_parameter_name(self, key, value):
@@ -173,7 +180,11 @@ class Handler(RequestHandler):
 
         """
         fileformat = "covjson" if self.handler_type == "item" else "json"
-        template_file = f"{self.handler_type}.{fileformat}"
+        if self.handler_type in ["area", "locations", "radius"]:
+            request_type = "feature_collection"
+        else:
+            request_type = self.handler_type
+        template_file = f"{request_type}.{fileformat}"
         render_kwargs = self._get_render_args()
         rendered_template = self.render_string(template_file, **render_kwargs)
         minified_rendered_template = json.dumps(json.loads(rendered_template)).encode("utf-8")
@@ -379,7 +390,7 @@ class LocationsHandler(Handler):
         )
         locs_list = interface.data()
         collection_bbox = interface.get_collection_bbox()
-        return {"locations": locs_list, "collection_bbox": collection_bbox}
+        return {"features": locs_list, "collection_bbox": collection_bbox}
 
 
 class LocationHandler(Handler):
