@@ -443,9 +443,11 @@ class RadiusHandler(Handler):
             self.collection_id,
             self.query_parameters.parameters
         )
-        features_list = interface.data()
+        features_list, error = interface.data()
         if features_list is None:
-            raise HTTPError(404, f"No items found within specified radius.")
+            if error is None:
+                error = "No items found within specified radius."
+            raise HTTPError(404, error)
         collection_bbox = interface.get_collection_bbox()
         return {"features": features_list, "collection_bbox": collection_bbox}
 

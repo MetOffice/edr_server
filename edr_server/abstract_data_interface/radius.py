@@ -1,7 +1,5 @@
 from typing import Union
 
-from shapely import wkt
-
 from .area import Area
 
 
@@ -30,7 +28,7 @@ class Radius(Area):
 
     def _handle_units(self):
         crs = self.query_parameters.get("crs")
-        radius = self.query_parameters.get("within")
+        radius = float(self.query_parameters.get("within"))
         within_units = self.query_parameters.get("within_units").lower()
         if within_units == "km":
             radius *= 1000
@@ -41,5 +39,5 @@ class Radius(Area):
     def generate_polygon(self):
         """Generate the circle polygon to locate items within."""
         radius = self._handle_units()
-        coords = self.query_parameters.get("coords")
-        return wkt.loads(coords).buffer(radius)
+        point = self.query_parameters.get("coords")
+        self.polygon = point.buffer(radius)

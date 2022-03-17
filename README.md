@@ -13,10 +13,10 @@ No installer (yet). Instead, for now, download the repo and modify your `PYTHONP
 
 ### Dependencies
 
-At present, this repo is only dependent on one Python package beyond the standard library, being the Python webserver `tornado`. To install:
+The EDR Server is dependent a very limited number of Python packages beyond the standard library. Currently the extra packages are the Python webserver `tornado`, and `shapely` (for handling geometries passed in queries). To install:
 
 ```bash
-pip install tornado
+pip install shapely tornado
 ```
 
 ## Using it

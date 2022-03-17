@@ -1,6 +1,5 @@
 from typing import List, Tuple, Union
 
-from shapely import wkt
 from shapely.geometry import box
 
 from .core import Interface
@@ -28,8 +27,7 @@ class Area(Interface):
 
     def generate_polygon(self):
         """Generate the area polygon to locate items within."""
-        area_poly_coords = self.query_parameters["coords"]
-        return wkt.loads(area_poly_coords)
+        self.polygon = self.query_parameters["coords"]
 
     def _check_query_args(self) -> Union[str, None]:
         """
@@ -46,7 +44,7 @@ class Area(Interface):
     def polygon_filter(self, items: List[Feature]) -> List[Feature]:
         result = []
         for item in items:
-            bbox = box(item.bbox)
+            bbox = box(*item.bbox)
             if bbox.intersects(self.polygon):
                 result.append(item)
         return result
@@ -91,6 +89,9 @@ class Area(Interface):
                     result = None
         return result
 
+    def get_collection_bbox(self):
+        raise NotImplementedError
+
     def all_items(self) -> List[Feature]:
         raise NotImplementedError
 
@@ -110,4 +111,5 @@ class Area(Interface):
 
     def data(self) -> Tuple[Union[List[Feature], None], Union[str, None]]:
         error = self._check_query_args()
-        return self.filter(self.all_items()), error
+        result = self.filter(self.all_items()) if error is None else None
+        return result, error
