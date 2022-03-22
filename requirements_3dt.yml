@@ -1,0 +1,10 @@
+name: 3dt_edr_server
+channels:
+  - conda-forge
+dependencies:
+  - python=3.8
+  - ipykernel
+  - pip
+  - tornado=6.1
+  - iris
+  - cartopy
