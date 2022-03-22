@@ -1,7 +1,5 @@
 from typing import List, Tuple, Union
 
-from shapely.geometry import box
-
 from .core import Interface
 from .filter import Filter
 from .locations import Feature
@@ -40,14 +38,6 @@ class Area(Interface):
         if coords is None:
             error = "Required Area query argument 'coords' not present in query string."
         return error
-
-    def polygon_filter(self, items: List[Feature]) -> List[Feature]:
-        result = []
-        for item in items:
-            bbox = box(*item.bbox)
-            if bbox.intersects(self.polygon):
-                result.append(item)
-        return result
 
     def _datetime_filter(self, feature: Feature) -> Union[Feature, None]:
         """
@@ -90,6 +80,16 @@ class Area(Interface):
         return result
 
     def get_collection_bbox(self):
+        raise NotImplementedError
+
+    def polygon_filter(self, items: List[Feature]) -> List[Feature]:
+        """
+        Filter the features returned based on the polygon specified in the query.
+        The specific implementation of the filtering is to be provided by the
+        data interface, which can set the filtering appropriate to the
+        requirements of the data.
+
+        """
         raise NotImplementedError
 
     def all_items(self) -> List[Feature]:
