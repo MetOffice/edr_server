@@ -10,7 +10,7 @@
   {% set feature_count = len(features) %}
   "features": [
     {% for i, feature in enumerate(features, 1) %}
-    {% module Template("locations_feature.json", feature=feature) %}{% if i < feature_count %},{% end %}
+    {% module Template("feature.json", feature=feature) %}{% if i < feature_count %},{% end %}
     {% end %}
   ]
 }

@@ -79,9 +79,6 @@ class Area(Interface):
                     result = None
         return result
 
-    def get_collection_bbox(self):
-        raise NotImplementedError
-
     def polygon_filter(self, items: List[Feature]) -> List[Feature]:
         """
         Filter the features returned based on the polygon specified in the query.

@@ -153,6 +153,8 @@ class Handler(RequestHandler):
         self.handle_parameters()
         if self.query_parameters.get("f") == "json":
             self.render_template()
+        # elif self.query_parameters.get("f") in ["csv", "netcdf"]:
+        #     self.get_file()
         else:
             raise HTTPError(501, f"Only JSON response type is implemented.")
 
@@ -180,11 +182,7 @@ class Handler(RequestHandler):
 
         """
         fileformat = "covjson" if self.handler_type == "item" else "json"
-        if self.handler_type in ["area", "locations", "radius"]:
-            request_type = "feature_collection"
-        else:
-            request_type = self.handler_type
-        template_file = f"{request_type}.{fileformat}"
+        template_file = f"{self.handler_type}.{fileformat}"
         render_kwargs = self._get_render_args()
         rendered_template = self.render_string(template_file, **render_kwargs)
         minified_rendered_template = json.dumps(json.loads(rendered_template)).encode("utf-8")
@@ -302,7 +300,7 @@ class ServiceHandler(Handler):
 
 class AreaHandler(Handler):
     """Handle area requests."""
-    handler_type = "area"
+    handler_type = "domain"
 
     def initialize(self, data_interface, **kwargs):
         super().initialize(**kwargs)
@@ -313,18 +311,17 @@ class AreaHandler(Handler):
             self.collection_id,
             self.query_parameters.parameters
         )
-        features_list, error = interface.data()
-        if features_list is None:
+        data, error = interface.data()
+        if data is None:
             if error is None:
                 error = "No items found within specified coords."
             raise HTTPError(404, error)
-        collection_bbox = interface.get_collection_bbox()
-        return {"features": features_list, "collection_bbox": collection_bbox}
+        return {"domain": data}
 
 
 class CorridorHandler(Handler):
     """Handle corridor requests."""
-    handler_type = "corridor"
+    handler_type = "domain"
     def get(self, collection_name):
         """Handle a 'get corridor' request."""
         # Not implemented!
@@ -342,7 +339,7 @@ class CubeHandler(Handler):
 
 class ItemsHandler(Handler):
     """Handle items requests."""
-    handler_type = "items"
+    handler_type = "items"  # feature_collection?
 
     def initialize(self, data_interface, **kwargs):
         super().initialize(**kwargs)
@@ -381,7 +378,7 @@ class ItemHandler(Handler):
 
 class LocationsHandler(Handler):
     """Handle location requests."""
-    handler_type = "locations"
+    handler_type = "feature_collection"
 
     def initialize(self, data_interface, **kwargs):
         super().initialize(**kwargs)
@@ -399,7 +396,7 @@ class LocationsHandler(Handler):
 
 class LocationHandler(Handler):
     """Handle location requests."""
-    handler_type = "location"
+    handler_type = "domain"
 
     def initialize(self, data_interface, **kwargs):
         super().initialize(**kwargs)
@@ -423,7 +420,7 @@ class LocationHandler(Handler):
                 error_msg = "Location not found"
             emsg = f"{error_msg} for {self.location_id!r} in collection with ID {self.collection_id!r}."
             raise HTTPError(404, emsg)
-        return {"location": location}
+        return {"domain": location}
 
 
 class PositionHandler(Handler):
@@ -432,7 +429,7 @@ class PositionHandler(Handler):
 
 class RadiusHandler(Handler):
     """Handle radius requests."""
-    handler_type = "radius"
+    handler_type = "domain"
 
     def initialize(self, data_interface, **kwargs):
         super().initialize(**kwargs)
@@ -443,18 +440,17 @@ class RadiusHandler(Handler):
             self.collection_id,
             self.query_parameters.parameters
         )
-        features_list, error = interface.data()
-        if features_list is None:
+        data, error = interface.data()
+        if data is None:
             if error is None:
                 error = "No items found within specified radius."
             raise HTTPError(404, error)
-        collection_bbox = interface.get_collection_bbox()
-        return {"features": features_list, "collection_bbox": collection_bbox}
+        return {"domain": data}
 
 
 class TrajectoryHandler(Handler):
     """Handle trajectory requests."""
-    handler_type = "trajectory"
+    handler_type = "domain"
     def get(self, collection_name):
         """Handle a 'get trajectory' request."""
         # Not implemented!
