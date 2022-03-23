@@ -307,16 +307,17 @@ class AreaHandler(Handler):
         self.data_interface = data_interface
 
     def _get_render_args(self) -> Dict:
+        items_url = self.reverse_url_full("items_query", self.collection_id)
         interface = self.data_interface.Area(
             self.collection_id,
-            self.query_parameters.parameters
+            self.query_parameters.parameters,
+            items_url
         )
         data, error = interface.data()
         if data is None:
             if error is None:
                 error = "No items found within specified coords."
             raise HTTPError(404, error)
-        print(data)
         return {"domain": data}
 
 
@@ -437,9 +438,11 @@ class RadiusHandler(Handler):
         self.data_interface = data_interface
 
     def _get_render_args(self) -> Dict:
+        items_url = self.reverse_url_full("items_query", self.collection_id)
         interface = self.data_interface.Radius(
             self.collection_id,
-            self.query_parameters.parameters
+            self.query_parameters.parameters,
+            items_url
         )
         data, error = interface.data()
         if data is None:

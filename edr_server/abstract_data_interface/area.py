@@ -7,10 +7,11 @@ from .locations import Feature
 
 
 class Area(Interface):
-    def __init__(self, collection_id, query_parameters: dict) -> None:
+    def __init__(self, collection_id, query_parameters: dict, items_url: str) -> None:
         self.collection_id = collection_id
         self.query_parameters = query_parameters
         self.supported_query_params = ["coords", "z", "datetime", "crs"]
+        self.items_url = items_url
 
         self._polygon = None
 
