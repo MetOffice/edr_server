@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 import datetime
-from typing import List, Union
+from typing import Dict, List, Union
 
 import numpy.ma as ma
 
@@ -53,12 +53,16 @@ class Items(Interface):
     def _datetime_filter(self, location: Feature) -> bool:
         raise NotImplementedError
 
-    def _get_features(self) -> List[Feature]:
+    def get_features(self) -> Dict:
         """
-        Build the list of all features (locations, areas, cubes, ...) to be provided as
+        Get all features (locations, areas, cubes, ...) to be provided as
         the list of EDR Items to be served.
 
         """
+        raise NotImplementedError
+
+    def _build_features(self) -> List[Feature]:
+        """Build item features for all features found."""
         raise NotImplementedError
 
     def _get_timestamp(self):

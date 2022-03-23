@@ -11,6 +11,7 @@ class QueryParameters(object):
     def __init__(self):
         self._params_dict = {}
         self._handle_f("f", None)  # Always set a return type.
+        self._handle_crs("crs", None)  # Always set a CRS.
 
     def __getitem__(self, key):
         return self._params_dict[key]
@@ -103,6 +104,12 @@ class QueryParameters(object):
         """
         self[key] = wkt.loads(value)
 
+    def _handle_crs(self, key, value):
+        """Handle the query parameter `crs` - the coordinate reference system for the data."""
+        if value is None:
+            value = "WGS84"
+        self[key] = value
+
     def _handle_datetime(self, key, value):
         self[key] = self._intervals(value)
 
@@ -112,7 +119,7 @@ class QueryParameters(object):
         if value is None:
             value = "json"
         if value.lower() not in valid_types:
-            HTTPError(415, f"Return type {value!r} is not supported.")
+            raise HTTPError(415, f"Return type {value!r} is not supported.")
         self[key] = value
 
     def _handle_parameter_name(self, key, value):
@@ -291,16 +298,30 @@ class ServiceHandler(Handler):
 
 class AreaHandler(Handler):
     """Handle area requests."""
-    handler_type = "area"
-    def get(self, collection_name):
-        """Handle a 'get area' request."""
-        # Not implemented!
-        raise HTTPError(501, f"Get {self.handler_type} request is not implemented.")
+    handler_type = "domain"
+
+    def initialize(self, data_interface, **kwargs):
+        super().initialize(**kwargs)
+        self.data_interface = data_interface
+
+    def _get_render_args(self) -> Dict:
+        items_url = self.reverse_url_full("items_query", self.collection_id)
+        interface = self.data_interface.Area(
+            self.collection_id,
+            self.query_parameters.parameters,
+            items_url
+        )
+        data, error = interface.data()
+        if data is None:
+            if error is None:
+                error = "No items found within specified coords."
+            raise HTTPError(404, error)
+        return {"domain": data}
 
 
 class CorridorHandler(Handler):
     """Handle corridor requests."""
-    handler_type = "corridor"
+    handler_type = "domain"
     def get(self, collection_name):
         """Handle a 'get corridor' request."""
         # Not implemented!
@@ -318,7 +339,7 @@ class CubeHandler(Handler):
 
 class ItemsHandler(Handler):
     """Handle items requests."""
-    handler_type = "items"
+    handler_type = "items"  # feature_collection?
 
     def initialize(self, data_interface, **kwargs):
         super().initialize(**kwargs)
@@ -357,7 +378,7 @@ class ItemHandler(Handler):
 
 class LocationsHandler(Handler):
     """Handle location requests."""
-    handler_type = "locations"
+    handler_type = "feature_collection"
 
     def initialize(self, data_interface, **kwargs):
         super().initialize(**kwargs)
@@ -370,12 +391,12 @@ class LocationsHandler(Handler):
         )
         locs_list = interface.data()
         collection_bbox = interface.get_collection_bbox()
-        return {"locations": locs_list, "collection_bbox": collection_bbox}
+        return {"features": locs_list, "collection_bbox": collection_bbox}
 
 
 class LocationHandler(Handler):
     """Handle location requests."""
-    handler_type = "location"
+    handler_type = "domain"
 
     def initialize(self, data_interface, **kwargs):
         super().initialize(**kwargs)
@@ -399,7 +420,7 @@ class LocationHandler(Handler):
                 error_msg = "Location not found"
             emsg = f"{error_msg} for {self.location_id!r} in collection with ID {self.collection_id!r}."
             raise HTTPError(404, emsg)
-        return {"location": location}
+        return {"domain": location}
 
 
 class PositionHandler(Handler):
@@ -408,16 +429,30 @@ class PositionHandler(Handler):
 
 class RadiusHandler(Handler):
     """Handle radius requests."""
-    handler_type = "radius"
-    def get(self, collection_name):
-        """Handle a 'get radius' request."""
-        # Not implemented!
-        raise HTTPError(501, f"Get {self.handler_type} request is not implemented.")
+    handler_type = "domain"
+
+    def initialize(self, data_interface, **kwargs):
+        super().initialize(**kwargs)
+        self.data_interface = data_interface
+
+    def _get_render_args(self) -> Dict:
+        items_url = self.reverse_url_full("items_query", self.collection_id)
+        interface = self.data_interface.Radius(
+            self.collection_id,
+            self.query_parameters.parameters,
+            items_url
+        )
+        data, error = interface.data()
+        if data is None:
+            if error is None:
+                error = "No items found within specified radius."
+            raise HTTPError(404, error)
+        return {"domain": data}
 
 
 class TrajectoryHandler(Handler):
     """Handle trajectory requests."""
-    handler_type = "trajectory"
+    handler_type = "domain"
     def get(self, collection_name):
         """Handle a 'get trajectory' request."""
         # Not implemented!

@@ -1,0 +1,59 @@
+{% whitespace oneline %}
+{
+  "domain": {
+    "type": "Domain",
+    "domainType": "Grid",
+    {% set axes_count = len(domain.axes) %}
+    {% set i = 1 %}
+    "axes": {
+      {% if "x" in domain.axes %}
+      {% module Template("domain_axis.json", axis_name="x", points=domain.axis_x_values) %}
+      {% if i < axes_count %},{% end %}
+      {% set i += 1 %}
+      {% end %}
+      {% if "y" in domain.axes %}
+      {% module Template("domain_axis.json", axis_name="y", points=domain.axis_y_values) %}
+      {% if i < axes_count %},{% end %}
+      {% set i += 1 %}
+      {% end %}
+      {% if "z" in domain.axes %}
+      {% module Template("domain_axis.json", axis_name="z", points=domain.axis_z_values) %}
+      {% if i < axes_count %},{% end %}
+      {% set i += 1 %}
+      {% end %}
+      {% if "t" in domain.axes %}
+      {% module Template("domain_axis.json", axis_name="t", points=domain.axis_t_values) %}
+      {% end %}
+    },
+    {% set ref_count = len(domain.referencing) %}
+    "referencing": [
+      {% for i, reference in enumerate(domain.referencing, 1) %}
+      {
+        {% set coord_count = len(reference.coords) %}
+        "coordinates": [
+          {% for j, coord in enumerate(reference.coords, 1) %}
+          "{{ coord }}"{% if j < coord_count %},{% end %}
+          {% end %}
+        ],
+        "system": {
+          "type": "{{ reference.system_type }}"{% if len(reference.system_id) %},
+          "id": "{{ reference.system_id }}"{% end %}{% if len(reference.system_calendar) %},
+          "calendar": "{{ reference.system_calendar }}"
+          {% end %}
+        }
+      }{% if i < ref_count %},{% end %}
+      {% end %}
+    ]
+  },
+  {% set param_count = len(domain.parameters) %}
+  "parameters": {
+  {% for i, parameter in enumerate(domain.parameters, 1) %}
+    {% module Template("feature_parameter_param.json", parameter=parameter) %}{% if i < param_count %},{% end %}
+  {% end %}
+  },
+  "ranges": {
+  {% for i, parameter in enumerate(domain.parameters, 1) %}
+    {% module Template("domain_range_param.json", parameter=parameter) %}{% if i < param_count %},{% end %}
+  {% end %}
+  }
+}

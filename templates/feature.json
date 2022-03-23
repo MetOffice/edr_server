@@ -1,47 +1,47 @@
 {% whitespace oneline %}
 {
   "type": "Feature",
-  "id": "{{ location.id }}",
+  "id": "{{ feature.id }}",
   "geometry": {
-    "type": "{{ location.geometry_type }}",
-    {% set n_coord_vals = len(location.coords) %}
+    "type": "{{ feature.geometry_type }}",
+    {% set n_coord_vals = len(feature.coords) %}
     "coordinates": [
-    {% for i, coord in enumerate(location.coords, 1) %}
+    {% for i, coord in enumerate(feature.coords, 1) %}
       "{{ coord }}"{% if i < n_coord_vals %},{% end %}
     {% end %}
     ]
   },
   "properties": {
-  {% for key, value in location.properties.items() %}
+  {% for key, value in feature.properties.items() %}
     "{{ key }}": "{{ value }}",
   {% end %}
     "extent": {
       "spatial": {
-        {% set bbox_point_ct = len(location.bbox) %}
+        {% set bbox_point_ct = len(feature.bbox) %}
         "bbox": [
-          {% for i, value in enumerate(location.bbox, 1) %}
+          {% for i, value in enumerate(feature.bbox, 1) %}
           {{ value }}{% if i < bbox_point_ct %},{% end %}
           {% end %}
         ]
       }
-      {% set t_interval_ct = len(location.temporal_interval) %}
+      {% set t_interval_ct = len(feature.temporal_interval) %}
       {% if t_interval_ct %},
       "temporal": {
         "interval": [
           [
-            {% for i, interval in enumerate(location.temporal_interval, 1) %}
+            {% for i, interval in enumerate(feature.temporal_interval, 1) %}
             "{{ interval }}"{% if i < t_interval_ct %},{% end %}
             {% end %}
           ]
         ]
       }
       {% end %}
-      {% set v_interval_ct = len(location.vertical_interval) %}
+      {% set v_interval_ct = len(feature.vertical_interval) %}
       {% if v_interval_ct %},
       "vertical": {
         "interval": [
           [
-            {% for i, interval in enumerate(location.vertical_interval, 1) %}
+            {% for i, interval in enumerate(feature.vertical_interval, 1) %}
             {{ interval }}{% if i < v_interval_ct %},{% end %}
             {% end %}
           ]
@@ -49,10 +49,10 @@
       }
       {% end %}
     },
-    {% set param_count = len(location.parameters) %}
+    {% set param_count = len(feature.parameters) %}
     "parameter_names": {
-      {% for i, parameter in enumerate(location.parameters, 1) %}
-        {% module Template("location_parameter_param.json", parameter=parameter) %}{% if i < param_count %},{% end %}
+      {% for i, parameter in enumerate(feature.parameters, 1) %}
+        {% module Template("feature_parameter_param.json", parameter=parameter) %}{% if i < param_count %},{% end %}
       {% end %}
     }
   }
