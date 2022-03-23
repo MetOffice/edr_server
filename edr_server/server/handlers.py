@@ -153,6 +153,8 @@ class Handler(RequestHandler):
         self.handle_parameters()
         if self.query_parameters.get("f") == "json":
             self.render_template()
+        elif self.query_parameters.get("f") in ["csv", "netcdf"]:
+            self.get_file()
         else:
             raise HTTPError(501, f"Only JSON response type is implemented.")
 
@@ -185,6 +187,13 @@ class Handler(RequestHandler):
         rendered_template = self.render_string(template_file, **render_kwargs)
         minified_rendered_template = json.dumps(json.loads(rendered_template)).encode("utf-8")
         self.write(minified_rendered_template)
+
+    def get_file(self):
+        """
+        Support downloading a file rather than returning a JSON response for this query.
+
+        """
+        raise NotImplementedError
 
     def write_error(self, status_code: int, **kwargs: Any) -> None:
         self.set_header("Content-Type", "application/json")
