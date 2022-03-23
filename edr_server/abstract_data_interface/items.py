@@ -142,3 +142,6 @@ class Item(Interface):
 
     def data(self) -> Union[Parameter, None]:
         raise NotImplementedError
+
+    def file_object(self):
+        file_name = self.item_id

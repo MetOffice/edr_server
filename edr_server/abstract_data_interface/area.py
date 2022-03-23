@@ -1,4 +1,3 @@
-import copy
 from typing import List, Tuple, Union
 
 from .core import Interface
@@ -126,7 +125,6 @@ class Area(Interface):
         else:
             result = None
         return result
-
     def data(self) -> Tuple[Union[Feature, None], str, Union[str, None], Union[int, None]]:
         """
         Fetch data to populate the JSON response to the client with.
@@ -150,3 +148,12 @@ class Area(Interface):
             # `Domain` type responses expect a single feature, but we have a length-1 list.
             result, = result
         return result, handler_type, error, error_code
+
+    def file_object(self):
+        """
+        Return a file object matching the cutout described by the area in the
+        query parameters. This might need to combine multiple filesa and perform
+        cutout operations on the data interface end, and stream the result.
+
+        """
+        raise NotImplementedError

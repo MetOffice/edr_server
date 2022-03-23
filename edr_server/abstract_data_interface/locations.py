@@ -176,3 +176,9 @@ class Location(Interface):
 
     def data(self) -> Tuple[Union[Feature, None], Union[str, None]]:
         raise NotImplementedError
+
+    def file_object(self):
+        # XXX despite returning domain-type JSON, a single location isn't necessarily
+        #     described by a single file, so how to handle this would need
+        #     some thought on the data interface end (if we allow it at all).
+        raise NotImplementedError
