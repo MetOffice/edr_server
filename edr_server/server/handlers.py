@@ -316,6 +316,7 @@ class AreaHandler(Handler):
             if error is None:
                 error = "No items found within specified coords."
             raise HTTPError(404, error)
+        print(data)
         return {"domain": data}
 
 

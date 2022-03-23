@@ -1,3 +1,4 @@
+from copy import copy
 from typing import List, Tuple, Union
 
 from .core import Interface
@@ -48,13 +49,12 @@ class Area(Interface):
         result = feature
         if "datetime" in self.query_parameters.keys():
             extents = self.query_parameters["datetime"]
-            values = feature.axis_t_values
+            values = result.axis_t_values
             if len(values):
                 filterer = Filter(values, extents)
                 filtered_values = filterer.filter()
                 if filtered_values is not None:
-                    feature.axis_t_values = {"values": filtered_values}
-                    result = feature
+                    result.axis_t_values = {"values": filtered_values}
                 else:
                     result = None
         return result
@@ -68,13 +68,12 @@ class Area(Interface):
         result = feature
         if "z" in self.query_parameters.keys():
             z_extents = self.query_parameters["z"]
-            z_values = feature.axis_z_values
+            z_values = result.axis_z_values
             if len(z_values):
                 filterer = Filter(z_values, z_extents)
                 filtered_z_values = filterer.filter()
                 if filtered_z_values is not None:
-                    feature.axis_z_values = {"values": filtered_z_values}
-                    result = feature
+                    result.axis_z_values = {"values": filtered_z_values}
                 else:
                     result = None
         return result
@@ -102,11 +101,37 @@ class Area(Interface):
                     item = self._datetime_filter(item)
                     if item is not None:
                         result.append(item)
+            if not len(result):
+                result = None
         else:
             result = None
         return result
 
-    def data(self) -> Tuple[Union[List[Feature], None], Union[str, None]]:
+    def features_to_domain(self, features: List[Feature]) -> Feature:
+        """
+        Filtering all the features in the collection will return a list
+        of features of at least length 1, but we need a single Feature to
+        populate `domain.json`. To do this we concatenate the lists of parameters
+        from all features and return a single new `Feature` with
+        these concatenated elements.
+
+        """
+        if len(features) == 1:
+            result = features[0]
+        else:
+            all_params = []
+            for feature in features:
+                all_params.extend(feature.parameters)
+            all_unique_params = list(set(all_params))
+            result = copy.copy(features[0])
+            result.parameters = all_unique_params
+        return result
+
+    def data(self) -> Tuple[Union[Feature, None], Union[str, None]]:
         error = self._check_query_args()
-        result = self.filter(self.all_items()) if error is None else None
+        if error is None:
+            filtered_features = self.filter(self.all_items())
+            result = self.features_to_domain(filtered_features)
+        else:
+            result = None
         return result, error
