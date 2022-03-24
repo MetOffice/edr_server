@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 import datetime
-from typing import Dict, List, Union
+from typing import Dict, List, Tuple, Union
 
 import numpy.ma as ma
 
@@ -75,9 +75,10 @@ class Items(Interface):
 
 
 class Item(Interface):
-    def __init__(self, collection_id, item_id) -> None:
+    def __init__(self, collection_id, item_id, query_parameters) -> None:
         self.collection_id = collection_id
         self.item_id = item_id
+        self.query_parameters = query_parameters
         self.param_name, *axes_inds = self.item_id.split("_")
         self._free_axes = None
 
@@ -143,5 +144,5 @@ class Item(Interface):
     def data(self) -> Union[Parameter, None]:
         raise NotImplementedError
 
-    def file_object(self):
-        file_name = self.item_id
+    def file_object(self) -> Tuple[Union[str, None], Union[str, None], Union[str, None]]:
+        raise NotImplementedError

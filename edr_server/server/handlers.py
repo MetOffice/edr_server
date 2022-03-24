@@ -4,6 +4,8 @@ from urllib.parse import urljoin
 
 from shapely import wkt
 from tornado.escape import url_unescape
+from tornado.gen import coroutine
+from tornado.httpclient import AsyncHTTPClient
 from tornado.web import HTTPError, RequestHandler
 
 
@@ -192,16 +194,38 @@ class Handler(RequestHandler):
         minified_rendered_template = json.dumps(json.loads(rendered_template)).encode("utf-8")
         self.write(minified_rendered_template)
 
+    @coroutine
     def get_file(self):
         """
         Support downloading a file rather than returning a JSON response for this query.
 
         """
-        if self.handler_type != "domain":
+        if self.handler_type not in ["domain", "item"]:
             # Only handlers that return `Domain` type JSON can return data in any form.
             raise HTTPError(415, "File download request not supported by this query.")
-        result = self._get_file()
-        # ... and send it as a file...
+        mime_type = self.query_parameters.get("f")
+        if mime_type == "txt":
+            content_type = "text/plain"
+        else:
+            content_type = f"application/{mime_type}"
+        filename, url = self._get_file()
+        self.set_header("Content-Type", content_type)
+        self.set_header("Content-Disposition", f"attachment; filename={filename}")
+        if url is not None:
+            # File on remote (e.g. S3).
+            def streaming_callback(chunk):
+                self.write(chunk)
+                self.flush()
+            yield AsyncHTTPClient().fetch(url, streaming_callback=streaming_callback)
+        else:
+            # Local file to serve.
+            with open(filename, "rb") as obfh:
+                while True:
+                    data = obfh.read(4096)
+                    if not data:
+                        break
+                    self.write(data)
+        self.finish()
 
     def write_error(self, status_code: int, **kwargs: Any) -> None:
         self.set_header("Content-Type", "application/json")
@@ -319,15 +343,19 @@ class AreaHandler(Handler):
 
     def initialize(self, data_interface, **kwargs):
         super().initialize(**kwargs)
-        items_url = self.reverse_url_full("items_query", self.collection_id)
-        self.interface = data_interface.Area(
+        self.data_interface = data_interface
+        self.items_url = self.reverse_url_full("items_query", self.collection_id)
+
+    def _get_interface(self):
+        return self.data_interface.Area(
             self.collection_id,
             self.query_parameters.parameters,
-            items_url
+            self.items_url
         )
 
     def _get_render_args(self) -> Dict:
-        data, self.handler_type, error, error_code = self.interface.data()
+        interface = self._get_interface()
+        data, self.handler_type, error, error_code = interface.data()
         if data is None:
             if error is None:
                 error = "No items found within specified coords."
@@ -342,7 +370,14 @@ class AreaHandler(Handler):
         return render_args
 
     def _get_file(self):
-        file_object = self.interface.file_object()
+        interface = self._get_interface()
+        filename, url, error = interface.file_object()
+        if filename is None:
+            if error is None:
+                raise HTTPError(404, "File not found.")
+            else:
+                raise HTTPError(500, error)
+        return filename, url
 
 
 class CorridorHandler(Handler):
@@ -387,21 +422,36 @@ class ItemHandler(Handler):
 
     def initialize(self, data_interface, **kwargs):
         super().initialize(**kwargs)
-        self.interface = data_interface.Item(self.collection_id, self.item_id)
+        self.data_interface = data_interface
 
     def get(self, collection_id, item_id):
         self.collection_id = collection_id
         self.item_id = item_id
         super().get(collection_id)
 
+    def _get_interface(self):
+        return self.data_interface.Item(
+            self.collection_id,
+            self.item_id,
+            self.query_parameters.parameters
+        )
+
     def _get_render_args(self) -> Dict:
-        parameter = self.interface.data()
+        interface = self._get_interface()
+        parameter = interface.data()
         if parameter is None:
             raise HTTPError(404, f"Item {self.item_id} was not found.")
         return {"parameter": parameter}
 
     def _get_file(self):
-        file_object = self.interface.file_object()
+        interface = self._get_interface()
+        filename, url, error = interface.file_object()
+        if filename is None:
+            if error is None:
+                raise HTTPError(404, "File not found.")
+            else:
+                raise HTTPError(500, error)
+        return filename, url
 
 
 class LocationsHandler(Handler):
@@ -485,15 +535,19 @@ class RadiusHandler(Handler):
 
     def initialize(self, data_interface, **kwargs):
         super().initialize(**kwargs)
-        items_url = self.reverse_url_full("items_query", self.collection_id)
-        self.interface = data_interface.Radius(
+        self.data_interface = data_interface
+        self.items_url = self.reverse_url_full("items_query", self.collection_id)
+
+    def _get_interface(self):
+        return self.data_interface.Radius(
             self.collection_id,
             self.query_parameters.parameters,
-            items_url
+            self.items_url
         )
 
     def _get_render_args(self) -> Dict:
-        data, self.handler_type, error, error_code = self.interface.data()
+        interface = self._get_interface()
+        data, self.handler_type, error, error_code = interface.data()
         if data is None:
             if error is None:
                 error = "No items found within specified radius."
@@ -504,7 +558,14 @@ class RadiusHandler(Handler):
         return {"domain": data, "collection_bbox": collection_bbox}
 
     def _get_file(self):
-        file_object = self.interface.file_object()
+        interface = self._get_interface()
+        filename, url, error = interface.file_object()
+        if filename is None:
+            if error is None:
+                raise HTTPError(404, "File not found.")
+            else:
+                raise HTTPError(500, error)
+        return filename, url
 
 
 class TrajectoryHandler(Handler):
