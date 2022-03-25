@@ -3,6 +3,8 @@ server:
     data_queries:
     - locations
     - items
+    - area
+    - radius
 
 collections:
   json:
