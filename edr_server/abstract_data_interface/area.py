@@ -38,7 +38,7 @@ class Area(Interface):
         error = None
         coords = self.query_parameters.get("coords")
         if coords is None:
-            error = "Required Area query argument 'coords' not present in query string."
+            error = "Required argument 'coords' not present in query string."
         return error
 
     def _datetime_filter(self, feature: Feature) -> Union[Feature, None]:
