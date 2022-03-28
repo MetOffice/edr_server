@@ -1,4 +1,4 @@
-from copy import copy
+import copy
 from typing import List, Tuple, Union
 
 from .core import Interface

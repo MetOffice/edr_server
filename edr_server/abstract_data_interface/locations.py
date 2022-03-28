@@ -33,6 +33,9 @@ class Parameter:
     measurement_type_period: str = ""
     category_encoding: dict = field(default_factory=dict)
 
+    def __hash__(self):
+        return hash(self.id)
+
 
 @dataclass
 class Referencing:
