@@ -132,7 +132,11 @@ class Area(Interface):
         error = self._check_query_args()
         if error is None:
             filtered_features = self.filter(self.all_items())
-            result = self.features_to_domain(filtered_features)
+            if filtered_features is None:
+                result = None
+                error = f"No features located within provided {self.__class__.__name__.lower()}"
+            else:
+                result = self.features_to_domain(filtered_features)
         else:
             result = None
         return result, error
