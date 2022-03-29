@@ -298,8 +298,6 @@ class ServiceHandler(Handler):
 
 class AreaHandler(Handler):
     """Handle area requests."""
-    handler_type = "domain"
-
     def initialize(self, data_interface, **kwargs):
         super().initialize(**kwargs)
         self.data_interface = data_interface
@@ -311,7 +309,7 @@ class AreaHandler(Handler):
             self.query_parameters.parameters,
             items_url
         )
-        data, error, error_code = interface.data()
+        data, self.handler_type, error, error_code = interface.data()
         if data is None:
             if error is None:
                 error = "No items found within specified coords."
@@ -427,8 +425,6 @@ class LocationHandler(Handler):
 
 class PositionHandler(Handler):
     """Handle position requests."""
-    handler_type = "domain"
-
     def initialize(self, data_interface, **kwargs):
         super().initialize(**kwargs)
         self.data_interface = data_interface
@@ -440,7 +436,7 @@ class PositionHandler(Handler):
             self.query_parameters.parameters,
             items_url
         )
-        position, error_msg, error_code = interface.data()
+        position, self.handler_type, error_msg, error_code = interface.data()
         if position is None:
             if error_msg is None:
                 error_msg = "No data found at specified point"
@@ -452,8 +448,6 @@ class PositionHandler(Handler):
 
 class RadiusHandler(Handler):
     """Handle radius requests."""
-    handler_type = "domain"
-
     def initialize(self, data_interface, **kwargs):
         super().initialize(**kwargs)
         self.data_interface = data_interface
@@ -465,7 +459,7 @@ class RadiusHandler(Handler):
             self.query_parameters.parameters,
             items_url
         )
-        data, error, error_code = interface.data()
+        data, self.handler_type, error, error_code = interface.data()
         if data is None:
             if error is None:
                 error = "No items found within specified radius."

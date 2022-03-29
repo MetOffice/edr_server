@@ -43,6 +43,19 @@ class Area(Interface):
             error_code = 400
         return error, error_code
 
+    def _determine_handler_type(self) -> str:
+        """
+        Determine the best handler type to use to return results of this query,
+        from the options of:
+          * `Domain` (typically used to return data to the client)
+          * `FeatureCollection` (typically used to return metadata on one or more features)
+
+        This *must* be determined (between the two options above) by the data interface,
+        which has the information available to it to correctly make the choice.
+
+        """
+        raise NotImplementedError
+
     def _datetime_filter(self, feature: Feature) -> Union[Feature, None]:
         """
         Filter the datetime values returned in the feature based on limits provided in the
@@ -130,7 +143,15 @@ class Area(Interface):
             result.parameters = all_unique_params
         return result
 
-    def data(self) -> Tuple[Union[Feature, None], Union[str, None], Union[int, None]]:
+    def data(self) -> Tuple[Union[Feature, None], str, Union[str, None], Union[int, None]]:
+        """
+        Fetch data to populate the JSON response to the client with.
+
+        Also return the handler type for the server to use to set the JSON response to
+        be sent to the client, and any error messages and pertient http error codes, if
+        raised.
+
+        """
         error_code = None
         error, error_code = self._check_query_args()
         if error is None:
@@ -143,4 +164,5 @@ class Area(Interface):
                 result = self.features_to_domain(filtered_features)
         else:
             result = None
-        return result, error, error_code
+        handler_type = self._determine_handler_type()
+        return result, handler_type, error, error_code
