@@ -311,11 +311,13 @@ class AreaHandler(Handler):
             self.query_parameters.parameters,
             items_url
         )
-        data, error = interface.data()
+        data, error, error_code = interface.data()
         if data is None:
             if error is None:
                 error = "No items found within specified coords."
-            raise HTTPError(404, error)
+                error_code = 404
+            code = error_code if error_code is not None else 500
+            raise HTTPError(code, error)
         return {"domain": data}
 
 
@@ -438,12 +440,13 @@ class PositionHandler(Handler):
             self.query_parameters.parameters,
             items_url
         )
-        position, error_msg = interface.data()
+        position, error_msg, error_code = interface.data()
         if position is None:
             if error_msg is None:
-                error_msg = "No data found at provided Point"
-            emsg = f"{error_msg} in collection with ID {self.collection_id!r}."
-            raise HTTPError(404, emsg)
+                error_msg = "No data found at specified point"
+                error_code = 404
+            code = error_code if error_code is not None else 500
+            raise HTTPError(code, error_msg)
         return {"domain": position}
 
 
@@ -462,11 +465,13 @@ class RadiusHandler(Handler):
             self.query_parameters.parameters,
             items_url
         )
-        data, error = interface.data()
+        data, error, error_code = interface.data()
         if data is None:
             if error is None:
                 error = "No items found within specified radius."
-            raise HTTPError(404, error)
+                error_code = 404
+            code = error_code if error_code is not None else 500
+            raise HTTPError(code, error)
         return {"domain": data}
 
 

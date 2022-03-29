@@ -29,17 +29,19 @@ class Area(Interface):
         """Generate the area polygon to locate items within."""
         self.polygon = self.query_parameters["coords"]
 
-    def _check_query_args(self) -> Union[str, None]:
+    def _check_query_args(self) -> Tuple[Union[str, None], Union[int, None]]:
         """
         Check required query arguments for an Area query are present in the
         query string, and produce a descriptive error message if not.
 
         """
         error = None
+        error_code = None
         coords = self.query_parameters.get("coords")
         if coords is None:
             error = "Required argument 'coords' not present in query string."
-        return error
+            error_code = 400
+        return error, error_code
 
     def _datetime_filter(self, feature: Feature) -> Union[Feature, None]:
         """
@@ -128,15 +130,17 @@ class Area(Interface):
             result.parameters = all_unique_params
         return result
 
-    def data(self) -> Tuple[Union[Feature, None], Union[str, None]]:
-        error = self._check_query_args()
+    def data(self) -> Tuple[Union[Feature, None], Union[str, None], Union[int, None]]:
+        error_code = None
+        error, error_code = self._check_query_args()
         if error is None:
             filtered_features = self.filter(self.all_items())
             if filtered_features is None:
                 result = None
                 error = f"No features located within provided {self.__class__.__name__.capitalize()}"
+                error_code = 404
             else:
                 result = self.features_to_domain(filtered_features)
         else:
             result = None
-        return result, error
+        return result, error, error_code
