@@ -134,7 +134,7 @@ class Area(Interface):
             filtered_features = self.filter(self.all_items())
             if filtered_features is None:
                 result = None
-                error = f"No features located within provided {self.__class__.__name__.lower()}"
+                error = f"No features located within provided {self.__class__.__name__.capitalize()}"
             else:
                 result = self.features_to_domain(filtered_features)
         else:

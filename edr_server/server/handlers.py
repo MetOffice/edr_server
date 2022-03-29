@@ -435,14 +435,13 @@ class PositionHandler(Handler):
         items_url = self.reverse_url_full("items_query", self.collection_id)
         interface = self.data_interface.Position(
             self.collection_id,
-            self.location_id,
             self.query_parameters.parameters,
             items_url
         )
         position, error_msg = interface.data()
         if position is None:
             if error_msg is None:
-                error_msg = "No data found at selected location"
+                error_msg = "No data found at provided Point"
             emsg = f"{error_msg} in collection with ID {self.collection_id!r}."
             raise HTTPError(404, emsg)
         return {"domain": position}
