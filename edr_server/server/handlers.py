@@ -179,9 +179,9 @@ class Handler(RequestHandler):
         We dump and load the templated result to get inline JSON verification from the JSON library.
 
         """
+        render_kwargs = self._get_render_args()
         fileformat = "covjson" if self.handler_type == "item" else "json"
         template_file = f"{self.handler_type}.{fileformat}"
-        render_kwargs = self._get_render_args()
         rendered_template = self.render_string(template_file, **render_kwargs)
         minified_rendered_template = json.dumps(json.loads(rendered_template)).encode("utf-8")
         self.write(minified_rendered_template)
@@ -298,6 +298,8 @@ class ServiceHandler(Handler):
 
 class AreaHandler(Handler):
     """Handle area requests."""
+    handler_type = "domain"
+
     def initialize(self, data_interface, **kwargs):
         super().initialize(**kwargs)
         self.data_interface = data_interface
@@ -316,7 +318,12 @@ class AreaHandler(Handler):
                 error_code = 404
             code = error_code if error_code is not None else 500
             raise HTTPError(code, error)
-        return {"domain": data}
+        if self.handler_type == "domain":
+            render_args = {"domain": data}
+        elif self.handler_type == "feature_collection":
+            collection_bbox = interface.get_collection_bbox()
+            render_args = {"features": data, "collection_bbox": collection_bbox}
+        return render_args
 
 
 class CorridorHandler(Handler):
@@ -425,6 +432,8 @@ class LocationHandler(Handler):
 
 class PositionHandler(Handler):
     """Handle position requests."""
+    handler_type = "domain"
+
     def initialize(self, data_interface, **kwargs):
         super().initialize(**kwargs)
         self.data_interface = data_interface
@@ -443,11 +452,14 @@ class PositionHandler(Handler):
                 error_code = 404
             code = error_code if error_code is not None else 500
             raise HTTPError(code, error_msg)
-        return {"domain": position}
+        collection_bbox = interface.get_collection_bbox()
+        return {"domain": position, "collection_bbox": collection_bbox}
 
 
 class RadiusHandler(Handler):
     """Handle radius requests."""
+    handler_type = "domain"
+
     def initialize(self, data_interface, **kwargs):
         super().initialize(**kwargs)
         self.data_interface = data_interface
@@ -466,7 +478,8 @@ class RadiusHandler(Handler):
                 error_code = 404
             code = error_code if error_code is not None else 500
             raise HTTPError(code, error)
-        return {"domain": data}
+        collection_bbox = interface.get_collection_bbox()
+        return {"domain": data, "collection_bbox": collection_bbox}
 
 
 class TrajectoryHandler(Handler):

@@ -107,6 +107,10 @@ class Area(Interface):
     def all_items(self) -> List[Feature]:
         raise NotImplementedError
 
+    def get_collection_bbox(self):
+        """Get the bounding box for the collection that holds these locations."""
+        raise NotImplementedError
+
     def filter(self, items: List[Feature]) -> Union[List[Feature], None]:
         within_polygon = self.polygon_filter(items)
         if len(within_polygon):
@@ -123,26 +127,6 @@ class Area(Interface):
             result = None
         return result
 
-    def features_to_domain(self, features: List[Feature]) -> Feature:
-        """
-        Filtering all the features in the collection will return a list
-        of features of at least length 1, but we need a single Feature to
-        populate `domain.json`. To do this we concatenate the lists of parameters
-        from all features and return a single new `Feature` with
-        these concatenated elements.
-
-        """
-        if len(features) == 1:
-            result = features[0]
-        else:
-            all_params = []
-            for feature in features:
-                all_params.extend(feature.parameters)
-            all_unique_params = list(set(all_params))
-            result = copy.copy(features[0])
-            result.parameters = all_unique_params
-        return result
-
     def data(self) -> Tuple[Union[Feature, None], str, Union[str, None], Union[int, None]]:
         """
         Fetch data to populate the JSON response to the client with.
@@ -155,14 +139,14 @@ class Area(Interface):
         error_code = None
         error, error_code = self._check_query_args()
         if error is None:
-            filtered_features = self.filter(self.all_items())
-            if filtered_features is None:
-                result = None
+            result = self.filter(self.all_items())
+            if result is None:
                 error = f"No features located within provided {self.__class__.__name__.capitalize()}"
                 error_code = 404
-            else:
-                result = self.features_to_domain(filtered_features)
         else:
             result = None
         handler_type = self._determine_handler_type()
+        if handler_type == "domain":
+            # `Domain` type responses expect a single feature, but we have a length-1 list.
+            result, = result
         return result, handler_type, error, error_code
