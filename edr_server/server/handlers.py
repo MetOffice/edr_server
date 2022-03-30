@@ -365,7 +365,7 @@ class AreaHandler(Handler):
         if self.handler_type == "domain":
             render_args = {"domain": data}
         elif self.handler_type == "feature_collection":
-            collection_bbox = self.interface.get_collection_bbox()
+            collection_bbox = interface.get_collection_bbox()
             render_args = {"features": data, "collection_bbox": collection_bbox}
         return render_args
 
@@ -528,8 +528,12 @@ class PositionHandler(Handler):
                 error_code = 404
             code = error_code if error_code is not None else 500
             raise HTTPError(code, error_msg)
-        collection_bbox = interface.get_collection_bbox()
-        return {"domain": position, "collection_bbox": collection_bbox}
+        if self.handler_type == "domain":
+            render_args = {"domain": position}
+        elif self.handler_type == "feature_collection":
+            collection_bbox = interface.get_collection_bbox()
+            render_args = {"features": position, "collection_bbox": collection_bbox}
+        return render_args
 
     def _get_file(self):
         interface = self._get_interface()
@@ -567,8 +571,12 @@ class RadiusHandler(Handler):
                 error_code = 404
             code = error_code if error_code is not None else 500
             raise HTTPError(code, error)
-        collection_bbox = interface.get_collection_bbox()
-        return {"domain": data, "collection_bbox": collection_bbox}
+        if self.handler_type == "domain":
+            render_args = {"domain": data}
+        elif self.handler_type == "feature_collection":
+            collection_bbox = interface.get_collection_bbox()
+            render_args = {"features": data, "collection_bbox": collection_bbox}
+        return render_args
 
     def _get_file(self):
         interface = self._get_interface()
