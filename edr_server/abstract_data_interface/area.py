@@ -1,4 +1,4 @@
-from copy import copy
+import copy
 from typing import List, Tuple, Union
 
 from .core import Interface
@@ -29,17 +29,32 @@ class Area(Interface):
         """Generate the area polygon to locate items within."""
         self.polygon = self.query_parameters["coords"]
 
-    def _check_query_args(self) -> Union[str, None]:
+    def _check_query_args(self) -> Tuple[Union[str, None], Union[int, None]]:
         """
         Check required query arguments for an Area query are present in the
         query string, and produce a descriptive error message if not.
 
         """
         error = None
+        error_code = None
         coords = self.query_parameters.get("coords")
         if coords is None:
-            error = "Required Area query argument 'coords' not present in query string."
-        return error
+            error = "Required argument 'coords' not present in query string."
+            error_code = 400
+        return error, error_code
+
+    def _determine_handler_type(self) -> str:
+        """
+        Determine the best handler type to use to return results of this query,
+        from the options of:
+          * `Domain` (typically used to return data to the client)
+          * `FeatureCollection` (typically used to return metadata on one or more features)
+
+        This *must* be determined (between the two options above) by the data interface,
+        which has the information available to it to correctly make the choice.
+
+        """
+        raise NotImplementedError
 
     def _datetime_filter(self, feature: Feature) -> Union[Feature, None]:
         """
@@ -92,6 +107,10 @@ class Area(Interface):
     def all_items(self) -> List[Feature]:
         raise NotImplementedError
 
+    def get_collection_bbox(self):
+        """Get the bounding box for the collection that holds these locations."""
+        raise NotImplementedError
+
     def filter(self, items: List[Feature]) -> Union[List[Feature], None]:
         within_polygon = self.polygon_filter(items)
         if len(within_polygon):
@@ -108,31 +127,26 @@ class Area(Interface):
             result = None
         return result
 
-    def features_to_domain(self, features: List[Feature]) -> Feature:
+    def data(self) -> Tuple[Union[Feature, None], str, Union[str, None], Union[int, None]]:
         """
-        Filtering all the features in the collection will return a list
-        of features of at least length 1, but we need a single Feature to
-        populate `domain.json`. To do this we concatenate the lists of parameters
-        from all features and return a single new `Feature` with
-        these concatenated elements.
+        Fetch data to populate the JSON response to the client with.
+
+        Also return the handler type for the server to use to set the JSON response to
+        be sent to the client, and any error messages and pertient http error codes, if
+        raised.
 
         """
-        if len(features) == 1:
-            result = features[0]
-        else:
-            all_params = []
-            for feature in features:
-                all_params.extend(feature.parameters)
-            all_unique_params = list(set(all_params))
-            result = copy.copy(features[0])
-            result.parameters = all_unique_params
-        return result
-
-    def data(self) -> Tuple[Union[Feature, None], Union[str, None]]:
-        error = self._check_query_args()
+        error_code = None
+        error, error_code = self._check_query_args()
         if error is None:
-            filtered_features = self.filter(self.all_items())
-            result = self.features_to_domain(filtered_features)
+            result = self.filter(self.all_items())
+            if result is None:
+                error = f"No features located within provided {self.__class__.__name__.capitalize()}"
+                error_code = 404
         else:
             result = None
-        return result, error
+        handler_type = self._determine_handler_type()
+        if handler_type == "domain":
+            # `Domain` type responses expect a single feature, but we have a length-1 list.
+            result, = result
+        return result, handler_type, error, error_code

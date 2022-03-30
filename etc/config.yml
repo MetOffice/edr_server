@@ -4,6 +4,7 @@ server:
     - locations
     - items
     - area
+    - position
     - radius
 
 collections:

@@ -179,9 +179,9 @@ class Handler(RequestHandler):
         We dump and load the templated result to get inline JSON verification from the JSON library.
 
         """
+        render_kwargs = self._get_render_args()
         fileformat = "covjson" if self.handler_type == "item" else "json"
         template_file = f"{self.handler_type}.{fileformat}"
-        render_kwargs = self._get_render_args()
         rendered_template = self.render_string(template_file, **render_kwargs)
         minified_rendered_template = json.dumps(json.loads(rendered_template)).encode("utf-8")
         self.write(minified_rendered_template)
@@ -311,12 +311,19 @@ class AreaHandler(Handler):
             self.query_parameters.parameters,
             items_url
         )
-        data, error = interface.data()
+        data, self.handler_type, error, error_code = interface.data()
         if data is None:
             if error is None:
                 error = "No items found within specified coords."
-            raise HTTPError(404, error)
-        return {"domain": data}
+                error_code = 404
+            code = error_code if error_code is not None else 500
+            raise HTTPError(code, error)
+        if self.handler_type == "domain":
+            render_args = {"domain": data}
+        elif self.handler_type == "feature_collection":
+            collection_bbox = interface.get_collection_bbox()
+            render_args = {"features": data, "collection_bbox": collection_bbox}
+        return render_args
 
 
 class CorridorHandler(Handler):
@@ -425,6 +432,28 @@ class LocationHandler(Handler):
 
 class PositionHandler(Handler):
     """Handle position requests."""
+    handler_type = "domain"
+
+    def initialize(self, data_interface, **kwargs):
+        super().initialize(**kwargs)
+        self.data_interface = data_interface
+
+    def _get_render_args(self) -> Dict:
+        items_url = self.reverse_url_full("items_query", self.collection_id)
+        interface = self.data_interface.Position(
+            self.collection_id,
+            self.query_parameters.parameters,
+            items_url
+        )
+        position, self.handler_type, error_msg, error_code = interface.data()
+        if position is None:
+            if error_msg is None:
+                error_msg = "No data found at specified point"
+                error_code = 404
+            code = error_code if error_code is not None else 500
+            raise HTTPError(code, error_msg)
+        collection_bbox = interface.get_collection_bbox()
+        return {"domain": position, "collection_bbox": collection_bbox}
 
 
 class RadiusHandler(Handler):
@@ -442,12 +471,15 @@ class RadiusHandler(Handler):
             self.query_parameters.parameters,
             items_url
         )
-        data, error = interface.data()
+        data, self.handler_type, error, error_code = interface.data()
         if data is None:
             if error is None:
                 error = "No items found within specified radius."
-            raise HTTPError(404, error)
-        return {"domain": data}
+                error_code = 404
+            code = error_code if error_code is not None else 500
+            raise HTTPError(code, error)
+        collection_bbox = interface.get_collection_bbox()
+        return {"domain": data, "collection_bbox": collection_bbox}
 
 
 class TrajectoryHandler(Handler):
