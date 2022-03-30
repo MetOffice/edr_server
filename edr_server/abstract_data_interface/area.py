@@ -125,6 +125,7 @@ class Area(Interface):
         else:
             result = None
         return result
+
     def data(self) -> Tuple[Union[Feature, None], str, Union[str, None], Union[int, None]]:
         """
         Fetch data to populate the JSON response to the client with.

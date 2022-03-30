@@ -510,14 +510,17 @@ class PositionHandler(Handler):
     def initialize(self, data_interface, **kwargs):
         super().initialize(**kwargs)
         self.data_interface = data_interface
+        self.items_url = self.reverse_url_full("items_query", self.collection_id)
 
-    def _get_render_args(self) -> Dict:
-        items_url = self.reverse_url_full("items_query", self.collection_id)
-        interface = self.data_interface.Position(
+    def _get_interface(self):
+        return self.data_interface.Position(
             self.collection_id,
             self.query_parameters.parameters,
-            items_url
+            self.items_url
         )
+
+    def _get_render_args(self) -> Dict:
+        interface = self._get_interface()
         position, self.handler_type, error_msg, error_code = interface.data()
         if position is None:
             if error_msg is None:
@@ -527,6 +530,16 @@ class PositionHandler(Handler):
             raise HTTPError(code, error_msg)
         collection_bbox = interface.get_collection_bbox()
         return {"domain": position, "collection_bbox": collection_bbox}
+
+    def _get_file(self):
+        interface = self._get_interface()
+        filename, url, error = interface.file_object()
+        if filename is None:
+            if error is None:
+                raise HTTPError(404, "File not found.")
+            else:
+                raise HTTPError(500, error)
+        return filename, url
 
 
 class RadiusHandler(Handler):
