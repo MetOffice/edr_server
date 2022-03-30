@@ -9,15 +9,16 @@ The EDR standard an OGC (Open Geospatial Consortium) standard. Much more informa
 
 ## Installing
 
-No installer (yet). Instead, for now, download the repo and modify your `PYTHONPATH` variable to point at the location of the repo.
+`pip install https://github.com/ADAQ-AQI/edr-server/archive/refs/heads/main.zip`
 
-### Dependencies
+For **development** work:  
+To install the code using pip in development mode, clone the repository and run:  
+`pip install -e /path/to/repo/root/directory/`  
+(where `/path/to/repo/root/directory/` is replaced with the path to the repo's root directory)
 
-The EDR Server is dependent a very limited number of Python packages beyond the standard library. Currently the extra packages are the Python webserver `tornado`, and `shapely` (for handling geometries passed in queries). To install:
-
-```bash
-pip install shapely tornado
-```
+This will install the code using symlinks back to the source code, enabling changes to the code
+to take effect without having to reinstall the package manually. (Although some changes, to things such as
+the packaging config may still require a manual reinstall, most things won't)
 
 ## Using it
 
@@ -32,7 +33,7 @@ This assumes that tornado is available in the Python environment supplying the P
 
 To test functionality, you could use the `requests` package to submit a request to the server:
 
-```python
+```pycon
 >>> import requests
 
 >>> uri = "http://localhost:8808/collections/?f=json"
@@ -52,7 +53,7 @@ WARNING:tornado.access:404 GET /collections?f=json (127.0.0.1) 0.68ms
 
 This error indicates that for some reason tornado was unable to find a handler for the path requested of the server, resulting in an error `404 (not found)` being raised by the server. If we had made this request to the server using requests, this is what we'd see from requests:
 
-```python
+```pycon
 >>> uri = "http://localhost:8808/collections?f=json"
 >>> r = requests.get(uri)
 >>> r

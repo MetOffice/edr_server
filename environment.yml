@@ -11,7 +11,3 @@ dependencies:
   # Required for cartopy
   - proj
   - geos
-
-  - pip:
-#    - https://github.com/ADAQ-AQI/clean-air-project/archive/CAP-212_object_store_access.zip
-     - https://github.com/ADAQ-AQI/clean-air-project/archive/master.zip
