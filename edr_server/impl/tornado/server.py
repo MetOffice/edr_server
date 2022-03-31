@@ -1,15 +1,17 @@
+import types
+from typing import Optional
+
 from tornado.web import Application, url
 
-from . import admin
-from . import collection
-from . import handlers
+from . import admin, collection, handlers
 from .config import config
-from .paths import app_relative_path_to_absolute
+from edr_server.utils.paths import app_relative_path_to_absolute
 
 
-def make_app():
+def make_app(data_interface: Optional[types.ModuleType] = None) -> Application:
     collections_cache_path = config.collections_cache_path()
-    data_interface = config.data_interface()
+    if not data_interface:
+        data_interface = config.data_interface()
     supported_data_queries = config.data_queries()
 
     return Application(
