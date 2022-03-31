@@ -22,14 +22,16 @@ the packaging config may still require a manual reinstall, most things won't)
 
 ## Using it
 
-Run the executable Python script `bin/run_server.py`. This will kick off a tornado web server (running on localhost and on port 8808 by default, which was chosen at random) that runs the EDR Server. For example:
+Run the executable Python script `bin/run_server`. It is added to the PATH by the pip installer, so it can be
+executed like this:
 
 ```bash
-$ ./bin/run_server.py
+$ run_edr_server
 Listening on port 8808...
 ```
 
-This assumes that tornado is available in the Python environment supplying the Python executable here.
+This will kick off a tornado web server (running on localhost and on port 8808 by default, which was chosen at random) 
+that runs the EDR Server.
 
 To test functionality, you could use the `requests` package to submit a request to the server:
 
