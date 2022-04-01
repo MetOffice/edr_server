@@ -4,6 +4,8 @@ from urllib.parse import urljoin
 
 from shapely import wkt
 from tornado.escape import url_unescape
+from tornado.gen import coroutine
+from tornado.httpclient import AsyncHTTPClient
 from tornado.web import HTTPError, RequestHandler
 
 
@@ -143,6 +145,10 @@ class Handler(RequestHandler):
         """
         raise NotImplementedError
 
+    def _get_file(self):
+        """Request data as a file download object from the data interface."""
+        raise NotImplementedError
+
     def get(self, collection_id):
         """
         Handle a get request for data from EDR.
@@ -153,6 +159,8 @@ class Handler(RequestHandler):
         self.handle_parameters()
         if self.query_parameters.get("f") == "json":
             self.render_template()
+        elif self.query_parameters.get("f") in ["csv", "netcdf"]:
+            self.get_file()
         else:
             raise HTTPError(501, f"Only JSON response type is implemented.")
 
@@ -186,6 +194,39 @@ class Handler(RequestHandler):
         minified_rendered_template = json.dumps(json.loads(rendered_template)).encode("utf-8")
         self.write(minified_rendered_template)
 
+    @coroutine
+    def get_file(self):
+        """
+        Support downloading a file rather than returning a JSON response for this query.
+
+        """
+        if self.handler_type not in ["domain", "item"]:
+            # Only handlers that return `Domain` type JSON can return data in any form.
+            raise HTTPError(415, "File download request not supported by this query.")
+        mime_type = self.query_parameters.get("f")
+        if mime_type == "txt":
+            content_type = "text/plain"
+        else:
+            content_type = f"application/{mime_type}"
+        filename, url = self._get_file()
+        self.set_header("Content-Type", content_type)
+        self.set_header("Content-Disposition", f"attachment; filename={filename}")
+        if url is not None:
+            # File on remote (e.g. S3).
+            def streaming_callback(chunk):
+                self.write(chunk)
+                self.flush()
+            yield AsyncHTTPClient().fetch(url, streaming_callback=streaming_callback)
+        else:
+            # Local file to serve.
+            with open(filename, "rb") as obfh:
+                while True:
+                    data = obfh.read(4096)
+                    if not data:
+                        break
+                    self.write(data)
+        self.finish()
+
     def write_error(self, status_code: int, **kwargs: Any) -> None:
         self.set_header("Content-Type", "application/json")
         exc_info = kwargs.get("exc_info")
@@ -217,6 +258,52 @@ class Handler(RequestHandler):
         """
         host = "{protocol}://{host}".format(**vars(self.request))
         return urljoin(host, self.reverse_url(name, *args, **kwargs))
+
+
+class _DomainOrFeatureHandler(Handler):
+        """
+        Superclass for any query handler that can return either `FeatureCollection`
+        or `Domain` type JSON. This includes `Area`, `Radius` and `Position`.
+
+        """
+        def initialize(self, data_interface, **kwargs):
+            super().initialize(**kwargs)
+            self.data_interface = data_interface
+            self.items_url = self.reverse_url_full("items_query", self.collection_id)
+
+        def _get_interface(self):
+            provider_class = getattr(self.data_interface, self.__class__.__name__)
+            return provider_class(
+                self.collection_id,
+                self.query_parameters.parameters,
+                self.items_url
+            )
+
+        def _get_render_args(self) -> Dict:
+            interface = self._get_interface()
+            data, self.handler_type, error, error_code = interface.data()
+            if data is None:
+                if error is None:
+                    error = "No items found within specified coords."
+                    error_code = 404
+                code = error_code if error_code is not None else 500
+                raise HTTPError(code, error)
+            if self.handler_type == "domain":
+                render_args = {"domain": data}
+            elif self.handler_type == "feature_collection":
+                collection_bbox = interface.get_collection_bbox()
+                render_args = {"features": data, "collection_bbox": collection_bbox}
+            return render_args
+
+        def _get_file(self):
+            interface = self._get_interface()
+            filename, url, error = interface.file_object()
+            if filename is None:
+                if error is None:
+                    raise HTTPError(404, "File not found.")
+                else:
+                    raise HTTPError(500, error)
+            return filename, url
 
 
 class RootHandler(Handler):
@@ -296,34 +383,12 @@ class ServiceHandler(Handler):
         self.redirect(redir_url, permanent=True)
 
 
-class AreaHandler(Handler):
+class AreaHandler(_DomainOrFeatureHandler):
     """Handle area requests."""
     handler_type = "domain"
 
     def initialize(self, data_interface, **kwargs):
-        super().initialize(**kwargs)
-        self.data_interface = data_interface
-
-    def _get_render_args(self) -> Dict:
-        items_url = self.reverse_url_full("items_query", self.collection_id)
-        interface = self.data_interface.Area(
-            self.collection_id,
-            self.query_parameters.parameters,
-            items_url
-        )
-        data, self.handler_type, error, error_code = interface.data()
-        if data is None:
-            if error is None:
-                error = "No items found within specified coords."
-                error_code = 404
-            code = error_code if error_code is not None else 500
-            raise HTTPError(code, error)
-        if self.handler_type == "domain":
-            render_args = {"domain": data}
-        elif self.handler_type == "feature_collection":
-            collection_bbox = interface.get_collection_bbox()
-            render_args = {"features": data, "collection_bbox": collection_bbox}
-        return render_args
+        super().initialize(data_interface, **kwargs)
 
 
 class CorridorHandler(Handler):
@@ -375,12 +440,29 @@ class ItemHandler(Handler):
         self.item_id = item_id
         super().get(collection_id)
 
+    def _get_interface(self):
+        return self.data_interface.Item(
+            self.collection_id,
+            self.item_id,
+            self.query_parameters.parameters
+        )
+
     def _get_render_args(self) -> Dict:
-        interface = self.data_interface.Item(self.collection_id, self.item_id)
+        interface = self._get_interface()
         parameter = interface.data()
         if parameter is None:
             raise HTTPError(404, f"Item {self.item_id} was not found.")
-        return {"parameter": interface.data()}
+        return {"parameter": parameter}
+
+    def _get_file(self):
+        interface = self._get_interface()
+        filename, url, error = interface.file_object()
+        if filename is None:
+            if error is None:
+                raise HTTPError(404, "File not found.")
+            else:
+                raise HTTPError(500, error)
+        return filename, url
 
 
 class LocationsHandler(Handler):
@@ -407,21 +489,20 @@ class LocationHandler(Handler):
 
     def initialize(self, data_interface, **kwargs):
         super().initialize(**kwargs)
-        self.data_interface = data_interface
+        items_url = self.reverse_url_full("items_query", self.collection_id)
+        self.interface = data_interface.Location(
+            self.collection_id,
+            self.location_id,
+            self.query_parameters.parameters,
+            items_url
+        )
 
     def get(self, collection_id, location_id):
         self.location_id = location_id
         super().get(collection_id)
 
     def _get_render_args(self) -> Dict:
-        items_url = self.reverse_url_full("items_query", self.collection_id)
-        interface = self.data_interface.Location(
-            self.collection_id,
-            self.location_id,
-            self.query_parameters.parameters,
-            items_url
-        )
-        location, error_msg = interface.data()
+        location, error_msg = self.interface.data()
         if location is None:
             if error_msg is None:
                 error_msg = "Location not found"
@@ -429,57 +510,24 @@ class LocationHandler(Handler):
             raise HTTPError(404, emsg)
         return {"domain": location}
 
+    def _get_file(self):
+        file_object = self.interface.file_object()
 
-class PositionHandler(Handler):
+
+class PositionHandler(_DomainOrFeatureHandler):
     """Handle position requests."""
     handler_type = "domain"
 
     def initialize(self, data_interface, **kwargs):
-        super().initialize(**kwargs)
-        self.data_interface = data_interface
-
-    def _get_render_args(self) -> Dict:
-        items_url = self.reverse_url_full("items_query", self.collection_id)
-        interface = self.data_interface.Position(
-            self.collection_id,
-            self.query_parameters.parameters,
-            items_url
-        )
-        position, self.handler_type, error_msg, error_code = interface.data()
-        if position is None:
-            if error_msg is None:
-                error_msg = "No data found at specified point"
-                error_code = 404
-            code = error_code if error_code is not None else 500
-            raise HTTPError(code, error_msg)
-        collection_bbox = interface.get_collection_bbox()
-        return {"domain": position, "collection_bbox": collection_bbox}
+        super().initialize(data_interface, **kwargs)
 
 
-class RadiusHandler(Handler):
+class RadiusHandler(_DomainOrFeatureHandler):
     """Handle radius requests."""
     handler_type = "domain"
 
     def initialize(self, data_interface, **kwargs):
-        super().initialize(**kwargs)
-        self.data_interface = data_interface
-
-    def _get_render_args(self) -> Dict:
-        items_url = self.reverse_url_full("items_query", self.collection_id)
-        interface = self.data_interface.Radius(
-            self.collection_id,
-            self.query_parameters.parameters,
-            items_url
-        )
-        data, self.handler_type, error, error_code = interface.data()
-        if data is None:
-            if error is None:
-                error = "No items found within specified radius."
-                error_code = 404
-            code = error_code if error_code is not None else 500
-            raise HTTPError(code, error)
-        collection_bbox = interface.get_collection_bbox()
-        return {"domain": data, "collection_bbox": collection_bbox}
+        super().initialize(data_interface, **kwargs)
 
 
 class TrajectoryHandler(Handler):

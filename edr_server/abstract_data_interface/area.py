@@ -1,4 +1,3 @@
-import copy
 from typing import List, Tuple, Union
 
 from .core import Interface
@@ -150,3 +149,12 @@ class Area(Interface):
             # `Domain` type responses expect a single feature, but we have a length-1 list.
             result, = result
         return result, handler_type, error, error_code
+
+    def file_object(self) -> Tuple[Union[str, None], Union[str, None], Union[str, None]]:
+        """
+        Return a file object matching the cutout described by the area in the
+        query parameters. This might need to combine multiple files and perform
+        cutout operations on the data interface end, and stream the result.
+
+        """
+        raise NotImplementedError
