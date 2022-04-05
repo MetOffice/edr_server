@@ -1,5 +1,5 @@
 {% whitespace oneline %}
-{% from edr_server.core import EdrDataQuery %}
+{% from edr_server.core.models import EdrDataQuery %}
 {
   "links": [
     {
@@ -55,14 +55,14 @@
     "spatial": {
       {% set corner_count = len(collection.extent.spatial.bounds) %}
       "bbox": [
-        {% for i, corner in enumerate(collection.bbox.bounds, 1) %}
+        {% for i, corner in enumerate(collection.extent.spatial.bounds, 1) %}
         {{ corner }}{% if i < corner_count %},{% end %}
         {% end %}
       ],
       "crs": "{{ collection.crs }}",
       "name": "{{ collection.crs.name }}"
-    }{% if collection.extent.temporal %},
-    {% include "collection_extent_temporal.json" %}
+    }{% if collection.extent.temporal %}{#,
+    {% include "collection_extent_temporal.json" %} #}
     {% end %}{% if collection.extent.vertical %},
     {% include "collection_extent_vertical.json" %}
     {% end %}

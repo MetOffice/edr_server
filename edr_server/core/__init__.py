@@ -1,51 +1,7 @@
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
-from enum import Enum
-from typing import List, Optional, Any
+from typing import List, Optional
 
-import pyproj
-from shapely.geometry import box
-from shapely.geometry.base import BaseGeometry
-
-CollectionId = str
-ItemId = str
-
-
-class EdrDataQuery(Enum):
-    CUBE = "cube"
-    CORRIDOR = "corridor"
-    LOCATIONS = "locations"
-    ITEMS = "items"
-    AREA = "area"
-    POSITION = "position"
-    RADIUS = "radius"
-    TRAJECTORY = "trajectory"
-
-
-@dataclass
-class Extent:
-    spatial: BaseGeometry = box(1, 2, 3, 4)
-    temporal: Any = None
-    vertical: Any = None
-
-
-@dataclass
-class CollectionMetadata:
-    id: str
-    title: str
-    description: str
-    keywords: List[str]
-    crs: pyproj.CRS
-    bbox: BaseGeometry
-    parameters: List
-    supported_data_queries: List[EdrDataQuery]
-    output_formats: List[str]
-    extent: Extent = Extent()
-
-
-@dataclass
-class ItemMetadata:
-    pass
+from edr_server.core.models import CollectionId, ItemId, CollectionMetadata, ItemMetadata
 
 
 class AbstractCollectionsMetadataDataInterface(ABC):

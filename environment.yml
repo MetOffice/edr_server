@@ -11,3 +11,8 @@ dependencies:
   # Required for cartopy
   - proj
   - geos
+
+  - pip:
+      - tox<4.0.0 # The conda package didn't install correctly, but using the pip package did
+      - -e .[dev]  # Install the source code in development mode, with the 'dev' extras specified in setup.cfg.
+      # The argument is the path to the folder containing the setup.cfg
