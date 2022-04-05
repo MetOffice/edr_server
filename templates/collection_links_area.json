@@ -1,7 +1,0 @@
-{
-  "href": "{{ reverse_url_full('area_query', collection.id) }}",
-  "hreflang": "en",
-  "rel": "data",
-  "type": "area",
-  "title": "Area"
-}

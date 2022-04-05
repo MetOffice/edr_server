@@ -132,8 +132,60 @@ class QueryParameters(object):
         self[key] = self._intervals(value)
 
 
-class Handler(RequestHandler):
+class BaseRequestHandler(RequestHandler):
+    """Extends tornado's RequestHandler in order to add some useful functionality that's common to all our Handlers"""
+
+    def get_template_namespace(self) -> Dict[str, Any]:
+        """
+        The template namespace is the scope within which `tornado` renders templates.
+        Overriding it like this allows us to add extra functionality to the namespace,
+        notably adding the full URL reversal method `self.reverse_url_full`.
+
+        """
+        namespace = super().get_template_namespace()
+        namespace["reverse_url_full"] = self.reverse_url_full
+        return namespace
+
+    def reverse_url_full(self, name: str, *args: Any, **kwargs: Dict[str, Any]):
+        """
+        Extend the functionality of `RequestHandler.reverse_url` to return the full URL
+        rather than the URL relative to the host.
+
+        Reference: https://stackoverflow.com/a/39612115/6676985.
+
+        """
+        host = "{protocol}://{host}".format(**vars(self.request))
+        return urljoin(host, self.reverse_url(name, *args))
+
+    def write_error(self, status_code: int, **kwargs: Any) -> None:
+        self.set_header("Content-Type", "application/json")
+        exc_info = kwargs.get("exc_info")
+        if exc_info is not None:
+            error_obj = exc_info[1]
+            try:
+                message = error_obj.log_message
+            except AttributeError:
+                message = f"{error_obj.__class__.__name__}: {error_obj}"
+            self.write({
+                "code": self.get_status(),
+                "description": self._reason,
+                "message": message,
+            })
+        else:
+            self.write({
+                "code": status_code,
+                "description": self._reason,
+                "message": kwargs["reason"],
+            })
+
+
+class Handler(BaseRequestHandler):
     """Generic handler for EDR queries."""
+
+    collection_id: str
+    query_parameters: QueryParameters
+    handler_type: str
+
     def initialize(self, **kwargs):
         self.query_parameters = QueryParameters()
 
@@ -163,17 +215,6 @@ class Handler(RequestHandler):
             self.get_file()
         else:
             raise HTTPError(501, f"Only JSON response type is implemented.")
-
-    def get_template_namespace(self) -> Dict[str, Any]:
-        """
-        The template namespace is the scope within which `tornado` renders templates.
-        Overriding it like this allows us to add extra functionality to the namespace,
-        notably adding the full URL reversal method `self.reverse_url_full`.
-
-        """
-        namespace = super().get_template_namespace()
-        namespace["reverse_url_full"] = self.reverse_url_full
-        return namespace
 
     def handle_parameters(self):
         """Translate EDR concepts in the query arguments into standard Python objects."""
@@ -366,6 +407,7 @@ class ServiceHandler(Handler):
     they are found rather than templating HTML documents here.
 
     """
+
     def initialize(self, data_interface):
         self.data_interface = data_interface
 
@@ -394,6 +436,7 @@ class AreaHandler(_DomainOrFeatureHandler):
 class CorridorHandler(Handler):
     """Handle corridor requests."""
     handler_type = "domain"
+
     def get(self, collection_name):
         """Handle a 'get corridor' request."""
         # Not implemented!
@@ -403,6 +446,7 @@ class CorridorHandler(Handler):
 class CubeHandler(Handler):
     """Handle cube requests."""
     handler_type = "cube"
+
     def get(self, collection_name):
         """Handle a 'get cube' request."""
         # Not implemented!
@@ -533,6 +577,7 @@ class RadiusHandler(_DomainOrFeatureHandler):
 class TrajectoryHandler(Handler):
     """Handle trajectory requests."""
     handler_type = "domain"
+
     def get(self, collection_name):
         """Handle a 'get trajectory' request."""
         # Not implemented!
