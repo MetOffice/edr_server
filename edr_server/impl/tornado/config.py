@@ -1,11 +1,12 @@
 import importlib
+import types
 from pathlib import Path
 from typing import List
 
 import yaml
 from yaml.loader import SafeLoader
 
-from .paths import app_relative_path_to_absolute
+from edr_server.utils.paths import app_relative_path_to_absolute
 
 
 class Config(object):
@@ -51,7 +52,7 @@ class Config(object):
         cjpath.mkdir(parents=True, exist_ok=True)
         return cjpath
 
-    def data_interface(self):
+    def data_interface(self) -> types.ModuleType:
         """
         The data interface implementation must be provided by either:
           * a named concrete implementation directory in `edr_data_interface`
@@ -69,14 +70,14 @@ class Config(object):
         data_interface_path = self.yaml["data"]["interface"]["path"]
 
         error = None
-        if (data_interface_name is None and data_interface_path is None):
+        if data_interface_name is None and data_interface_path is None:
             error = "neither"
-        elif (data_interface_name is not None and data_interface_path is not None):
+        elif data_interface_name is not None and data_interface_path is not None:
             error = "both"
 
-        if error is not None:
-            emsg = f"Either `data.interface.name` or `data.interface.path` must be set in `config.yml`, but {error} were."
-            raise ValueError(emsg)
+        if error:
+            raise ValueError(f"Either `data.interface.name` or `data.interface.path` "
+                             f"must be set in `config.yml`, but {error} were.")
 
         data_interface = f"edr_data_interface.{data_interface_name}"
         return importlib.import_module(data_interface)

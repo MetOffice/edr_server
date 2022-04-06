@@ -11,26 +11,21 @@ APP_LOGGER = logging.getLogger("tornado.application")
 class CollectionsHandler(Handler):
     """Handle collections requests."""
 
+
+
+    def _get_render_args(self):
+        pass
+
     collections_cache_path: Path
 
     def initialize(self, collections_cache_path: Path):
         super().initialize()
         self.collections_cache_path = collections_cache_path
-        self._collection_id = None
-
-    @property
-    def collection_id(self):
-        return self._collection_id
-
-    @collection_id.setter
-    def collection_id(self, value):
-        self._collection_id = value
 
     @removeslash
     def get(self, collection_id=None):
         """Handle a 'get collections' request."""
-        self.collection_id = collection_id
-        super().get("")
+        super().get(collection_id)
 
     def render_template(self):
         cache_filename = Path(f"{self.collection_id if self.collection_id else 'collections'}.json")

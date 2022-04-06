@@ -135,7 +135,6 @@ class Area(Interface):
         raised.
 
         """
-        error_code = None
         error, error_code = self._check_query_args()
         if error is None:
             result = self.filter(self.all_items())

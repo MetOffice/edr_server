@@ -2,50 +2,53 @@
 import json
 import logging
 from pathlib import Path
-from typing import List
+from typing import Optional, Awaitable
 
 from tornado.web import removeslash
 
-from .handlers import Handler
+from .handlers import BaseRequestHandler
+from ...core import AbstractCollectionsMetadataDataInterface
 
 APP_LOGGER = logging.getLogger("tornado.application")
 
 
-# data_received is marked as abstract, but doesn't need to be implemented
-# noinspection PyAbstractClass
-class RefreshCollectionsHandler(Handler):
+class RefreshCollectionsHandler(BaseRequestHandler):
     """Handles requests to regenerate the static collections JSON file"""
 
     collections_cache_path: Path
 
-    def initialize(self, data_interface, data_queries: List, collections_cache_path: Path):
-        self.data_queries = data_queries
-        self.interface = data_interface.RefreshCollections(self.data_queries)
+    collections_interface: AbstractCollectionsMetadataDataInterface
+
+    def initialize(self, collections_interface: AbstractCollectionsMetadataDataInterface, collections_cache_path: Path):
+        self.collections_interface = collections_interface
         self.collections_cache_path = collections_cache_path
+
+    def data_received(self, chunk: bytes) -> Optional[Awaitable[None]]:
+        # This is an abstract method on the base class, but when running,
+        return super().data_received(chunk)  # TODO can just pass/return None?
 
     def _save_cached_response(self, collection_name: str, rendered_template: bytes, cache_file_path: Path):
         # This has the added benefit of validating our JSON rendered from the template
         minified_rendered_template = json.dumps(json.loads(rendered_template)).encode("utf-8")
         with open(cache_file_path, "wb") as f:
             f.write(minified_rendered_template)
-        APP_LOGGER.info(f"Wrote collection JSON for {collection_name} to {cache_file_path}")
+        APP_LOGGER.debug(f"Wrote collection JSON for {collection_name} to {cache_file_path}")
 
     @removeslash
     def post(self):
         """Handle a refresh collections request."""
-        collections_metadata = self.interface.data()
+        collections_metadata = self.collections_interface.all()
+
+        # # clear existing cached files
+        for f in self.collections_cache_path.iterdir():
+            f.unlink()  # Despite the name, this will delete the file (or symlink)
 
         # Store updated individual collection metadata files.
         collection_files = []
         for collection in collections_metadata:
             cache_file_path = self.collections_cache_path / Path(f"{collection.id}.json")
             collection_files.append(cache_file_path)
-            render_kwargs = {
-                "collection": collection,
-                "data_queries": self.data_queries,
-                "parameters": self.interface.get_parameters(collection.id),
-            }
-            rendered_template = self.render_string("collection.json", **render_kwargs)
+            rendered_template = self.render_string("collection.json", collection=collection)
             self._save_cached_response(collection.id, rendered_template, cache_file_path)
 
         # Store the updated metadata for all collections as well.
@@ -53,4 +56,6 @@ class RefreshCollectionsHandler(Handler):
         rendered_template = self.render_string("collections.json", collection_files=collection_files)
         self._save_cached_response("collections endpoint", rendered_template, cache_file_path)
 
-        self.write(f"Refreshed cache with {len(collections_metadata)} collections")
+        msg= f"Refreshed cache with {len(collections_metadata)} collections"
+        APP_LOGGER.info(msg)
+        self.write(msg)

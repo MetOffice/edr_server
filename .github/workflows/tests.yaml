@@ -1,0 +1,73 @@
+name: Run tests
+
+on:
+  # Run on pushes to master
+  push:
+    branches: [master]
+  # Run on pull requests (specifically on open, reopen, or push)
+  pull_request:
+  # Run manually (from actions tab)
+  workflow_dispatch:
+
+jobs:
+  setup-and-run:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2
+
+      - name: Check out data
+        uses: actions/checkout@v2
+        with:
+          repository: ADAQ-AQI/cap-sample-data
+          path: ./cap-sample-data
+      - run: mv ./cap-sample-data ../cap-sample-data
+
+      - name: Check cached environment
+        id: cache
+        uses: actions/cache@v2
+        with:
+          key: env-${{ hashFiles('environment.yml') }}
+          path: ./pyenv
+
+      - name: Create environment
+        # Only if not found in the cache
+        if: steps.cache.outputs.cache-hit != 'true'
+        # NOTE: we're using a path (-p) not a name (-n or in the yaml), because
+        # we need to know the path anyway for caching purposes.  In fact, even
+        # knowing that a named environment would go in $CONDA/envs/<name>,
+        # the cache action fails to restore files there?
+        run: conda env create -q -p ./pyenv -f environment.yml
+
+      - name: Activate environment
+        # This is tricky, because "steps" are somewhat isolated in a way
+        # that doesn't play nicely with conda.
+        # In normal usage, `conda init` modifies .bashrc to define a "hook"
+        # function, which allows `conda activate` to be used, which sets some
+        # environment variables of the form CONDA_* and modifies PATH.
+        # In github actions, .bashrc is not used, so we need to manually
+        # define the hook.  Furthermore, changes to environment variables do
+        # not persist to the next step, but can be made to do so by instead
+        # writing to the file at $GITHUB_ENV, or $GITHUB_PATH for $PATH.
+        # (Admittedly this could be an action in its own right, or a script
+        # in the main repo, but this will do.)
+        run: |
+          old_path="$(echo "$PATH" | tr ':' '\n')"
+          eval "$(conda shell.bash hook 2> /dev/null)"
+          conda activate ./pyenv
+          env | grep CONDA_ >> $GITHUB_ENV
+          # NOTE: diff will give a non-zero exit code, which github assumes
+          # means the whole action failed, so follow it with a no-op
+          diff --unchanged-line-format '' \
+            <(echo "$old_path") <(echo "$PATH" | tr ':' '\n') \
+            >> $GITHUB_PATH \
+            || :
+          # Now display all the packages installed, for debugging
+          # Human-readable
+          conda list
+          # Machine-readable (for creating an exact copy of this environment)
+          conda list --explicit
+
+      - name: Run unit tests using tox
+        run: tox

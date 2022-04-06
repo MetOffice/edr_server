@@ -1,15 +1,15 @@
 from tornado.web import Application, url
 
-from . import admin
-from . import collection
-from . import handlers
+from edr_server.utils.paths import app_relative_path_to_absolute
+from . import admin, collection, handlers
 from .config import config
-from .paths import app_relative_path_to_absolute
+from ...core import EdrDataInterface
 
 
-def make_app():
+def make_app(data_interface: EdrDataInterface = None) -> Application:
     collections_cache_path = config.collections_cache_path()
-    data_interface = config.data_interface()
+    if not data_interface:
+        data_interface = config.data_interface()
     supported_data_queries = config.data_queries()
 
     return Application(
@@ -45,8 +45,7 @@ def make_app():
                 {"collections_cache_path": collections_cache_path},
                 name="collections"),
             url(r"/admin/refresh_collections\/?", admin.RefreshCollectionsHandler,
-                {"data_interface": data_interface,
-                 "data_queries": supported_data_queries,
+                {"collections_interface": data_interface.collections,
                  "collections_cache_path": collections_cache_path},
                 name="refresh_collections"),
             # url(r"/api\/?", handlers.APIHandler,

@@ -1,4 +1,5 @@
 {% whitespace oneline %}
+{% from edr_server.core.models import EdrDataQuery %}
 {
   "links": [
     {
@@ -28,19 +29,21 @@
       "rel": "collection",
       "type": "collection",
       "title": "Collection"
-    },
+    }{% if collection.supported_data_queries %},{% end %}
+    {% set data_query_count = len(collection.supported_data_queries) %}
+    {% for i, query_type in enumerate(collection.supported_data_queries, 1) %}
     {
       "href": "{{ reverse_url_full('position_query', collection.id) }}",
       "hreflang": "en",
       "rel": "data",
       "type": "position",
       "title": "Position"
-    }{% if "area" in data_queries %},
-    {% include "collection_links_area.json" %}
+    }{% if i < data_query_count %},{% end %}
     {% end %}
+
   ],
   "id": "{{ collection.id }}",
-  "title": "{{ collection.name }}",
+  "title": "{{ collection.title }}",
   "description": "{{ collection.description }}",
   {% set kw_count = len(collection.keywords) %}
   "keywords": [
@@ -50,29 +53,30 @@
   ],
   "extent": {
     "spatial": {
-      {% set corner_count = len(collection.bbox) %}
+      {% set corner_count = len(collection.extent.spatial.bounds) %}
       "bbox": [
-        {% for i, corner in enumerate(collection.bbox, 1) %}
+        {% for i, corner in enumerate(collection.extent.spatial.bounds, 1) %}
         {{ corner }}{% if i < corner_count %},{% end %}
         {% end %}
       ],
       "crs": "{{ collection.crs }}",
-      "name": "{{ collection.crs_name }}"
-    }{% if collection.has_temporal_extent() %},
-    {% include "collection_extent_temporal.json" %}
-    {% end %}{% if collection.has_vertical_extent() %},
+      "name": "{{ collection.crs.name }}"
+    }{% if collection.extent.temporal %}{#,
+    {% include "collection_extent_temporal.json" %} #}
+    {% end %}{% if collection.extent.vertical %},
     {% include "collection_extent_vertical.json" %}
     {% end %}
   },
   "data_queries": {
-    {% if "position" in data_queries %}{% include "collection_position.json" %}{% end %}
-    {% if "radius" in data_queries %}{% include "collection_radius.json" %}{% end %}
-    {% if "area" in data_queries %}{% include "collection_area.json" %}{% end %}
-    {% if "cube" in data_queries %}{% include "collection_cube.json" %}{% end %}
-    {% if "trajectory" in data_queries %}{% include "collection_trajectory.json" %}{% end %}
-    {% if "corridor" in data_queries %}{% include "collection_corridor.json" %}{% end %}
-    {% if "locations" in data_queries %}{% include "collection_locations.json" %}{% end %}
-    {% if "items" in data_queries %}{% include "collection_items.json" %}{% end %}
+
+    {% if EdrDataQuery.POSITION in collection.supported_data_queries %}{% include "collection_position.json" %}{% end %}
+    {% if EdrDataQuery.RADIUS in collection.supported_data_queries %}{% include "collection_radius.json" %}{% end %}
+    {% if EdrDataQuery.AREA in collection.supported_data_queries %}{% include "collection_area.json" %}{% end %}
+    {% if EdrDataQuery.CUBE in collection.supported_data_queries %}{% include "collection_cube.json" %}{% end %}
+    {% if EdrDataQuery.TRAJECTORY in collection.supported_data_queries %}{% include "collection_trajectory.json" %}{% end %}
+    {% if EdrDataQuery.CORRIDOR in collection.supported_data_queries %}{% include "collection_corridor.json" %}{% end %}
+    {% if EdrDataQuery.LOCATIONS in collection.supported_data_queries %}{% include "collection_locations.json" %}{% end %}
+    {% if EdrDataQuery.ITEMS in collection.supported_data_queries %}{% include "collection_items.json" %}{% end %}
   },
   "crs": [
     "{{ collection.crs }}"
@@ -80,9 +84,9 @@
   "output_formats": [
     "CoverageJSON"
   ],
-  {% set param_count = len(parameters) %}
+  {% set param_count = len(collection.parameters) %}
   "parameter_names": {
-    {% for i, parameter in enumerate(parameters, 1) %}
+    {% for i, parameter in enumerate(collection.parameters, 1) %}
     {% module Template("parameter.json", parameter=parameter) %}{% if i < param_count %},{% end %}
     {% end %}
   }

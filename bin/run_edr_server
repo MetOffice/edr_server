@@ -2,7 +2,7 @@
 
 import logging
 
-from edr_server.server.server import make_app
+from edr_server.impl.tornado.server import make_app
 import tornado.ioloop
 from tornado.options import options, define
 

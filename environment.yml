@@ -13,5 +13,6 @@ dependencies:
   - geos
 
   - pip:
-#    - https://github.com/ADAQ-AQI/clean-air-project/archive/CAP-212_object_store_access.zip
-     - https://github.com/ADAQ-AQI/clean-air-project/archive/master.zip
+      - tox<4.0.0 # The conda package didn't install correctly, but using the pip package did
+      - -e .[dev]  # Install the source code in development mode, with the 'dev' extras specified in setup.cfg.
+      # The argument is the path to the folder containing the setup.cfg
