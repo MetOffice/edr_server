@@ -13,7 +13,6 @@ import dateutil.parser
 import pyproj
 import shapely.geometry
 from dateutil.relativedelta import relativedelta
-from shapely.geometry.base import BaseGeometry
 
 
 @total_ordering
@@ -843,6 +842,19 @@ class DateTimeInterval:
 
 
 @dataclass
+class TemporalReferenceSystem:
+    """
+    I haven't found a library like pyproj that supports temporal reference systems, but would rather use one if it
+    existed.
+
+    EDR's core specification only supports Gregorian, however, so this will do for now. If implementors need something
+     other than Gregorian, they can override the defaults.
+    """
+    name: str = "Gregorian"
+    wkt: str = 'TIMECRS["DateTime",TDATUM["Gregorian Calendar"],CS[TemporalDateTime,1],AXIS["Time (T)",future]'
+
+
+@dataclass
 class TemporalExtent:
     """
     The specific times and time ranges covered by a dataset
@@ -851,6 +863,7 @@ class TemporalExtent:
     """
     values: List[datetime] = dataclasses.field(default_factory=list)
     intervals: List[DateTimeInterval] = dataclasses.field(default_factory=list)
+    trs: TemporalReferenceSystem = TemporalReferenceSystem()
 
     @property
     def interval(self) -> Tuple[Optional[datetime], Optional[datetime]]:
@@ -887,9 +900,19 @@ class TemporalExtent:
 
 
 @dataclass
+class SpatialExtent:
+    bbox: shapely.geometry.Polygon
+    crs: pyproj.CRS = pyproj.CRS("WGS84")
+
+    @property
+    def bounds(self):
+        return self.bbox.bounds
+
+
+@dataclass
 class Extent:
     """A struct-like container for the geographic area and time range(s) covered by a dataset"""
-    spatial: shapely.geometry.Polygon
+    spatial: SpatialExtent
     temporal: TemporalExtent
     vertical: None
 
@@ -920,7 +943,6 @@ class CollectionMetadata:
     parameters: List
     supported_data_queries: List[EdrDataQuery]
     output_formats: List[str]
-
 
 
 @dataclass

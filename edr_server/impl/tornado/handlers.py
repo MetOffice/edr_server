@@ -8,6 +8,8 @@ from tornado.gen import coroutine
 from tornado.httpclient import AsyncHTTPClient
 from tornado.web import HTTPError, RequestHandler
 
+from edr_server.core.serialisation import EdrJsonEncoder
+
 
 class QueryParameters(object):
     def __init__(self):
@@ -144,6 +146,7 @@ class BaseRequestHandler(RequestHandler):
         """
         namespace = super().get_template_namespace()
         namespace["reverse_url_full"] = self.reverse_url_full
+        namespace["json_encoder"] = EdrJsonEncoder()
         return namespace
 
     def reverse_url_full(self, name: str, *args: Any, **kwargs: Dict[str, Any]):
