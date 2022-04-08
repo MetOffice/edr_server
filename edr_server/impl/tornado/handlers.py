@@ -9,6 +9,7 @@ from tornado.httpclient import AsyncHTTPClient
 from tornado.web import HTTPError, RequestHandler
 
 from edr_server.core.serialisation import EdrJsonEncoder
+from edr_server.core.urls import EdrUrlResolver
 
 
 class QueryParameters(object):
@@ -137,6 +138,13 @@ class QueryParameters(object):
 class BaseRequestHandler(RequestHandler):
     """Extends tornado's RequestHandler in order to add some useful functionality that's common to all our Handlers"""
 
+    url_resolver: EdrUrlResolver
+    json_encoder: EdrJsonEncoder
+
+    def initalize(self):
+        self.url_resolver = EdrUrlResolver(f"{self.request.protocol}://{self.request.host}")
+        self.json_encoder = EdrJsonEncoder(urls=self.url_resolver)
+
     def get_template_namespace(self) -> Dict[str, Any]:
         """
         The template namespace is the scope within which `tornado` renders templates.
@@ -260,6 +268,7 @@ class Handler(BaseRequestHandler):
             def streaming_callback(chunk):
                 self.write(chunk)
                 self.flush()
+
             yield AsyncHTTPClient().fetch(url, streaming_callback=streaming_callback)
         else:
             # Local file to serve.
@@ -305,49 +314,50 @@ class Handler(BaseRequestHandler):
 
 
 class _DomainOrFeatureHandler(Handler):
-        """
-        Superclass for any query handler that can return either `FeatureCollection`
-        or `Domain` type JSON. This includes `Area`, `Radius` and `Position`.
+    """
+    Superclass for any query handler that can return either `FeatureCollection`
+    or `Domain` type JSON. This includes `Area`, `Radius` and `Position`.
 
-        """
-        def initialize(self, data_interface, **kwargs):
-            super().initialize(**kwargs)
-            self.data_interface = data_interface
-            self.items_url = self.reverse_url_full("items_query", self.collection_id)
+    """
 
-        def _get_interface(self):
-            provider_class = getattr(self.data_interface, self.__class__.__name__)
-            return provider_class(
-                self.collection_id,
-                self.query_parameters.parameters,
-                self.items_url
-            )
+    def initialize(self, data_interface, **kwargs):
+        super().initialize(**kwargs)
+        self.data_interface = data_interface
+        self.items_url = self.reverse_url_full("items_query", self.collection_id)
 
-        def _get_render_args(self) -> Dict:
-            interface = self._get_interface()
-            data, self.handler_type, error, error_code = interface.data()
-            if data is None:
-                if error is None:
-                    error = "No items found within specified coords."
-                    error_code = 404
-                code = error_code if error_code is not None else 500
-                raise HTTPError(code, error)
-            if self.handler_type == "domain":
-                render_args = {"domain": data}
-            elif self.handler_type == "feature_collection":
-                collection_bbox = interface.get_collection_bbox()
-                render_args = {"features": data, "collection_bbox": collection_bbox}
-            return render_args
+    def _get_interface(self):
+        provider_class = getattr(self.data_interface, self.__class__.__name__)
+        return provider_class(
+            self.collection_id,
+            self.query_parameters.parameters,
+            self.items_url
+        )
 
-        def _get_file(self):
-            interface = self._get_interface()
-            filename, url, error = interface.file_object()
-            if filename is None:
-                if error is None:
-                    raise HTTPError(404, "File not found.")
-                else:
-                    raise HTTPError(500, error)
-            return filename, url
+    def _get_render_args(self) -> Dict:
+        interface = self._get_interface()
+        data, self.handler_type, error, error_code = interface.data()
+        if data is None:
+            if error is None:
+                error = "No items found within specified coords."
+                error_code = 404
+            code = error_code if error_code is not None else 500
+            raise HTTPError(code, error)
+        if self.handler_type == "domain":
+            render_args = {"domain": data}
+        elif self.handler_type == "feature_collection":
+            collection_bbox = interface.get_collection_bbox()
+            render_args = {"features": data, "collection_bbox": collection_bbox}
+        return render_args
+
+    def _get_file(self):
+        interface = self._get_interface()
+        filename, url, error = interface.file_object()
+        if filename is None:
+            if error is None:
+                raise HTTPError(404, "File not found.")
+            else:
+                raise HTTPError(500, error)
+        return filename, url
 
 
 class RootHandler(Handler):

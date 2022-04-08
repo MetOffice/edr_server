@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Dict, Callable
 
-from edr_server.core.models import EdrDataQuery
+from ._data_query import EdrDataQuery
 
 
 @dataclass

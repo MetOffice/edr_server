@@ -1,5 +1,4 @@
 """Utilities related to the creation of EDR compliant response payloads, such as valid JSON responses"""
-import json
 import logging
 from pathlib import Path
 from typing import Optional, Awaitable
@@ -20,6 +19,7 @@ class RefreshCollectionsHandler(BaseRequestHandler):
     collections_interface: AbstractCollectionsMetadataDataInterface
 
     def initialize(self, collections_interface: AbstractCollectionsMetadataDataInterface, collections_cache_path: Path):
+        super().initialize()
         self.collections_interface = collections_interface
         self.collections_cache_path = collections_cache_path
 
@@ -27,11 +27,10 @@ class RefreshCollectionsHandler(BaseRequestHandler):
         # This is an abstract method on the base class, but when running,
         return super().data_received(chunk)  # TODO can just pass/return None?
 
-    def _save_cached_response(self, collection_name: str, rendered_template: bytes, cache_file_path: Path):
-        # This has the added benefit of validating our JSON rendered from the template
-        minified_rendered_template = json.dumps(json.loads(rendered_template)).encode("utf-8")
+    @staticmethod
+    def _save_cached_response(collection_name: str, rendered_template: bytes, cache_file_path: Path):
         with open(cache_file_path, "wb") as f:
-            f.write(minified_rendered_template)
+            f.write(rendered_template)
         APP_LOGGER.debug(f"Wrote collection JSON for {collection_name} to {cache_file_path}")
 
     @removeslash
@@ -48,7 +47,7 @@ class RefreshCollectionsHandler(BaseRequestHandler):
         for collection in collections_metadata:
             cache_file_path = self.collections_cache_path / Path(f"{collection.id}.json")
             collection_files.append(cache_file_path)
-            rendered_template = self.render_string("collection.json", collection=collection)
+            rendered_template = self.json_encoder.encode(collection).encode("utf-8")
             self._save_cached_response(collection.id, rendered_template, cache_file_path)
 
         # Store the updated metadata for all collections as well.
@@ -56,6 +55,6 @@ class RefreshCollectionsHandler(BaseRequestHandler):
         rendered_template = self.render_string("collections.json", collection_files=collection_files)
         self._save_cached_response("collections endpoint", rendered_template, cache_file_path)
 
-        msg= f"Refreshed cache with {len(collections_metadata)} collections"
+        msg = f"Refreshed cache with {len(collections_metadata)} collections"
         APP_LOGGER.info(msg)
         self.write(msg)

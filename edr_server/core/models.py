@@ -5,7 +5,6 @@ import re
 import warnings
 from dataclasses import dataclass
 from datetime import datetime, timedelta
-from enum import Enum
 from functools import total_ordering, cached_property
 from typing import List, Optional, Union, Tuple, Dict, Callable, Any
 
@@ -13,6 +12,9 @@ import dateutil.parser
 import pyproj
 import shapely.geometry
 from dateutil.relativedelta import relativedelta
+
+from ._data_query import EdrDataQuery
+from .urls import EdrUrlResolver
 
 
 @total_ordering
@@ -849,6 +851,8 @@ class TemporalReferenceSystem:
 
     EDR's core specification only supports Gregorian, however, so this will do for now. If implementors need something
      other than Gregorian, they can override the defaults.
+
+    Based on a portion of http://schemas.opengis.net/ogcapi/edr/1.0/openapi/schemas/extent.yaml
     """
     name: str = "Gregorian"
     wkt: str = 'TIMECRS["DateTime",TDATUM["Gregorian Calendar"],CS[TemporalDateTime,1],AXIS["Time (T)",future]'
@@ -860,6 +864,8 @@ class TemporalExtent:
     The specific times and time ranges covered by a dataset
     A temporal extent can be made up of one or more DateTimeIntervals, one or more specific datetimes, or a
     combination of both
+
+    Based on a portion of http://schemas.opengis.net/ogcapi/edr/1.0/openapi/schemas/extent.yaml
     """
     values: List[datetime] = dataclasses.field(default_factory=list)
     intervals: List[DateTimeInterval] = dataclasses.field(default_factory=list)
@@ -901,6 +907,7 @@ class TemporalExtent:
 
 @dataclass
 class SpatialExtent:
+    """Based on a portion of http://schemas.opengis.net/ogcapi/edr/1.0/openapi/schemas/extent.yaml"""
     bbox: shapely.geometry.Polygon
     crs: pyproj.CRS = pyproj.CRS("WGS84")
 
@@ -911,7 +918,10 @@ class SpatialExtent:
 
 @dataclass
 class Extent:
-    """A struct-like container for the geographic area and time range(s) covered by a dataset"""
+    """
+    A struct-like container for the geographic area and time range(s) covered by a dataset
+    Based on http://schemas.opengis.net/ogcapi/edr/1.0/openapi/schemas/extent.yaml
+    """
     spatial: SpatialExtent
     temporal: TemporalExtent
     vertical: None
@@ -921,28 +931,116 @@ CollectionId = str
 ItemId = str
 
 
-class EdrDataQuery(Enum):
-    CUBE = "cube"
-    CORRIDOR = "corridor"
-    LOCATIONS = "locations"
-    ITEMS = "items"
-    AREA = "area"
-    POSITION = "position"
-    RADIUS = "radius"
-    TRAJECTORY = "trajectory"
+@dataclass
+class Link:
+    """
+    A simple link that can be used in the "links" section of an EDR response
+    Based on http://schemas.opengis.net/ogcapi/edr/1.0/openapi/schemas/link.yaml
+    """
+    href: str
+    rel: str
+    type: Optional[str] = None
+    hreflang: Optional[str] = None
+    title: Optional[str] = None
+    length: Optional[int] = None
+
+
+@dataclass
+class DataQuery:
+    """Based on http://schemas.opengis.net/ogcapi/edr/1.0/openapi/schemas/dataQuery.yaml"""
+    title: Optional[str] = None
+    description: Optional[str] = None
+    query_type: Optional[EdrDataQuery] = None
+    coords: Optional[Any] = None
+    within_units: Optional[List[str]] = None
+    width_units: Optional[List[str]] = None
+    height_units: Optional[List[str]] = None
+    output_formats: Optional[List[str]] = None
+    default_output_format: Optional[str] = None
+    crs_details: Optional[pyproj.CRS] = None
+
+
+@dataclass
+class DataQueryLink:
+    """
+    Extended version of a simple link for use in the data_queries section of a collection metadata response
+    Based on http://schemas.opengis.net/ogcapi/edr/1.0/openapi/schemas/link.yaml
+    """
+    # Didn't use inheritance here due to the way dataclasses interacts with the mixture of default and non-default
+    # values in the fields. TLDR: it leads to a "Non-default argument(s) follows default argument(s) defined in 'Link'"
+    # error. Further detail here:
+    # https://stackoverflow.com/questions/51575931/class-inheritance-in-python-3-7-dataclasses
+    # Duplication was the easiest workaround
+    href: str
+    rel: str
+    variables: List[DataQuery]
+    type: Optional[str] = None
+    hreflang: Optional[str] = None
+    title: Optional[str] = None
+    length: Optional[int] = None
+
+    @property
+    def templated(self):
+        """All EDR's data query links are templated"""
+        return True
 
 
 @dataclass
 class CollectionMetadata:
+    """Based on http://schemas.opengis.net/ogcapi/edr/1.0/openapi/schemas/collection.yaml"""
     id: str
     title: str
     description: str
     keywords: List[str]
-    crs: pyproj.CRS
     extent: Extent
     parameters: List
     supported_data_queries: List[EdrDataQuery]
     output_formats: List[str]
+    extra_links: List[Link] = dataclasses.field(default_factory=list)
+
+
+    @property
+    def crs(self) -> pyproj.CRS:
+        return self.extent.spatial.crs
+
+    def get_links(self, urls: EdrUrlResolver) -> List[Link]:
+        links = [
+            Link(
+                href=urls.collection(self.id),
+                rel="collection",
+                type="application/json",
+                hreflang="en",
+                title="Collection",
+            )
+        ]
+        links.extend([
+            Link(
+                href=urls.COLLECTION_DATA_QUERY_MAP[query](self.id),
+                rel=query.name.lower(),
+                type=query.name.lower(),
+                hreflang="en",
+                title=query.name.title(),
+            )
+            for query in self.supported_data_queries
+        ])
+        links.extend(self.extra_links)
+        return links
+
+    def get_data_query_links(self, urls: EdrUrlResolver) -> List[DataQueryLink]:
+        return [
+            DataQueryLink(
+                href=urls.COLLECTION_DATA_QUERY_MAP[query](self.id),
+                rel="data",
+                variables=DataQuery(
+                    # TODO I go to here
+                ),
+                type=query.name.lower(),
+                hreflang="en",
+                title=query.name.title(),
+
+            )
+            for query in self.supported_data_queries
+        ]
 
 
 @dataclass
