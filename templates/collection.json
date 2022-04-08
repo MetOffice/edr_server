@@ -61,10 +61,11 @@
       ],
       "crs": "{{ collection.crs }}",
       "name": "{{ collection.crs.name }}"
-    }{% if collection.extent.temporal %}{#,
-    {% include "collection_extent_temporal.json" %} #}
-    {% end %}{% if collection.extent.vertical %},
-    {% include "collection_extent_vertical.json" %}
+    }{% if collection.extent.temporal %},
+      "temporal": {% raw json_encoder.encode(collection.extent.temporal) %}
+    {% end %}
+    {% if collection.extent.vertical %},
+      {% include "collection_extent_vertical.json" %}
     {% end %}
   },
   "data_queries": {
@@ -79,7 +80,7 @@
     {% if EdrDataQuery.ITEMS in collection.supported_data_queries %}{% include "collection_items.json" %}{% end %}
   },
   "crs": [
-    "{{ collection.crs }}"
+    "{{ collection.extent.spatial.crs }}"
   ],
   "output_formats": [
     "CoverageJSON"
