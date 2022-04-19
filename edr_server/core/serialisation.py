@@ -54,7 +54,22 @@ def json_encode_collection_metadata_list(
 
 
 def json_encode_link(link: Link, urls: EdrUrlResolver) -> Dict[str, Any]:
-    return {}  # TODO
+    encoded_link = {
+        "href": link.href,
+        "rel": link.rel,
+    }
+
+    # Optional stuff
+    if link.title:
+        encoded_link["title"] = link.title
+    if link.type:
+        encoded_link["type"] = link.type
+    if link.hreflang:
+        encoded_link["hreflang"] = link.hreflang
+    if link.length:
+        encoded_link["length"] = link.length
+
+    return encoded_link
 
 
 def json_encode_data_query_link(dq_link: DataQueryLink, urls: EdrUrlResolver) -> Dict[str, Any]:
