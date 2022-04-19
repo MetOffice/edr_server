@@ -1,13 +1,13 @@
 from abc import ABC, abstractmethod
 from typing import List, Optional
 
-from edr_server.core.models import CollectionId, ItemId, CollectionMetadata, ItemMetadata
+from edr_server.core.models import CollectionId, ItemId, CollectionMetadata, ItemMetadata, CollectionMetadataList
 
 
 class AbstractCollectionsMetadataDataInterface(ABC):
 
     @abstractmethod
-    def all(self) -> List[CollectionMetadata]:
+    def all(self) -> CollectionMetadataList:
         pass
 
     @abstractmethod

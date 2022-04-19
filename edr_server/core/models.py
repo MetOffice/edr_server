@@ -998,7 +998,6 @@ class CollectionMetadata:
     output_formats: List[str]
     extra_links: List[Link] = dataclasses.field(default_factory=list)
 
-
     @property
     def crs(self) -> pyproj.CRS:
         return self.extent.spatial.crs
@@ -1041,6 +1040,17 @@ class CollectionMetadata:
             )
             for query in self.supported_data_queries
         ]
+
+
+@dataclass
+class CollectionMetadataList:
+    collections: List[CollectionMetadata]
+    extra_links: List[Link] = dataclasses.field(default_factory=list)
+
+    def get_links(self, urls: EdrUrlResolver) -> List[Link]:
+        return [
+                   Link(urls.collections(), "self", "application/json"),
+               ] + self.extra_links
 
 
 @dataclass

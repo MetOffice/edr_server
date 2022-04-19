@@ -2,7 +2,7 @@ import json
 from datetime import datetime
 from typing import Any, Dict, Callable, Type, Optional, Tuple
 
-from .models import TemporalExtent, CollectionMetadata
+from .models import TemporalExtent, CollectionMetadata, Link, DataQueryLink, DataQuery, CollectionMetadataList
 from .urls import EdrUrlResolver
 
 
@@ -45,11 +45,31 @@ def json_encode_collection(collection: CollectionMetadata, urls: EdrUrlResolver)
     }
 
 
+def json_encode_collection_metadata_list(
+        collection_list: CollectionMetadataList, urls: EdrUrlResolver) -> Dict[str, Any]:
+    return {
+        "links": [json_encode_link(l, urls) for l in collection_list.get_links(urls)],
+        "collections": [json_encode_collection(c, urls) for c in collection_list.collections]
+    }
+
+
+def json_encode_link(link: Link, urls: EdrUrlResolver) -> Dict[str, Any]:
+    return {}  # TODO
+
+
+def json_encode_data_query_link(dq_link: DataQueryLink, urls: EdrUrlResolver) -> Dict[str, Any]:
+    return {}  # TODO
+
+
+def json_encode_data_query(dq: DataQuery, urls: EdrUrlResolver) -> Dict[str, Any]:
+    return {}  # TODO
+
+
 class EdrJsonEncoder(json.JSONEncoder):
     def __init__(
-            self, *, skipkeys: bool = ..., ensure_ascii: bool = ..., check_circular: bool = ...,
-            allow_nan: bool = ..., sort_keys: bool = ..., indent: Optional[int] = ...,
-            separators: Optional[Tuple[str, str]] = ..., default: Optional[Callable[..., Any]] = ...,
+            self, *, skipkeys: bool = False, ensure_ascii: bool = True, check_circular: bool = True,
+            allow_nan: bool = True, sort_keys: bool = False, indent: Optional[int] = None,
+            separators: Optional[Tuple[str, str]] = None, default: Optional[Callable[..., Any]] = None,
             urls: EdrUrlResolver) -> None:
         super().__init__(skipkeys=skipkeys, ensure_ascii=ensure_ascii, check_circular=check_circular,
                          allow_nan=allow_nan, sort_keys=sort_keys, indent=indent, separators=separators,
@@ -59,6 +79,11 @@ class EdrJsonEncoder(json.JSONEncoder):
     ENCODER_MAP: Dict[Type, Callable[[Any, EdrUrlResolver], Dict[str, Any]]] = {
         datetime: json_encode_datetime,
         TemporalExtent: json_encode_temporal_extent,
+        CollectionMetadata: json_encode_collection,
+        CollectionMetadataList: json_encode_collection_metadata_list,
+        Link: json_encode_link,
+        DataQuery: json_encode_data_query,
+        DataQueryLink: json_encode_data_query_link,
     }
 
     def default(self, obj: Any) -> Any:

@@ -141,7 +141,7 @@ class BaseRequestHandler(RequestHandler):
     url_resolver: EdrUrlResolver
     json_encoder: EdrJsonEncoder
 
-    def initalize(self):
+    def initialize(self, **_kwargs):
         self.url_resolver = EdrUrlResolver(f"{self.request.protocol}://{self.request.host}")
         self.json_encoder = EdrJsonEncoder(urls=self.url_resolver)
 
@@ -154,7 +154,6 @@ class BaseRequestHandler(RequestHandler):
         """
         namespace = super().get_template_namespace()
         namespace["reverse_url_full"] = self.reverse_url_full
-        namespace["json_encoder"] = EdrJsonEncoder()
         return namespace
 
     def reverse_url_full(self, name: str, *args: Any, **kwargs: Dict[str, Any]):
@@ -198,6 +197,7 @@ class Handler(BaseRequestHandler):
     handler_type: str
 
     def initialize(self, **kwargs):
+        super().initialize(**kwargs)
         self.query_parameters = QueryParameters()
 
     def _get_render_args(self):

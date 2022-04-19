@@ -43,18 +43,16 @@ class RefreshCollectionsHandler(BaseRequestHandler):
             f.unlink()  # Despite the name, this will delete the file (or symlink)
 
         # Store updated individual collection metadata files.
-        collection_files = []
-        for collection in collections_metadata:
+        for collection in collections_metadata.collections:
             cache_file_path = self.collections_cache_path / Path(f"{collection.id}.json")
-            collection_files.append(cache_file_path)
-            rendered_template = self.json_encoder.encode(collection).encode("utf-8")
-            self._save_cached_response(collection.id, rendered_template, cache_file_path)
+            serialised_response = self.json_encoder.encode(collection).encode("utf-8")
+            self._save_cached_response(collection.id, serialised_response, cache_file_path)
 
         # Store the updated metadata for all collections as well.
         cache_file_path = self.collections_cache_path / Path(f"collections.json")
-        rendered_template = self.render_string("collections.json", collection_files=collection_files)
-        self._save_cached_response("collections endpoint", rendered_template, cache_file_path)
+        serialised_response = self.json_encoder.encode(collections_metadata).encode("utf-8")
+        self._save_cached_response("collections endpoint", serialised_response, cache_file_path)
 
-        msg = f"Refreshed cache with {len(collections_metadata)} collections"
+        msg = f"Refreshed cache with {len(collections_metadata.collections)} collections"
         APP_LOGGER.info(msg)
         self.write(msg)
