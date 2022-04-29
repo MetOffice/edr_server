@@ -8,15 +8,15 @@ from tornado.gen import coroutine
 from tornado.httpclient import AsyncHTTPClient
 from tornado.web import HTTPError, RequestHandler
 
+from edr_server.core.models import EdrUrlResolver
 from edr_server.core.serialisation import EdrJsonEncoder
-from edr_server.core.urls import EdrUrlResolver
 
 
 class QueryParameters(object):
     def __init__(self):
         self._params_dict = {}
         self._handle_f("f", None)  # Always set a return type.
-        self._handle_crs("crs", None)  # Always set a CRS.
+        self._handle_crs("crs_details", None)  # Always set a CRS.
 
     def __getitem__(self, key):
         return self._params_dict[key]
@@ -35,10 +35,11 @@ class QueryParameters(object):
         return self._params_dict
 
     def get(self, key, default=None):
+        result = default
         try:
             result = self.__getitem__(key)
         except KeyError:
-            result = default
+            pass
         finally:
             return result
 
@@ -310,7 +311,7 @@ class Handler(BaseRequestHandler):
 
         """
         host = "{protocol}://{host}".format(**vars(self.request))
-        return urljoin(host, self.reverse_url(name, *args, **kwargs))
+        return urljoin(host, self.reverse_url(name, *args))
 
 
 class _DomainOrFeatureHandler(Handler):
@@ -342,6 +343,8 @@ class _DomainOrFeatureHandler(Handler):
                 error_code = 404
             code = error_code if error_code is not None else 500
             raise HTTPError(code, error)
+
+        render_args = {}
         if self.handler_type == "domain":
             render_args = {"domain": data}
         elif self.handler_type == "feature_collection":

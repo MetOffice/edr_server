@@ -2,8 +2,8 @@ import json
 from datetime import datetime
 from typing import Any, Dict, Callable, Type, Optional, Tuple
 
-from .models import TemporalExtent, CollectionMetadata, Link, DataQueryLink, DataQuery, CollectionMetadataList
-from .urls import EdrUrlResolver
+from .models import TemporalExtent, CollectionMetadata, Link, DataQueryLink, DataQuery, CollectionMetadataList, \
+    EdrUrlResolver
 
 
 def json_encode_datetime(dt: datetime, _urls: EdrUrlResolver) -> str:
@@ -32,14 +32,14 @@ def json_encode_collection(collection: CollectionMetadata, urls: EdrUrlResolver)
         "extent": {
             "spatial": {
                 "bbox": list(collection.extent.spatial.bounds),
-                "crs": str(collection.extent.spatial.crs),
+                "crs_details": str(collection.extent.spatial.crs),
                 "name": collection.crs.name,
             },
             "temporal": json_encode_temporal_extent(collection.extent.temporal, urls),
             # TODO: Vertical extent
         },
-        "data_queries": collection.get_data_query_links(urls),  # TODO - Serialise these objects
-        "crs": [str(collection.extent.spatial.crs)],
+        "data_queries": collection.get_data_query_links(urls),
+        "crs_details": [str(collection.extent.spatial.crs)],
         "output_formats": collection.output_formats,
         "parameter_names": [],  # TODO - implement this part of the serialisation
     }
@@ -48,12 +48,12 @@ def json_encode_collection(collection: CollectionMetadata, urls: EdrUrlResolver)
 def json_encode_collection_metadata_list(
         collection_list: CollectionMetadataList, urls: EdrUrlResolver) -> Dict[str, Any]:
     return {
-        "links": [json_encode_link(l, urls) for l in collection_list.get_links(urls)],
+        "links": [json_encode_link(link, urls) for link in collection_list.get_links(urls)],
         "collections": [json_encode_collection(c, urls) for c in collection_list.collections]
     }
 
 
-def json_encode_link(link: Link, urls: EdrUrlResolver) -> Dict[str, Any]:
+def json_encode_link(link: Link, _urls: Optional[EdrUrlResolver] = None) -> Dict[str, Any]:
     encoded_link = {
         "href": link.href,
         "rel": link.rel,
@@ -72,12 +72,47 @@ def json_encode_link(link: Link, urls: EdrUrlResolver) -> Dict[str, Any]:
     return encoded_link
 
 
-def json_encode_data_query_link(dq_link: DataQueryLink, urls: EdrUrlResolver) -> Dict[str, Any]:
-    return {}  # TODO
+def json_encode_data_query_link(dq_link: DataQueryLink, _urls: Optional[EdrUrlResolver] = None) -> Dict[str, Any]:
+    encoded_link = {
+        "href": dq_link.href,
+        "rel": dq_link.rel,
+    }
+
+    # Optional stuff
+    if dq_link.variables:
+        encoded_link["variables"] = json_encode_data_query(dq_link.variables)
+    if dq_link.title:
+        encoded_link["title"] = dq_link.title
+    if dq_link.type:
+        encoded_link["type"] = dq_link.type
+    if dq_link.hreflang:
+        encoded_link["hreflang"] = dq_link.hreflang
+    if dq_link.length:
+        encoded_link["length"] = dq_link.length
+    if dq_link.templated:
+        encoded_link["templated"] = dq_link.templated
+
+    return encoded_link
 
 
-def json_encode_data_query(dq: DataQuery, urls: EdrUrlResolver) -> Dict[str, Any]:
-    return {}  # TODO
+def json_encode_data_query(dq: DataQuery, _urls: Optional[EdrUrlResolver] = None) -> Dict[str, Any]:
+    encoded_dq = {
+        "title": dq.title,
+        "descriptions": dq.description,
+        "query_type": dq.query_type.name.lower(),
+        "output_formats": dq.output_formats,
+        "default_output_format": dq.default_output_format,
+        "crs_details": [{"crs_details": crs.name, "wkt": str(crs)} for crs in dq.crs_details]
+    }
+
+    if dq.height_units:
+        encoded_dq["height_units"] = dq.height_units
+    if dq.width_units:
+        encoded_dq["width_units"] = dq.width_units
+    if dq.within_units:
+        encoded_dq["within_units"] = dq.within_units
+
+    return encoded_dq
 
 
 class EdrJsonEncoder(json.JSONEncoder):

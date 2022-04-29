@@ -4,7 +4,8 @@ from datetime import datetime, timedelta
 import pytest
 from dateutil.tz import UTC, tzoffset
 
-from edr_server.core.models import TemporalExtent, Duration, DateTimeInterval
+from edr_server.core.models import TemporalExtent
+from edr_server.core.time import Duration, DateTimeInterval
 
 
 class DateTimeIntervalTest(unittest.TestCase):
