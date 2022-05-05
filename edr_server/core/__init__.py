@@ -1,7 +1,8 @@
 from abc import ABC, abstractmethod
 from typing import List, Optional
 
-from edr_server.core.models import CollectionId, ItemId, CollectionMetadata, ItemMetadata, CollectionMetadataList
+from edr_server.core.models import CollectionId, ItemId
+from edr_server.core.models.metadata import CollectionMetadata, CollectionMetadataList, ItemMetadata
 
 
 class AbstractCollectionsMetadataDataInterface(ABC):

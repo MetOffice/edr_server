@@ -6,7 +6,7 @@ import unittest
 from datetime import datetime, timedelta
 
 import pytest
-from edr_server.core.time import Duration
+from edr_server.core.models.time import Duration
 from dateutil.relativedelta import relativedelta
 
 

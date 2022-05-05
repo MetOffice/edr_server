@@ -2,8 +2,10 @@ import json
 from datetime import datetime
 from typing import Any, Dict, Callable, Type, Optional, Tuple
 
-from .models import TemporalExtent, CollectionMetadata, Link, DataQueryLink, DataQuery, CollectionMetadataList, \
-    EdrUrlResolver
+from .models.extents import TemporalExtent
+from .models.links import Link, DataQuery, DataQueryLink
+from .models.metadata import CollectionMetadata, CollectionMetadataList
+from .models.urls import EdrUrlResolver
 
 
 def json_encode_datetime(dt: datetime, _urls: EdrUrlResolver) -> str:
@@ -129,6 +131,7 @@ class EdrJsonEncoder(json.JSONEncoder):
     ENCODER_MAP: Dict[Type, Callable[[Any, EdrUrlResolver], Dict[str, Any]]] = {
         datetime: json_encode_datetime,
         TemporalExtent: json_encode_temporal_extent,
+        # TODO Check all models are present here, Extent and VerticalExtent are definitely missing
         CollectionMetadata: json_encode_collection,
         CollectionMetadataList: json_encode_collection_metadata_list,
         Link: json_encode_link,
