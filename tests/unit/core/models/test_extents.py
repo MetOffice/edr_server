@@ -1,9 +1,8 @@
 import unittest
 from datetime import datetime, timedelta
 
-from edr_server.core.models import DateTimeInterval
 from edr_server.core.models.extents import TemporalExtent
-from edr_server.core.models.time import Duration
+from edr_server.core.models.time import Duration, DateTimeInterval
 
 
 class TemporalExtentTest(unittest.TestCase):
