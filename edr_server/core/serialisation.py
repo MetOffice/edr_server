@@ -2,7 +2,7 @@ import json
 from datetime import datetime
 from typing import Any, Dict, Callable, Type, Optional, Tuple
 
-from .models.extents import TemporalExtent
+from .models.extents import TemporalExtent, Extents, SpatialExtent, VerticalExtent
 from .models.links import Link, DataQuery, DataQueryLink
 from .models.metadata import CollectionMetadata, CollectionMetadataList
 from .models.urls import EdrUrlResolver
@@ -15,7 +15,40 @@ def json_encode_datetime(dt: datetime, _urls: EdrUrlResolver) -> str:
     return dt.isoformat()
 
 
-def json_encode_temporal_extent(temporal_extent: TemporalExtent, _urls: EdrUrlResolver) -> Dict[str, Any]:
+def json_encode_extents(extents: Extents, urls: Optional[EdrUrlResolver] = None) -> Dict[str, Any]:
+    encoded_extents = {}
+
+    # According to the extents.yaml, all 3 properties are optional
+    if extents.spatial:
+        encoded_extents["spatial"] = json_encode_spatial_extent(extents.spatial, urls)
+    if extents.temporal:
+        encoded_extents["temporal"] = json_encode_temporal_extent(extents.temporal, urls)
+    if extents.vertical:
+        encoded_extents["vertical"] = json_encode_vertical_extent(extents.vertical, urls)
+
+    return encoded_extents
+
+
+def json_encode_vertical_extent(
+        vertical_extent: VerticalExtent, _urls: Optional[EdrUrlResolver] = None) -> Dict[str, Any]:
+    return {
+        "interval": vertical_extent.interval,
+        "values": vertical_extent.values,
+        "vrs": str(vertical_extent.vrs),
+        "name": vertical_extent.vrs.name,
+    }
+
+
+def json_encode_spatial_extent(spatial_extent: SpatialExtent, _urls: Optional[EdrUrlResolver] = None) -> Dict[str, Any]:
+    return {
+        "bbox": list(spatial_extent.bounds),
+        "crs_details": str(spatial_extent.crs),
+        "name": spatial_extent.crs.name,
+    }
+
+
+def json_encode_temporal_extent(
+        temporal_extent: TemporalExtent, _urls: Optional[EdrUrlResolver] = None) -> Dict[str, Any]:
     return {
         "name": temporal_extent.trs.name,
         "trs": temporal_extent.trs.wkt,
@@ -31,15 +64,7 @@ def json_encode_collection(collection: CollectionMetadata, urls: EdrUrlResolver)
         "title": collection.title,
         "description": collection.description,
         "keywords": collection.keywords,
-        "extent": {
-            "spatial": {
-                "bbox": list(collection.extent.spatial.bounds),
-                "crs_details": str(collection.extent.spatial.crs),
-                "name": collection.crs.name,
-            },
-            "temporal": json_encode_temporal_extent(collection.extent.temporal, urls),
-            # TODO: Vertical extent
-        },
+        "extent": json_encode_extents(collection.extent, urls),
         "data_queries": collection.get_data_query_links(urls),
         "crs_details": [str(collection.extent.spatial.crs)],
         "output_formats": collection.output_formats,
@@ -130,8 +155,10 @@ class EdrJsonEncoder(json.JSONEncoder):
 
     ENCODER_MAP: Dict[Type, Callable[[Any, EdrUrlResolver], Dict[str, Any]]] = {
         datetime: json_encode_datetime,
+        Extents: json_encode_extents,
+        SpatialExtent: json_encode_spatial_extent,
         TemporalExtent: json_encode_temporal_extent,
-        # TODO Check all models are present here, Extent and VerticalExtent are definitely missing
+        VerticalExtent: json_encode_vertical_extent,
         CollectionMetadata: json_encode_collection,
         CollectionMetadataList: json_encode_collection_metadata_list,
         Link: json_encode_link,
