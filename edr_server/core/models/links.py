@@ -4,7 +4,7 @@ from typing import Optional, List
 import pyproj
 
 from ._types_and_defaults import EdrDataQuery, DEFAULT_CRS, CollectionId
-from .urls import EdrUrlResolver
+from .urls import EdrUrlResolver, URL
 
 
 @dataclass
@@ -14,7 +14,7 @@ class Link:
     Based on
     https://github.com/opengeospatial/ogcapi-environmental-data-retrieval/blob/546c338/standard/openapi/schemas/link.yaml
     """
-    href: str
+    href: URL
     rel: str
     type: Optional[str] = None
     hreflang: Optional[str] = None
@@ -128,7 +128,7 @@ class DataQueryLink:
     # error. Further detail here:
     # https://stackoverflow.com/questions/51575931/class-inheritance-in-python-3-7-dataclasses
     # Duplication was the easiest workaround
-    href: str
+    href: URL
     rel: str
     variables: DataQuery
     type: Optional[str] = None

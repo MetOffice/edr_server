@@ -7,22 +7,23 @@ from ._types_and_defaults import CollectionId, EdrDataQuery
 from .extents import Extents
 from .links import Link, DataQueryLink
 from .urls import EdrUrlResolver
+from .parameters import Parameter
 
 
 @dataclass
 class CollectionMetadata:
     """
     Based on
-    https://github.com/opengeospatial/ogcapi-environmental-data-retrieval/blob/master/standard/openapi/schemas/collection.yaml
+    https://github.com/opengeospatial/ogcapi-environmental-data-retrieval/blob/e8a78f9/standard/openapi/schemas/collection.yaml
     """
     id: CollectionId
     title: str
     description: str
     keywords: List[str]
     extent: Extents
-    parameters: List
     supported_data_queries: List[EdrDataQuery]
     output_formats: List[str]
+    parameters: List[Parameter] = field(default_factory=list)
     height_units: List[str] = field(default_factory=list)
     width_units: List[str] = field(default_factory=list)
     within_units: List[str] = field(default_factory=list)

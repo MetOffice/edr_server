@@ -3,58 +3,11 @@ from datetime import datetime
 from typing import Any, Dict, Callable, Type, Optional, Tuple
 
 from .models.extents import TemporalExtent, Extents, SpatialExtent, VerticalExtent
+from .models.i18n import LanguageMap
 from .models.links import Link, DataQuery, DataQueryLink
 from .models.metadata import CollectionMetadata, CollectionMetadataList
+from .models.parameters import Symbol, Unit, Category, ObservedProperty, Parameter
 from .models.urls import EdrUrlResolver
-
-
-def json_encode_datetime(dt: datetime, _urls: EdrUrlResolver) -> str:
-    # Whilst wrapping this simple function call in a function may seem like overkill, it allows us to include it in
-    # EdrJsonEncoder.ENCODER_MAP, so it gets hooked into the JSON Encoder correctly. Also, it documents that datetimes
-    # should be encoded as ISO 8601 datetimes
-    return dt.isoformat()
-
-
-def json_encode_extents(extents: Extents, urls: Optional[EdrUrlResolver] = None) -> Dict[str, Any]:
-    encoded_extents = {}
-
-    # According to the extents.yaml, all 3 properties are optional
-    if extents.spatial:
-        encoded_extents["spatial"] = json_encode_spatial_extent(extents.spatial, urls)
-    if extents.temporal:
-        encoded_extents["temporal"] = json_encode_temporal_extent(extents.temporal, urls)
-    if extents.vertical:
-        encoded_extents["vertical"] = json_encode_vertical_extent(extents.vertical, urls)
-
-    return encoded_extents
-
-
-def json_encode_vertical_extent(
-        vertical_extent: VerticalExtent, _urls: Optional[EdrUrlResolver] = None) -> Dict[str, Any]:
-    return {
-        "interval": vertical_extent.interval,
-        "values": vertical_extent.values,
-        "vrs": str(vertical_extent.vrs),
-        "name": vertical_extent.vrs.name,
-    }
-
-
-def json_encode_spatial_extent(spatial_extent: SpatialExtent, _urls: Optional[EdrUrlResolver] = None) -> Dict[str, Any]:
-    return {
-        "bbox": list(spatial_extent.bounds),
-        "crs_details": str(spatial_extent.crs),
-        "name": spatial_extent.crs.name,
-    }
-
-
-def json_encode_temporal_extent(
-        temporal_extent: TemporalExtent, _urls: Optional[EdrUrlResolver] = None) -> Dict[str, Any]:
-    return {
-        "name": temporal_extent.trs.name,
-        "trs": temporal_extent.trs.wkt,
-        "interval": [temporal_extent.bounds],
-        "values": list(map(json_encode_datetime, temporal_extent.values)) + list(map(str, temporal_extent.intervals))
-    }
 
 
 def json_encode_collection(collection: CollectionMetadata, urls: EdrUrlResolver) -> Dict[str, Any]:
@@ -80,23 +33,11 @@ def json_encode_collection_metadata_list(
     }
 
 
-def json_encode_link(link: Link, _urls: Optional[EdrUrlResolver] = None) -> Dict[str, Any]:
-    encoded_link = {
-        "href": link.href,
-        "rel": link.rel,
-    }
-
-    # Optional stuff
-    if link.title:
-        encoded_link["title"] = link.title
-    if link.type:
-        encoded_link["type"] = link.type
-    if link.hreflang:
-        encoded_link["hreflang"] = link.hreflang
-    if link.length:
-        encoded_link["length"] = link.length
-
-    return encoded_link
+def json_encode_datetime(dt: datetime, _urls: EdrUrlResolver) -> str:
+    # Whilst wrapping this simple function call in a function may seem like overkill, it allows us to include it in
+    # EdrJsonEncoder.ENCODER_MAP, so it gets hooked into the JSON Encoder correctly. Also, it documents that datetimes
+    # should be encoded as ISO 8601 datetimes
+    return dt.isoformat()
 
 
 def json_encode_data_query_link(dq_link: DataQueryLink, _urls: Optional[EdrUrlResolver] = None) -> Dict[str, Any]:
@@ -142,6 +83,85 @@ def json_encode_data_query(dq: DataQuery, _urls: Optional[EdrUrlResolver] = None
     return encoded_dq
 
 
+def json_encode_extents(extents: Extents, urls: Optional[EdrUrlResolver] = None) -> Dict[str, Any]:
+    encoded_extents = {}
+
+    # According to the extents.yaml, all 3 properties are optional
+    if extents.spatial:
+        encoded_extents["spatial"] = json_encode_spatial_extent(extents.spatial, urls)
+    if extents.temporal:
+        encoded_extents["temporal"] = json_encode_temporal_extent(extents.temporal, urls)
+    if extents.vertical:
+        encoded_extents["vertical"] = json_encode_vertical_extent(extents.vertical, urls)
+
+    return encoded_extents
+
+
+def json_encode_link(link: Link, _urls: Optional[EdrUrlResolver] = None) -> Dict[str, Any]:
+    encoded_link = {
+        "href": link.href,
+        "rel": link.rel,
+    }
+
+    # Optional stuff
+    if link.title:
+        encoded_link["title"] = link.title
+    if link.type:
+        encoded_link["type"] = link.type
+    if link.hreflang:
+        encoded_link["hreflang"] = link.hreflang
+    if link.length:
+        encoded_link["length"] = link.length
+
+    return encoded_link
+
+
+def json_encode_spatial_extent(spatial_extent: SpatialExtent, _urls: Optional[EdrUrlResolver] = None) -> Dict[str, Any]:
+    return {
+        "bbox": list(spatial_extent.bounds),
+        "crs_details": str(spatial_extent.crs),
+        "name": spatial_extent.crs.name,
+    }
+
+
+def json_encode_temporal_extent(
+        temporal_extent: TemporalExtent, _urls: Optional[EdrUrlResolver] = None) -> Dict[str, Any]:
+    return {
+        "name": temporal_extent.trs.name,
+        "trs": temporal_extent.trs.wkt,
+        "interval": [temporal_extent.bounds],
+        "values": list(map(json_encode_datetime, temporal_extent.values)) + list(map(str, temporal_extent.intervals))
+    }
+
+
+def json_encode_vertical_extent(
+        vertical_extent: VerticalExtent, _urls: Optional[EdrUrlResolver] = None) -> Dict[str, Any]:
+    return {
+        "interval": vertical_extent.interval,
+        "values": vertical_extent.values,
+        "vrs": str(vertical_extent.vrs),
+        "name": vertical_extent.vrs.name,
+    }
+
+
+def json_encode_language_map(): pass  # TODO
+
+
+def json_encode_symbol(): pass  # TODO
+
+
+def json_encode_unit(): pass  # TODO
+
+
+def json_encode_category(): pass  # TODO
+
+
+def json_encode_observed_property(): pass  # TODO
+
+
+def json_encode_parameter(): pass  # TODO
+
+
 class EdrJsonEncoder(json.JSONEncoder):
     def __init__(
             self, *, skipkeys: bool = False, ensure_ascii: bool = True, check_circular: bool = True,
@@ -154,16 +174,22 @@ class EdrJsonEncoder(json.JSONEncoder):
         self.urls = urls
 
     ENCODER_MAP: Dict[Type, Callable[[Any, EdrUrlResolver], Dict[str, Any]]] = {
-        datetime: json_encode_datetime,
-        Extents: json_encode_extents,
-        SpatialExtent: json_encode_spatial_extent,
-        TemporalExtent: json_encode_temporal_extent,
-        VerticalExtent: json_encode_vertical_extent,
+        Category: json_encode_category,
         CollectionMetadata: json_encode_collection,
         CollectionMetadataList: json_encode_collection_metadata_list,
-        Link: json_encode_link,
+        datetime: json_encode_datetime,
         DataQuery: json_encode_data_query,
         DataQueryLink: json_encode_data_query_link,
+        Extents: json_encode_extents,
+        LanguageMap: json_encode_language_map,
+        Link: json_encode_link,
+        ObservedProperty: json_encode_observed_property,
+        Parameter: json_encode_parameter,
+        SpatialExtent: json_encode_spatial_extent,
+        Symbol: json_encode_symbol,
+        TemporalExtent: json_encode_temporal_extent,
+        Unit: json_encode_unit,
+        VerticalExtent: json_encode_vertical_extent,
     }
 
     def default(self, obj: Any) -> Any:
