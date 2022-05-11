@@ -23,7 +23,7 @@ class TemporalReferenceSystem:
     https://github.com/opengeospatial/ogcapi-environmental-data-retrieval/blob/546c338/standard/openapi/schemas/extent.yaml
     """
     name: str = "Gregorian"
-    wkt: str = DEFAULT_TRS
+    wkt: pyproj.CRS = DEFAULT_TRS
 
 
 T = TypeVar("T")
