@@ -10,37 +10,50 @@ from .models.parameters import Symbol, Unit, Category, ObservedProperty, Paramet
 from .models.urls import EdrUrlResolver
 
 
-def json_encode_collection(collection: CollectionMetadata, urls: EdrUrlResolver) -> Dict[str, Any]:
+def json_encode_category(category: Category, encoder: "EdrJsonEncoder") -> Dict[str, Any]:
+    encoded_category = {
+        "id": category.id,
+        "label": category.label if isinstance(category.label, str) else encoder.default(category.label)
+    }
+
+    if category.description:
+        encoded_category["description"] = (
+            category.description if isinstance(category.description, str) else encoder.default(category.description))
+
+    return encoded_category
+
+
+def json_encode_collection(collection: CollectionMetadata, encoder: "EdrJsonEncoder") -> Dict[str, Any]:
     return {
-        "links": collection.get_links(urls),
+        "links": [encoder.default(link) for link in collection.get_links(encoder.urls)],
         "id": collection.id,
         "title": collection.title,
         "description": collection.description,
         "keywords": collection.keywords,
-        "extent": json_encode_extents(collection.extent, urls),
-        "data_queries": collection.get_data_query_links(urls),
+        "extent": encoder.default(collection.extent),
+        "data_queries": [encoder.default(dl) for dl in collection.get_data_query_links(encoder.urls)],
         "crs_details": [str(collection.extent.spatial.crs)],
         "output_formats": collection.output_formats,
-        "parameter_names": [],  # TODO - implement this part of the serialisation
+        "parameter_names": [encoder.default(param) for param in collection.parameters],
     }
 
 
 def json_encode_collection_metadata_list(
-        collection_list: CollectionMetadataList, urls: EdrUrlResolver) -> Dict[str, Any]:
+        collection_list: CollectionMetadataList, encoder: "EdrJsonEncoder") -> Dict[str, Any]:
     return {
-        "links": [json_encode_link(link, urls) for link in collection_list.get_links(urls)],
-        "collections": [json_encode_collection(c, urls) for c in collection_list.collections]
+        "links": [encoder.default(link) for link in collection_list.get_links(encoder.urls)],
+        "collections": [encoder.default(collection) for collection in collection_list.collections],
     }
 
 
-def json_encode_datetime(dt: datetime, _urls: EdrUrlResolver) -> str:
+def json_encode_datetime(dt: datetime, _encoder: Optional["EdrJsonEncoder"] = None) -> str:
     # Whilst wrapping this simple function call in a function may seem like overkill, it allows us to include it in
-    # EdrJsonEncoder.ENCODER_MAP, so it gets hooked into the JSON Encoder correctly. Also, it documents that datetimes
-    # should be encoded as ISO 8601 datetimes
+    # EdrJsonEncoder.ENCODER_MAP, so it gets hooked into the JSON Encoder correctly. Also, it documents that datetime
+    # objects should be encoded using the ISO 8601 datetime format.
     return dt.isoformat()
 
 
-def json_encode_data_query_link(dq_link: DataQueryLink, _urls: Optional[EdrUrlResolver] = None) -> Dict[str, Any]:
+def json_encode_data_query_link(dq_link: DataQueryLink, encoder: "EdrJsonEncoder") -> Dict[str, Any]:
     encoded_link = {
         "href": dq_link.href,
         "rel": dq_link.rel,
@@ -48,7 +61,7 @@ def json_encode_data_query_link(dq_link: DataQueryLink, _urls: Optional[EdrUrlRe
 
     # Optional stuff
     if dq_link.variables:
-        encoded_link["variables"] = json_encode_data_query(dq_link.variables)
+        encoded_link["variables"] = encoder.default(dq_link.variables)
     if dq_link.title:
         encoded_link["title"] = dq_link.title
     if dq_link.type:
@@ -63,7 +76,7 @@ def json_encode_data_query_link(dq_link: DataQueryLink, _urls: Optional[EdrUrlRe
     return encoded_link
 
 
-def json_encode_data_query(dq: DataQuery, _urls: Optional[EdrUrlResolver] = None) -> Dict[str, Any]:
+def json_encode_data_query(dq: DataQuery, _encoder: Optional["EdrJsonEncoder"] = None) -> Dict[str, Any]:
     encoded_dq = {
         "title": dq.title,
         "descriptions": dq.description,
@@ -83,21 +96,25 @@ def json_encode_data_query(dq: DataQuery, _urls: Optional[EdrUrlResolver] = None
     return encoded_dq
 
 
-def json_encode_extents(extents: Extents, urls: Optional[EdrUrlResolver] = None) -> Dict[str, Any]:
+def json_encode_extents(extents: Extents, encoder: "EdrJsonEncoder") -> Dict[str, Any]:
     encoded_extents = {}
 
     # According to the extents.yaml, all 3 properties are optional
     if extents.spatial:
-        encoded_extents["spatial"] = json_encode_spatial_extent(extents.spatial, urls)
+        encoded_extents["spatial"] = encoder.default(extents.spatial)
     if extents.temporal:
-        encoded_extents["temporal"] = json_encode_temporal_extent(extents.temporal, urls)
+        encoded_extents["temporal"] = encoder.default(extents.temporal)
     if extents.vertical:
-        encoded_extents["vertical"] = json_encode_vertical_extent(extents.vertical, urls)
+        encoded_extents["vertical"] = encoder.default(extents.vertical)
 
     return encoded_extents
 
 
-def json_encode_link(link: Link, _urls: Optional[EdrUrlResolver] = None) -> Dict[str, Any]:
+def json_encode_language_map(language_map: LanguageMap, _encoder: Optional["EdrJsonEncoder"] = None):
+    return {k: v for k, v in language_map.items()}  # Make a copy so that we don't accidentally change the original data
+
+
+def json_encode_link(link: Link, _encoder: Optional["EdrJsonEncoder"] = None) -> Dict[str, Any]:
     encoded_link = {
         "href": link.href,
         "rel": link.rel,
@@ -116,7 +133,49 @@ def json_encode_link(link: Link, _urls: Optional[EdrUrlResolver] = None) -> Dict
     return encoded_link
 
 
-def json_encode_spatial_extent(spatial_extent: SpatialExtent, _urls: Optional[EdrUrlResolver] = None) -> Dict[str, Any]:
+def json_encode_observed_property(
+        observed_property: ObservedProperty, encoder: Optional["EdrJsonEncoder"] = None) -> Dict[str, Any]:
+    encoded_property = {
+        "label": (observed_property.label
+                  if isinstance(observed_property.label, str) else encoder.default(observed_property.label)),
+
+    }
+    if observed_property.id:
+        encoded_property["id"] = observed_property.id
+    if observed_property.description:
+        encoded_property["description"] = observed_property.description
+    if observed_property.categories:
+        encoded_property["categories"] = [encoder.default(cat) for cat in observed_property.categories]
+
+    return encoded_property
+
+
+def json_encode_parameter(param: Parameter, encoder: Optional["EdrJsonEncoder"] = None) -> Dict[str, Any]:
+    encoded_param = {
+        "type": "Parameter",
+        "observedProperty": encoder.default(param.observed_property),
+    }
+
+    if param.description:
+        encoded_param["description"] = param.description
+    if param.label:
+        encoded_param["label"] = param.label
+    if param.data_type:
+        encoded_param["data-type"] = param.data_type.__name__
+    if param.unit:
+        encoded_param["unit"] = encoder.default(param.unit)
+    # TODO serialise categoryEncoding, once it's added to model
+    if param.extent:
+        encoded_param["extent"] = encoder.default(param.extent)
+    if param.id:
+        encoded_param["id"] = param.id
+    # TODO serialise measurementType once it's added to model
+
+    return encoded_param
+
+
+def json_encode_spatial_extent(
+        spatial_extent: SpatialExtent, _encoder: Optional["EdrJsonEncoder"] = None) -> Dict[str, Any]:
     return {
         "bbox": list(spatial_extent.bounds),
         "crs_details": str(spatial_extent.crs),
@@ -124,42 +183,45 @@ def json_encode_spatial_extent(spatial_extent: SpatialExtent, _urls: Optional[Ed
     }
 
 
+def json_encode_symbol(symbol: Symbol, _encoder: Optional["EdrJsonEncoder"] = None) -> Dict[str, Any]:
+    return {
+        "value": symbol.value,
+        "type": symbol.type,
+    }
+
+
 def json_encode_temporal_extent(
-        temporal_extent: TemporalExtent, _urls: Optional[EdrUrlResolver] = None) -> Dict[str, Any]:
+        temporal_extent: TemporalExtent, encoder: Optional["EdrJsonEncoder"] = None) -> Dict[str, Any]:
     return {
         "name": temporal_extent.trs.name,
         "trs": temporal_extent.trs.wkt,
         "interval": [temporal_extent.bounds],
-        "values": list(map(json_encode_datetime, temporal_extent.values)) + list(map(str, temporal_extent.intervals))
+        "values": [encoder.default(dt) for dt in temporal_extent.values] + list(map(str, temporal_extent.intervals))
     }
 
 
+def json_encode_unit(unit: Unit, encoder: Optional["EdrJsonEncoder"] = None) -> Dict[str, Any]:
+    encoded_unit = {}
+
+    if unit.symbol:
+        encoded_unit["symbol"] = unit.symbol if isinstance(unit.symbol, str) else encoder.default(unit.symbol)
+    if unit.labels:
+        # Note, the field is called `label` in the serialised output, even though it can hold multiple values
+        encoded_unit["label"] = unit.symbol if isinstance(unit.labels, str) else encoder.default(unit.labels)
+    if unit.id:
+        encoded_unit["id"] = unit.id
+
+    return encoded_unit
+
+
 def json_encode_vertical_extent(
-        vertical_extent: VerticalExtent, _urls: Optional[EdrUrlResolver] = None) -> Dict[str, Any]:
+        vertical_extent: VerticalExtent, _encoder: Optional["EdrJsonEncoder"] = None) -> Dict[str, Any]:
     return {
         "interval": vertical_extent.interval,
         "values": vertical_extent.values,
         "vrs": str(vertical_extent.vrs),
         "name": vertical_extent.vrs.name,
     }
-
-
-def json_encode_language_map(): pass  # TODO
-
-
-def json_encode_symbol(): pass  # TODO
-
-
-def json_encode_unit(): pass  # TODO
-
-
-def json_encode_category(): pass  # TODO
-
-
-def json_encode_observed_property(): pass  # TODO
-
-
-def json_encode_parameter(): pass  # TODO
 
 
 class EdrJsonEncoder(json.JSONEncoder):
@@ -173,7 +235,7 @@ class EdrJsonEncoder(json.JSONEncoder):
                          default=default)
         self.urls = urls
 
-    ENCODER_MAP: Dict[Type, Callable[[Any, EdrUrlResolver], Dict[str, Any]]] = {
+    ENCODER_MAP: Dict[Type, Callable[[Any, "EdrJsonEncoder"], Dict[str, Any]]] = {
         Category: json_encode_category,
         CollectionMetadata: json_encode_collection,
         CollectionMetadataList: json_encode_collection_metadata_list,
@@ -193,12 +255,9 @@ class EdrJsonEncoder(json.JSONEncoder):
     }
 
     def default(self, obj: Any) -> Any:
+        """Return a JSON encodable version of objects that can't otherwise be serialised, or raise a TypeError"""
         try:
-            # We try the super method first, because this is the most common code path, since most things
-            # can be encoded by the json library
+            return self.ENCODER_MAP[type(obj)](obj, self)
+        except KeyError:
+            # Let the base class default method raise the TypeError
             return super().default(obj)
-        except TypeError as type_err:
-            try:
-                return self.ENCODER_MAP[type(obj)](obj, self.urls)
-            except KeyError:
-                raise type_err  # Re-raise original error, it's more appropriate than a Key Error

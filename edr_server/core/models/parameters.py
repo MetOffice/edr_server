@@ -66,7 +66,7 @@ class Parameter:
     https://github.com/opengeospatial/ogcapi-environmental-data-retrieval/blob/e8a78f9/standard/openapi/schemas/parameterNames.yaml
     """
     id: str
-    units: Unit
+    unit: Unit
     observed_property: str
     data_type: Optional[ParameterDataType] = None
     description: Optional[Union[LanguageMap, str]] = None
