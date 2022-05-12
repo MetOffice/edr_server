@@ -2,12 +2,12 @@ import json
 from datetime import datetime
 from typing import Any, Callable, Dict, Optional, Tuple, Type
 
-from .models.extents import Extents, SpatialExtent, TemporalExtent, VerticalExtent
-from .models.i18n import LanguageMap
-from .models.links import DataQuery, DataQueryLink, Link
-from .models.metadata import CollectionMetadata, CollectionMetadataList
-from .models.parameters import Category, ObservedProperty, Parameter, Symbol, Unit
-from .models.urls import EdrUrlResolver
+from ..models.extents import TemporalExtent, Extents, SpatialExtent, VerticalExtent
+from ..models.i18n import LanguageMap
+from ..models.links import Link, DataQuery, DataQueryLink
+from ..models.metadata import CollectionMetadata, CollectionMetadataList
+from ..models.parameters import Symbol, Unit, Category, ObservedProperty, Parameter
+from ..models.urls import EdrUrlResolver
 
 
 def json_encode_category(category: Category, encoder: "EdrJsonEncoder") -> Dict[str, Any]:

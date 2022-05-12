@@ -9,7 +9,7 @@ from tornado.httpclient import AsyncHTTPClient
 from tornado.web import HTTPError, RequestHandler
 
 from edr_server.core.models.urls import EdrUrlResolver
-from edr_server.core.serialisation import EdrJsonEncoder
+from edr_server.core.serialisation.encode import EdrJsonEncoder
 
 
 class QueryParameters(object):
