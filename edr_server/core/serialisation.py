@@ -1,5 +1,5 @@
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, Callable, Type, Optional, Tuple
 
 from .models.extents import TemporalExtent, Extents, SpatialExtent, VerticalExtent
@@ -50,7 +50,7 @@ def json_encode_datetime(dt: datetime, _encoder: Optional["EdrJsonEncoder"] = No
     # Whilst wrapping this simple function call in a function may seem like overkill, it allows us to include it in
     # EdrJsonEncoder.ENCODER_MAP, so it gets hooked into the JSON Encoder correctly. Also, it documents that datetime
     # objects should be encoded using the ISO 8601 datetime format.
-    return dt.isoformat()
+    return dt.utcnow().replace(tzinfo=timezone.utc).isoformat()
 
 
 def json_encode_data_query_link(dq_link: DataQueryLink, encoder: "EdrJsonEncoder") -> Dict[str, Any]:
