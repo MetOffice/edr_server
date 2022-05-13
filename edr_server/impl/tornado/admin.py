@@ -1,7 +1,7 @@
 """Utilities related to the creation of EDR compliant response payloads, such as valid JSON responses"""
 import logging
 from pathlib import Path
-from typing import Optional, Awaitable
+from typing import Optional, Awaitable, AnyStr
 
 from tornado.web import removeslash
 
@@ -28,8 +28,8 @@ class RefreshCollectionsHandler(BaseRequestHandler):
         return super().data_received(chunk)  # TODO can just pass/return None?
 
     @staticmethod
-    def _save_cached_response(collection_name: str, rendered_template: bytes, cache_file_path: Path):
-        with open(cache_file_path, "wb") as f:
+    def _save_cached_response(collection_name: str, rendered_template: AnyStr, cache_file_path: Path):
+        with open(cache_file_path, "w", encoding="utf-8") as f:
             f.write(rendered_template)
         APP_LOGGER.debug(f"Wrote collection JSON for {collection_name} to {cache_file_path}")
 
@@ -45,12 +45,12 @@ class RefreshCollectionsHandler(BaseRequestHandler):
         # Store updated individual collection metadata files.
         for collection in collections_metadata.collections:
             cache_file_path = self.collections_cache_path / Path(f"{collection.id}.json")
-            serialised_response = self.json_encoder.encode(collection).encode("utf-8")
+            serialised_response = self.json_encoder.encode(collection)
             self._save_cached_response(collection.id, serialised_response, cache_file_path)
 
         # Store the updated metadata for all collections as well.
         cache_file_path = self.collections_cache_path / Path(f"collections.json")
-        serialised_response = self.json_encoder.encode(collections_metadata).encode("utf-8")
+        serialised_response = self.json_encoder.encode(collections_metadata)
         self._save_cached_response("collections endpoint", serialised_response, cache_file_path)
 
         msg = f"Refreshed cache with {len(collections_metadata.collections)} collections"

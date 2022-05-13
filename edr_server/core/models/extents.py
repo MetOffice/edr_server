@@ -9,23 +9,6 @@ import shapely.geometry
 from ._types_and_defaults import DEFAULT_CRS, DEFAULT_VRS, DEFAULT_TRS
 from .time import DateTimeInterval
 
-
-@dataclass
-class TemporalReferenceSystem:
-    """
-    I haven't found a library like pyproj that supports temporal reference systems, but would rather use one if it
-    existed.
-
-    EDR's core specification only supports Gregorian, however, so this will do for now. If implementors need something
-     other than Gregorian, they can override the defaults.
-
-    Based on a portion of
-    https://github.com/opengeospatial/ogcapi-environmental-data-retrieval/blob/546c338/standard/openapi/schemas/extent.yaml
-    """
-    name: str = "Gregorian"
-    wkt: pyproj.CRS = DEFAULT_TRS
-
-
 T = TypeVar("T")
 
 
@@ -53,7 +36,7 @@ class TemporalExtent:
     """
     values: List[datetime] = dataclasses.field(default_factory=list)
     intervals: List[DateTimeInterval] = dataclasses.field(default_factory=list)
-    trs: TemporalReferenceSystem = TemporalReferenceSystem()
+    trs: pyproj.CRS = DEFAULT_TRS
 
     @property
     def interval(self) -> "ScalarBounds[Optional[datetime]]":

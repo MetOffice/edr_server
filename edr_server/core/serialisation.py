@@ -194,7 +194,7 @@ def json_encode_temporal_extent(
         temporal_extent: TemporalExtent, encoder: Optional["EdrJsonEncoder"] = None) -> Dict[str, Any]:
     return {
         "name": temporal_extent.trs.name,
-        "trs": temporal_extent.trs.wkt,
+        "trs": str(temporal_extent.trs),
         "interval": [temporal_extent.bounds],
         "values": [encoder.default(dt) for dt in temporal_extent.values] + list(map(str, temporal_extent.intervals))
     }
