@@ -83,6 +83,7 @@ class SpatialExtent:
     Based on a portion of
     https://github.com/opengeospatial/ogcapi-environmental-data-retrieval/blob/546c338/standard/openapi/schemas/extent.yaml
     """
+    # TODO support multiple bounding boxes (https://github.com/ADAQ-AQI/edr_server/issues/31)
     bbox: shapely.geometry.Polygon
     crs: pyproj.CRS = DEFAULT_CRS
 

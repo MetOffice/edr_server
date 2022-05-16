@@ -183,7 +183,8 @@ def json_encode_parameter(param: Parameter, encoder: Optional["EdrJsonEncoder"] 
 def json_encode_spatial_extent(
         spatial_extent: SpatialExtent, _encoder: Optional["EdrJsonEncoder"] = None) -> Dict[str, Any]:
     return {
-        "bbox": list(spatial_extent.bounds),
+        # TODO support multiple bounding boxes (https://github.com/ADAQ-AQI/edr_server/issues/31)
+        "bbox": [list(spatial_extent.bounds)],
         "crs_details": spatial_extent.crs.to_wkt(),
         "name": spatial_extent.crs.name,
     }
