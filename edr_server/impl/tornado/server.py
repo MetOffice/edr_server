@@ -6,11 +6,8 @@ from .config import config
 from ...core import EdrDataInterface
 
 
-def make_app(data_interface: EdrDataInterface = None) -> Application:
+def make_app(data_interface: EdrDataInterface) -> Application:
     collections_cache_path = config.collections_cache_path()
-    if not data_interface:
-        data_interface = config.data_interface()
-    supported_data_queries = config.data_queries()
 
     return Application(
         [

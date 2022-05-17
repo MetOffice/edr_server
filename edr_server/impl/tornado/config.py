@@ -52,35 +52,5 @@ class Config(object):
         cjpath.mkdir(parents=True, exist_ok=True)
         return cjpath
 
-    def data_interface(self) -> types.ModuleType:
-        """
-        The data interface implementation must be provided by either:
-          * a named concrete implementation directory in `edr_data_interface`
-            (set in `data.interface.name` in `config.yml`), or
-          * an importable path to a directory containing the modules required
-            by the interface that's provided by a 3rd-party data interface library;
-            for example `my_data_library.edr_interface` (set in
-            `data.interface.path` in `config.yml`).
-
-        Only one of these options may be set. An error is raised in the case of both
-        or neither being set.
-
-        """
-        data_interface_name = self.yaml["data"]["interface"]["name"]
-        data_interface_path = self.yaml["data"]["interface"]["path"]
-
-        error = None
-        if data_interface_name is None and data_interface_path is None:
-            error = "neither"
-        elif data_interface_name is not None and data_interface_path is not None:
-            error = "both"
-
-        if error:
-            raise ValueError(f"Either `data.interface.name` or `data.interface.path` "
-                             f"must be set in `config.yml`, but {error} were.")
-
-        data_interface = f"edr_data_interface.{data_interface_name}"
-        return importlib.import_module(data_interface)
-
 
 config = Config()

@@ -13,7 +13,9 @@ class AbstractCollectionsMetadataDataInterface(ABC):
 
     @abstractmethod
     def get(self, collection_id: CollectionId) -> CollectionMetadata:
-        pass
+        """Get a collection by ID
+        :raises: CollectionNotFoundException if a collection with the given ID doesn't exist
+        """
 
 
 class AbstractItemsDataInterface(ABC):
