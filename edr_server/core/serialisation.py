@@ -1,12 +1,12 @@
 import json
-from datetime import datetime, timezone
-from typing import Any, Dict, Callable, Type, Optional, Tuple
+from datetime import datetime
+from typing import Any, Callable, Dict, Optional, Tuple, Type
 
-from .models.extents import TemporalExtent, Extents, SpatialExtent, VerticalExtent
+from .models.extents import Extents, SpatialExtent, TemporalExtent, VerticalExtent
 from .models.i18n import LanguageMap
-from .models.links import Link, DataQuery, DataQueryLink
+from .models.links import DataQuery, DataQueryLink, Link
 from .models.metadata import CollectionMetadata, CollectionMetadataList
-from .models.parameters import Symbol, Unit, Category, ObservedProperty, Parameter
+from .models.parameters import Category, ObservedProperty, Parameter, Symbol, Unit
 from .models.urls import EdrUrlResolver
 
 
@@ -50,7 +50,13 @@ def json_encode_datetime(dt: datetime, _encoder: Optional["EdrJsonEncoder"] = No
     # Whilst wrapping this simple function call in a function may seem like overkill, it allows us to include it in
     # EdrJsonEncoder.ENCODER_MAP, so it gets hooked into the JSON Encoder correctly. Also, it documents that datetime
     # objects should be encoded using the ISO 8601 datetime format.
-    return dt.utcnow().replace(tzinfo=timezone.utc).isoformat()
+
+    # Is your serialisaed datetime missing a `Z` or other timezone designator?
+    # You need to set the timezone on your datetimes, otherwise it is a timezone naive datetime and will not have
+    # timezone information. E.g. datetime(2022,5,19, tzinfo=timezone.utc) or datetime.now().replace(tzinfo=timezone.utc)
+
+    # This code is fine and correctly handles both timezone aware and timezone naive datetimes.
+    return dt.isoformat()  # Did I mention that if you're having timezone serialisation issues, this code is fine?
 
 
 def json_encode_data_query_link(dq_link: DataQueryLink, encoder: "EdrJsonEncoder") -> Dict[str, Any]:
@@ -83,7 +89,7 @@ def json_encode_data_query(dq: DataQuery, _encoder: Optional["EdrJsonEncoder"] =
         "query_type": dq.query_type.name.lower(),
         "output_formats": dq.output_formats,
         "default_output_format": dq.default_output_format,
-        "crs_details": [{"crs_details": crs.name, "wkt": str(crs)} for crs in dq.crs_details]
+        "crs_details": [{"crs_details": crs.name, "wkt": crs.to_wkt()} for crs in dq.crs_details]
     }
 
     if dq.height_units:
@@ -178,7 +184,7 @@ def json_encode_spatial_extent(
         spatial_extent: SpatialExtent, _encoder: Optional["EdrJsonEncoder"] = None) -> Dict[str, Any]:
     return {
         "bbox": list(spatial_extent.bounds),
-        "crs_details": str(spatial_extent.crs),
+        "crs_details": spatial_extent.crs.to_wkt(),
         "name": spatial_extent.crs.name,
     }
 
@@ -194,7 +200,7 @@ def json_encode_temporal_extent(
         temporal_extent: TemporalExtent, encoder: Optional["EdrJsonEncoder"] = None) -> Dict[str, Any]:
     return {
         "name": temporal_extent.trs.name,
-        "trs": str(temporal_extent.trs),
+        "trs": temporal_extent.trs.to_wkt(),
         "interval": [temporal_extent.bounds],
         "values": [encoder.default(dt) for dt in temporal_extent.values] + list(map(str, temporal_extent.intervals))
     }
@@ -207,7 +213,7 @@ def json_encode_unit(unit: Unit, encoder: Optional["EdrJsonEncoder"] = None) -> 
         encoded_unit["symbol"] = unit.symbol if isinstance(unit.symbol, str) else encoder.default(unit.symbol)
     if unit.labels:
         # Note, the field is called `label` in the serialised output, even though it can hold multiple values
-        encoded_unit["label"] = unit.symbol if isinstance(unit.labels, str) else encoder.default(unit.labels)
+        encoded_unit["label"] = unit.labels if isinstance(unit.labels, str) else encoder.default(unit.labels)
     if unit.id:
         encoded_unit["id"] = unit.id
 
@@ -217,9 +223,9 @@ def json_encode_unit(unit: Unit, encoder: Optional["EdrJsonEncoder"] = None) -> 
 def json_encode_vertical_extent(
         vertical_extent: VerticalExtent, _encoder: Optional["EdrJsonEncoder"] = None) -> Dict[str, Any]:
     return {
-        "interval": vertical_extent.interval,
-        "values": vertical_extent.values,
-        "vrs": str(vertical_extent.vrs),
+        "interval": list(map(str, vertical_extent.interval)),
+        "values": list(map(str, vertical_extent.values)),
+        "vrs": vertical_extent.vrs.to_wkt(),
         "name": vertical_extent.vrs.name,
     }
 

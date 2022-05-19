@@ -2,9 +2,9 @@ import math
 import operator
 import re
 from dataclasses import dataclass
-from datetime import timedelta, datetime
-from functools import total_ordering, cached_property
-from typing import Optional, Union, Dict, Any, Callable
+from datetime import datetime, timedelta
+from functools import cached_property, total_ordering
+from typing import Any, Callable, Dict, Optional, Union
 
 import dateutil.parser
 from dateutil.relativedelta import relativedelta

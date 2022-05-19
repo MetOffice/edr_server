@@ -1,5 +1,5 @@
-from dataclasses import dataclass
 import datetime
+from dataclasses import dataclass
 from typing import Dict, List, Tuple, Union
 
 import numpy.ma as ma

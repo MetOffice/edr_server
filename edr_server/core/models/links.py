@@ -1,10 +1,10 @@
 from dataclasses import dataclass, field
-from typing import Optional, List
+from typing import List, Optional
 
 import pyproj
 
-from ._types_and_defaults import EdrDataQuery, DEFAULT_CRS, CollectionId
-from .urls import EdrUrlResolver, URL
+from ._types_and_defaults import DEFAULT_CRS, CollectionId, EdrDataQuery
+from .urls import URL, EdrUrlResolver
 
 
 @dataclass

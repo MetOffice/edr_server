@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Dict, Callable
+from typing import Callable, Dict
 
 from ._types_and_defaults import EdrDataQuery
 

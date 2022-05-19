@@ -5,9 +5,9 @@ import pyproj
 
 from ._types_and_defaults import CollectionId, EdrDataQuery
 from .extents import Extents
-from .links import Link, DataQueryLink
-from .urls import EdrUrlResolver
+from .links import DataQueryLink, Link
 from .parameters import Parameter
+from .urls import EdrUrlResolver
 
 
 @dataclass

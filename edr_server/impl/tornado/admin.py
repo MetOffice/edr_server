@@ -1,12 +1,12 @@
 """Utilities related to the creation of EDR compliant response payloads, such as valid JSON responses"""
 import logging
 from pathlib import Path
-from typing import Optional, Awaitable, AnyStr
+from typing import AnyStr, Awaitable, Optional
 
 from tornado.web import removeslash
 
-from .handlers import BaseRequestHandler
 from ...core import AbstractCollectionsMetadataDataInterface
+from .handlers import BaseRequestHandler
 
 APP_LOGGER = logging.getLogger("tornado.application")
 

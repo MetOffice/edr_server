@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Optional, Union, Type, List
+from typing import List, Optional, Type, Union
 
 from .extents import Extents
 from .i18n import LanguageMap
@@ -67,7 +67,7 @@ class Parameter:
     """
     id: str
     unit: Unit
-    observed_property: str
+    observed_property: ObservedProperty
     data_type: Optional[ParameterDataType] = None
     description: Optional[Union[LanguageMap, str]] = None
     label: Optional[str] = None

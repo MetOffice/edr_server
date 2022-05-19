@@ -1,12 +1,12 @@
 import dataclasses
 from dataclasses import dataclass
 from datetime import datetime
-from typing import List, Optional, NamedTuple, Generic, TypeVar
+from typing import Generic, List, NamedTuple, Optional, TypeVar
 
 import pyproj
 import shapely.geometry
 
-from ._types_and_defaults import DEFAULT_CRS, DEFAULT_VRS, DEFAULT_TRS
+from ._types_and_defaults import DEFAULT_CRS, DEFAULT_TRS, DEFAULT_VRS
 from .time import DateTimeInterval
 
 T = TypeVar("T")
@@ -127,5 +127,5 @@ class Extents:
     https://github.com/opengeospatial/ogcapi-environmental-data-retrieval/blob/546c338/standard/openapi/schemas/extent.yaml
     """
     spatial: SpatialExtent
-    temporal: Optional[TemporalExtent]
-    vertical: Optional[VerticalExtent]
+    temporal: Optional[TemporalExtent] = None
+    vertical: Optional[VerticalExtent] = None

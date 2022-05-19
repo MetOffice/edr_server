@@ -324,10 +324,13 @@ class _DomainOrFeatureHandler(Handler):
     def initialize(self, data_interface, **kwargs):
         super().initialize(**kwargs)
         self.data_interface = data_interface
-        self.items_url = self.reverse_url_full("items_query", self.collection_id)
+
+    def get(self, collection_id):
+        self.items_url = self.reverse_url_full("items_query", collection_id)
+        super().get(collection_id)
 
     def _get_interface(self):
-        provider_class = getattr(self.data_interface, self.__class__.__name__)
+        provider_class = getattr(self.data_interface, self.__class__.__name__.replace("Handler", ""))
         return provider_class(
             self.collection_id,
             self.query_parameters.parameters,
@@ -548,17 +551,19 @@ class LocationHandler(Handler):
     handler_type = "domain"
 
     def initialize(self, data_interface, **kwargs):
+        self.data_interface = data_interface
         super().initialize(**kwargs)
+
+    def get(self, collection_id, location_id):
+        self.collection_id = collection_id
+        self.location_id = location_id
         items_url = self.reverse_url_full("items_query", self.collection_id)
-        self.interface = data_interface.Location(
+        self.interface = self.data_interface.Location(
             self.collection_id,
             self.location_id,
             self.query_parameters.parameters,
             items_url
         )
-
-    def get(self, collection_id, location_id):
-        self.location_id = location_id
         super().get(collection_id)
 
     def _get_render_args(self) -> Dict:
