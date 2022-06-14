@@ -4,11 +4,14 @@ from edr_server.utils.paths import app_relative_path_to_absolute
 
 from ...core import EdrDataInterface
 from . import admin, collection, handlers
-from .config import config
+from edr_server.core.config import config
 
 
-def make_app(data_interface: EdrDataInterface) -> Application:
+def make_app(data_interface: EdrDataInterface = None) -> Application:
     collections_cache_path = config.collections_cache_path()
+
+    if data_interface is None:
+        data_interface = config.data_interface()
 
     return Application(
         [
