@@ -1,18 +1,21 @@
 from abc import ABC, abstractmethod
 from typing import List, Optional
 
-from edr_server.core.models import CollectionId, ItemId, CollectionMetadata, ItemMetadata
+from .models import CollectionId, ItemId
+from .models.metadata import CollectionMetadata, CollectionMetadataList, ItemMetadata
 
 
 class AbstractCollectionsMetadataDataInterface(ABC):
 
     @abstractmethod
-    def all(self) -> List[CollectionMetadata]:
+    def all(self) -> CollectionMetadataList:
         pass
 
     @abstractmethod
     def get(self, collection_id: CollectionId) -> CollectionMetadata:
-        pass
+        """Get a collection by ID
+        :raises: CollectionNotFoundException if a collection with the given ID doesn't exist
+        """
 
 
 class AbstractItemsDataInterface(ABC):

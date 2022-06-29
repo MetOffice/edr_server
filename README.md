@@ -7,45 +7,27 @@ Environmental Data Retrieval is a web standard for requesting environmental data
 
 The EDR standard an OGC (Open Geospatial Consortium) standard. Much more information on EDR is available [from the OGC](https://ogcapi.ogc.org/edr/).
 
-## Installing
+This project aims to reduce the overhead of creating an EDR server by providing a server implementation
+that allows users to provide their own data provider implementation.
 
-`pip install https://github.com/ADAQ-AQI/edr-server/archive/refs/heads/main.zip`
+Currently, the only server implementation is in [tornado](https://www.tornadoweb.org/en/stable/), but the project is 
+written so that more implementations could be  added over time. For example, an implementation using 
+[flask](https://flask.palletsprojects.com/en/2.1.x/) or [django](https://www.djangoproject.com/) or even an 
+[AWS Lambda](https://aws.amazon.com/lambda/) & [AWS API Gateway](https://aws.amazon.com/api-gateway/) based implementation.
 
-For **development** work:  
-To install the code using pip in development mode, clone the repository and run:  
-`pip install -e /path/to/repo/root/directory/`  
-(where `/path/to/repo/root/directory/` is replaced with the path to the repo's root directory)
+Implementors provide their own data provider by implementing the data interfaces defined in `edr_server.core`.  
+By adhering to a common data interface, a single server implementation can be used by multiple data providers without
+having to change the server code. 
 
-This will install the code using symlinks back to the source code, enabling changes to the code
-to take effect without having to reinstall the package manually. (Although some changes, to things such as
-the packaging config may still require a manual reinstall, most things won't)
+Depending on the needs of your project, `edr_server` can be used in two ways:
+* as a server
+* as a library/framework
 
-## Using it
+For further information on how to use `edr_server` in these different ways, please refer to:
+* [Quickstart_server](docs/Quickstart_server.md)
+* [Quickstart_library](docs/Quickstart_library.md)
 
-Run the executable Python script `bin/run_server`. It is added to the PATH by the pip installer, so it can be
-executed like this:
-
-```bash
-$ run_edr_server
-Listening on port 8808...
-```
-
-This will kick off a tornado web server (running on localhost and on port 8808 by default, which was chosen at random) 
-that runs the EDR Server.
-
-To test functionality, you could use the `requests` package to submit a request to the server:
-
-```pycon
->>> import requests
-
->>> uri = "http://localhost:8808/collections/?f=json"
->>> r = requests.get(uri)
->>> r.json()
-```
-
-If the server is functioning correctly, the last line will print the contents of the `collections` JSON file being served by the EDR server to `STDOUT`.
-
-### Troubleshooting
+## Troubleshooting
 
 If something goes wrong on the server you can check the server's error log for details. This is by default printed in the terminal session hosting the running server. For example:
 

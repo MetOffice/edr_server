@@ -1,15 +1,20 @@
 import importlib
-import types
 from pathlib import Path
-from typing import List
+from typing import List, Union, Type
 
 import yaml
 from yaml.loader import SafeLoader
 
+from edr_server.core import EdrDataInterface
+from edr_server.core.exceptions import EdrException
 from edr_server.utils.paths import app_relative_path_to_absolute
 
 
-class Config(object):
+class ConfigException(EdrException):
+    pass
+
+
+class EdrConfig:
     """
     A site-specific configuration handler.
 
@@ -17,12 +22,15 @@ class Config(object):
 
     """
 
-    def __init__(self):
+    def __init__(self, config_path: Union[Path, str]):
         """
         Set up site-specific configuration as defined in the config YAML file.
         Config file is relative to the root of the edr_server code
         """
-        self.yaml_path = app_relative_path_to_absolute("etc/config.yml")
+        if not isinstance(config_path, Path):
+            config_path = Path(config_path)
+
+        self.yaml_path = config_path.absolute()
         self._yaml = None
 
     @property
@@ -52,7 +60,7 @@ class Config(object):
         cjpath.mkdir(parents=True, exist_ok=True)
         return cjpath
 
-    def data_interface(self) -> types.ModuleType:
+    def data_interface(self) -> EdrDataInterface:
         """
         The data interface implementation must be provided by either:
           * a named concrete implementation directory in `edr_data_interface`
@@ -61,26 +69,33 @@ class Config(object):
             by the interface that's provided by a 3rd-party data interface library;
             for example `my_data_library.edr_interface` (set in
             `data.interface.path` in `config.yml`).
-
         Only one of these options may be set. An error is raised in the case of both
         or neither being set.
-
         """
-        data_interface_name = self.yaml["data"]["interface"]["name"]
-        data_interface_path = self.yaml["data"]["interface"]["path"]
+        try:
+            fq_data_interface_class_name: str = self.yaml["data"]["interface"]["fully_qualified_class_name"]
+        except KeyError as err:
+            raise ConfigException(
+                f"Looked for `data.interface.fully_qualified_class_name` in {self.yaml_path} but {err} was missing")
 
-        error = None
-        if data_interface_name is None and data_interface_path is None:
-            error = "neither"
-        elif data_interface_name is not None and data_interface_path is not None:
-            error = "both"
+        try:
+            data_interface_module_path, data_interface_class_name = fq_data_interface_class_name.rsplit(".", 1)
+        except ValueError:
+            raise ConfigException(
+                f"Unable to parse `data.interface.fully_qualified_class_name. "
+                f"Expected a module path using dotted notation, e.g. my_data_interface_module.MyEdrDataInterfaceClass;"
+                f" `data.interface.fully_qualified_class_name` was {fq_data_interface_class_name!r}"
+            )
 
-        if error:
-            raise ValueError(f"Either `data.interface.name` or `data.interface.path` "
-                             f"must be set in `config.yml`, but {error} were.")
+        try:
+            data_interface_module = importlib.import_module(data_interface_module_path)
+        except ModuleNotFoundError:
+            raise ConfigException(
+                f"Unable to import {data_interface_module_path!r}; Ensure it is installed or available via PYTHONPATH")
 
-        data_interface = f"edr_data_interface.{data_interface_name}"
-        return importlib.import_module(data_interface)
+        # noinspection PyPep8Naming
+        EdrDataInterfaceImpl: Type = getattr(data_interface_module, data_interface_class_name)
+        return EdrDataInterfaceImpl()
 
 
-config = Config()
+config = EdrConfig((Path(__file__).parents[2] / Path("etc/config.yml")).absolute())

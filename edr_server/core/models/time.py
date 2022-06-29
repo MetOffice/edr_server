@@ -1,17 +1,12 @@
-import dataclasses
 import math
 import operator
 import re
-import warnings
 from dataclasses import dataclass
 from datetime import datetime, timedelta
-from enum import Enum
-from functools import total_ordering, cached_property
-from typing import List, Optional, Union, Tuple, Dict, Callable, Any
+from functools import cached_property, total_ordering
+from typing import Any, Callable, Dict, Optional, Union
 
 import dateutil.parser
-import pyproj
-import shapely.geometry
 from dateutil.relativedelta import relativedelta
 
 
@@ -839,112 +834,3 @@ class DateTimeInterval:
                     start = dateutil.parser.isoparse(p)
 
         return DateTimeInterval(start, end, duration, recurrences)
-
-
-@dataclass
-class TemporalReferenceSystem:
-    """
-    I haven't found a library like pyproj that supports temporal reference systems, but would rather use one if it
-    existed.
-
-    EDR's core specification only supports Gregorian, however, so this will do for now. If implementors need something
-     other than Gregorian, they can override the defaults.
-    """
-    name: str = "Gregorian"
-    wkt: str = 'TIMECRS["DateTime",TDATUM["Gregorian Calendar"],CS[TemporalDateTime,1],AXIS["Time (T)",future]'
-
-
-@dataclass
-class TemporalExtent:
-    """
-    The specific times and time ranges covered by a dataset
-    A temporal extent can be made up of one or more DateTimeIntervals, one or more specific datetimes, or a
-    combination of both
-    """
-    values: List[datetime] = dataclasses.field(default_factory=list)
-    intervals: List[DateTimeInterval] = dataclasses.field(default_factory=list)
-    trs: TemporalReferenceSystem = TemporalReferenceSystem()
-
-    @property
-    def interval(self) -> Tuple[Optional[datetime], Optional[datetime]]:
-        warnings.warn("Renamed to 'bounds' to avoid confusion with a list of DateTimeIntervals", DeprecationWarning)
-        return self.bounds
-
-    @property
-    def bounds(self) -> Tuple[Optional[datetime], Optional[datetime]]:
-        """
-        Returns the earliest and latest datetimes covered by the extent.
-
-        None indicates an open-ended interval, such as where a duration repeats indefinitely. The lower bound, upper
-        bound, or both lower & and upper bounds can be open, depending on the extent being represented.
-        """
-        open_lower_bound = False
-        open_upper_bound = False
-
-        vals = self.values.copy()
-        for dti in self.intervals:
-            if dti.lower_bound:
-                vals.append(dti.lower_bound)
-            else:
-                open_lower_bound = True
-
-            if dti.upper_bound:
-                vals.append(dti.upper_bound)
-            else:
-                open_upper_bound = True
-
-        if vals:
-            return min(vals) if not open_lower_bound else None, max(vals) if not open_upper_bound else None
-        else:
-            return None, None
-
-
-@dataclass
-class SpatialExtent:
-    bbox: shapely.geometry.Polygon
-    crs: pyproj.CRS = pyproj.CRS("WGS84")
-
-    @property
-    def bounds(self):
-        return self.bbox.bounds
-
-
-@dataclass
-class Extent:
-    """A struct-like container for the geographic area and time range(s) covered by a dataset"""
-    spatial: SpatialExtent
-    temporal: TemporalExtent
-    vertical: None
-
-
-CollectionId = str
-ItemId = str
-
-
-class EdrDataQuery(Enum):
-    CUBE = "cube"
-    CORRIDOR = "corridor"
-    LOCATIONS = "locations"
-    ITEMS = "items"
-    AREA = "area"
-    POSITION = "position"
-    RADIUS = "radius"
-    TRAJECTORY = "trajectory"
-
-
-@dataclass
-class CollectionMetadata:
-    id: str
-    title: str
-    description: str
-    keywords: List[str]
-    crs: pyproj.CRS
-    extent: Extent
-    parameters: List
-    supported_data_queries: List[EdrDataQuery]
-    output_formats: List[str]
-
-
-@dataclass
-class ItemMetadata:
-    pass

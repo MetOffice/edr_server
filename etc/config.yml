@@ -13,5 +13,4 @@ collections:
 
 data:
   interface:
-    name: "dummy"
-    path: null
+    fully_qualified_class_name: "edr_data_interface.dummy.dummy_interface.DummyEdrDataInterface"

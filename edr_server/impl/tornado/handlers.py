@@ -8,6 +8,7 @@ from tornado.gen import coroutine
 from tornado.httpclient import AsyncHTTPClient
 from tornado.web import HTTPError, RequestHandler
 
+from edr_server.core.models.urls import EdrUrlResolver
 from edr_server.core.serialisation import EdrJsonEncoder
 
 
@@ -15,7 +16,7 @@ class QueryParameters(object):
     def __init__(self):
         self._params_dict = {}
         self._handle_f("f", None)  # Always set a return type.
-        self._handle_crs("crs", None)  # Always set a CRS.
+        self._handle_crs("crs_details", None)  # Always set a CRS.
 
     def __getitem__(self, key):
         return self._params_dict[key]
@@ -34,10 +35,11 @@ class QueryParameters(object):
         return self._params_dict
 
     def get(self, key, default=None):
+        result = default
         try:
             result = self.__getitem__(key)
         except KeyError:
-            result = default
+            pass
         finally:
             return result
 
@@ -137,6 +139,13 @@ class QueryParameters(object):
 class BaseRequestHandler(RequestHandler):
     """Extends tornado's RequestHandler in order to add some useful functionality that's common to all our Handlers"""
 
+    url_resolver: EdrUrlResolver
+    json_encoder: EdrJsonEncoder
+
+    def initialize(self, **_kwargs):
+        self.url_resolver = EdrUrlResolver(f"{self.request.protocol}://{self.request.host}")
+        self.json_encoder = EdrJsonEncoder(urls=self.url_resolver)
+
     def get_template_namespace(self) -> Dict[str, Any]:
         """
         The template namespace is the scope within which `tornado` renders templates.
@@ -146,7 +155,6 @@ class BaseRequestHandler(RequestHandler):
         """
         namespace = super().get_template_namespace()
         namespace["reverse_url_full"] = self.reverse_url_full
-        namespace["json_encoder"] = EdrJsonEncoder()
         return namespace
 
     def reverse_url_full(self, name: str, *args: Any, **kwargs: Dict[str, Any]):
@@ -190,6 +198,7 @@ class Handler(BaseRequestHandler):
     handler_type: str
 
     def initialize(self, **kwargs):
+        super().initialize(**kwargs)
         self.query_parameters = QueryParameters()
 
     def _get_render_args(self):
@@ -260,6 +269,7 @@ class Handler(BaseRequestHandler):
             def streaming_callback(chunk):
                 self.write(chunk)
                 self.flush()
+
             yield AsyncHTTPClient().fetch(url, streaming_callback=streaming_callback)
         else:
             # Local file to serve.
@@ -301,53 +311,59 @@ class Handler(BaseRequestHandler):
 
         """
         host = "{protocol}://{host}".format(**vars(self.request))
-        return urljoin(host, self.reverse_url(name, *args, **kwargs))
+        return urljoin(host, self.reverse_url(name, *args))
 
 
 class _DomainOrFeatureHandler(Handler):
-        """
-        Superclass for any query handler that can return either `FeatureCollection`
-        or `Domain` type JSON. This includes `Area`, `Radius` and `Position`.
+    """
+    Superclass for any query handler that can return either `FeatureCollection`
+    or `Domain` type JSON. This includes `Area`, `Radius` and `Position`.
 
-        """
-        def initialize(self, data_interface, **kwargs):
-            super().initialize(**kwargs)
-            self.data_interface = data_interface
-            self.items_url = self.reverse_url_full("items_query", self.collection_id)
+    """
 
-        def _get_interface(self):
-            provider_class = getattr(self.data_interface, self.__class__.__name__)
-            return provider_class(
-                self.collection_id,
-                self.query_parameters.parameters,
-                self.items_url
-            )
+    def initialize(self, data_interface, **kwargs):
+        super().initialize(**kwargs)
+        self.data_interface = data_interface
 
-        def _get_render_args(self) -> Dict:
-            interface = self._get_interface()
-            data, self.handler_type, error, error_code = interface.data()
-            if data is None:
-                if error is None:
-                    error = "No items found within specified coords."
-                    error_code = 404
-                code = error_code if error_code is not None else 500
-                raise HTTPError(code, error)
-            if self.handler_type == "domain":
-                render_args = {"domain": data}
-            elif self.handler_type == "feature_collection":
-                collection_bbox = interface.get_collection_bbox()
-                render_args = {"features": data, "collection_bbox": collection_bbox}
-            return render_args
+    def get(self, collection_id):
+        self.items_url = self.reverse_url_full("items_query", collection_id)
+        super().get(collection_id)
 
-        def _get_file(self):
-            interface = self._get_interface()
-            filename, url, error = interface.file_object()
-            if filename is None:
-                if error is None:
-                    raise HTTPError(404, "File not found.")
-                else:
-                    raise HTTPError(500, error)
-            return filename, url
+    def _get_interface(self):
+        provider_class = getattr(self.data_interface, self.__class__.__name__.replace("Handler", ""))
+        return provider_class(
+            self.collection_id,
+            self.query_parameters.parameters,
+            self.items_url
+        )
+
+    def _get_render_args(self) -> Dict:
+        interface = self._get_interface()
+        data, self.handler_type, error, error_code = interface.data()
+        if data is None:
+            if error is None:
+                error = "No items found within specified coords."
+                error_code = 404
+            code = error_code if error_code is not None else 500
+            raise HTTPError(code, error)
+
+        render_args = {}
+        if self.handler_type == "domain":
+            render_args = {"domain": data}
+        elif self.handler_type == "feature_collection":
+            collection_bbox = interface.get_collection_bbox()
+            render_args = {"features": data, "collection_bbox": collection_bbox}
+        return render_args
+
+    def _get_file(self):
+        interface = self._get_interface()
+        filename, url, error = interface.file_object()
+        if filename is None:
+            if error is None:
+                raise HTTPError(404, "File not found.")
+            else:
+                raise HTTPError(500, error)
+        return filename, url
 
 
 class RootHandler(Handler):
@@ -535,17 +551,19 @@ class LocationHandler(Handler):
     handler_type = "domain"
 
     def initialize(self, data_interface, **kwargs):
+        self.data_interface = data_interface
         super().initialize(**kwargs)
+
+    def get(self, collection_id, location_id):
+        self.collection_id = collection_id
+        self.location_id = location_id
         items_url = self.reverse_url_full("items_query", self.collection_id)
-        self.interface = data_interface.Location(
+        self.interface = self.data_interface.Location(
             self.collection_id,
             self.location_id,
             self.query_parameters.parameters,
             items_url
         )
-
-    def get(self, collection_id, location_id):
-        self.location_id = location_id
         super().get(collection_id)
 
     def _get_render_args(self) -> Dict:
