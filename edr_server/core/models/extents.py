@@ -3,10 +3,9 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Generic, List, NamedTuple, Optional, TypeVar
 
-import pyproj
 import shapely.geometry
 
-from ._types_and_defaults import DEFAULT_CRS, DEFAULT_TRS, DEFAULT_VRS
+from .crs import DEFAULT_CRS, DEFAULT_TRS, DEFAULT_VRS, CrsObject
 from .time import DateTimeInterval
 
 T = TypeVar("T")
@@ -36,7 +35,11 @@ class TemporalExtent:
     """
     values: List[datetime] = dataclasses.field(default_factory=list)
     intervals: List[DateTimeInterval] = dataclasses.field(default_factory=list)
-    trs: pyproj.CRS = DEFAULT_TRS
+    trs: CrsObject = DEFAULT_TRS
+
+    def __repr__(self) -> str:
+        return (f"{self.__class__.__name__}("
+                f"values={self.values!r}, intervals={self.intervals!r}, trs=pyproj.CRS({self.trs.to_wkt()!r}))")
 
     @property
     def interval(self) -> "ScalarBounds[Optional[datetime]]":
@@ -85,7 +88,10 @@ class SpatialExtent:
     """
     # TODO support multiple bounding boxes (https://github.com/ADAQ-AQI/edr_server/issues/31)
     bbox: shapely.geometry.Polygon
-    crs: pyproj.CRS = DEFAULT_CRS
+    crs: CrsObject = DEFAULT_CRS
+
+    def __repr__(self):
+        return f"{self.__class__.__name__}(shapely.wkt.loads({self.bbox.wkt!r}), pyproj.CRS({self.crs.to_wkt()!r}))"
 
     @property
     def bounds(self) -> SpatialBounds:
@@ -96,7 +102,7 @@ class SpatialExtent:
 class VerticalExtent:
     """"""
     values: List[float]
-    vrs: pyproj.CRS = DEFAULT_VRS
+    vrs: CrsObject = DEFAULT_VRS
 
     # TODO: Initially, we're only supporting the "list of vertical levels", but we'd like to support all 3 forms
     #       described here:
@@ -105,6 +111,9 @@ class VerticalExtent:
     #       * number of repetitions / min level / interval (e.g."R5/100/50")
     #       * list of vertical levels (e.g. "2",10,"80","100"}
     #       The value `null` is supported and indicates an open vertical interval.
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}({self.values!r}, pyproj.CRS({self.vrs.to_wkt()!r}))"
 
     @property
     def interval(self) -> "List[ScalarBounds[float]]":

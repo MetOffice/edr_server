@@ -24,10 +24,24 @@ class CollectionMetadata:
     supported_data_queries: List[EdrDataQuery]
     output_formats: List[str]
     parameters: List[Parameter] = field(default_factory=list)
+    extra_links: List[Link] = field(default_factory=list)
+    # data_queries  # TODO make this explicit rather than generated to make deserialisation easier?
     height_units: List[str] = field(default_factory=list)
     width_units: List[str] = field(default_factory=list)
     within_units: List[str] = field(default_factory=list)
-    extra_links: List[Link] = field(default_factory=list)
+
+    def __post_init__(self):
+        pass  # TODO can I handle extra arguments I want to ignore from deserilisation here?
+
+    def __str__(self):
+        return f"{self.id} metadata"
+
+    def __repr__(self):
+        return (f"{self.__class__.__name__}("
+                f"{self.id!r}, {self.title!r}, {self.description!r}, {self.keywords!r}, {self.extent!r}"
+                f", {self.supported_data_queries!r}, {self.parameters!r}, {self.height_units!r}, {self.width_units!r}"
+                f", {self.width_units!r}, {self.extra_links!r}"
+                f")")
 
     @property
     def crs(self) -> pyproj.CRS:

@@ -1,10 +1,14 @@
+from abc import abstractmethod
 from dataclasses import dataclass, field
-from typing import List, Optional
+from typing import List, Optional, Dict, Any, TypeVar
 
-import pyproj
+from pyproj import CRS
 
-from ._types_and_defaults import DEFAULT_CRS, CollectionId, EdrDataQuery
+from . import EdrModel
+from ._types_and_defaults import CollectionId, EdrDataQuery
+from .crs import CrsObject, DEFAULT_CRS
 from .urls import URL, EdrUrlResolver
+from ..exceptions import InvalidEdrJsonError
 
 
 @dataclass
@@ -23,7 +27,7 @@ class Link:
 
 
 @dataclass
-class DataQuery:
+class OldDataQuery:
     """
     Based on
     https://github.com/opengeospatial/ogcapi-environmental-data-retrieval/blob/546c338/standard/openapi/schemas/areaDataQuery.yaml
@@ -48,7 +52,7 @@ class DataQuery:
     height_units: Optional[List[str]] = None
     output_formats: Optional[List[str]] = None
     default_output_format: Optional[str] = None
-    crs_details: Optional[List[pyproj.CRS]] = field(default_factory=lambda: [DEFAULT_CRS])
+    crs_details: Optional[List[CRS]] = field(default_factory=lambda: [DEFAULT_CRS])
 
     @staticmethod
     def get_data_query(
@@ -57,8 +61,8 @@ class DataQuery:
             height_units: List[str] = None,
             width_units: List[str] = None,
             within_units: List[str] = None,
-            crs_details: List[pyproj.CRS] = None
-    ) -> "DataQuery":
+            crs_details: List[CRS] = None
+    ) -> "OldDataQuery":
 
         kwargs = {
             "title": f"{query_type.name.title()} Query",
@@ -104,7 +108,127 @@ class DataQuery:
         elif query_type is EdrDataQuery.TRAJECTORY:
             kwargs["description"] = "Query to return data for a defined well known text trajectory"
 
-        return DataQuery(**kwargs)
+        return OldDataQuery(**kwargs)
+
+
+E = TypeVar("E", bound="AbstractDataQuery")
+
+
+class AbstractDataQuery(EdrModel[E]):
+
+    def __init__(
+            self, output_formats: Optional[List[str]] = None, default_output_format: Optional[str] = None,
+            crs_details: Optional[List[CrsObject]] = None, title: Optional[str] = None,
+            description: Optional[str] = None,
+    ):
+        if crs_details is None:
+            crs_details = [DEFAULT_CRS]
+
+        self._title = title
+        self._description = description
+        self._output_formats = output_formats
+
+        if default_output_format:
+            self._default_output_format = default_output_format
+        elif self._output_formats:
+            self._default_output_format = self._output_formats[0]
+        else:
+            self._default_output_format = None
+
+        self._crs_details = crs_details
+
+    def _key(self) -> tuple:
+        """Used to construct a tuple of values to use in hashing and equality comparisons"""
+        return self._title, self._description, self._output_formats, self._default_output_format, self._crs_details
+
+    def __eq__(self, other: Any) -> bool:
+        return self._key() == other._key() if isinstance(other, AbstractDataQuery) else False
+
+    @classmethod
+    @abstractmethod
+    def get_query_type(cls) -> EdrDataQuery:
+        # I want each subclass to provide the correct value for this, and also want it accessible to the class method
+        # from_json(). I'd prefer it to be an abstract class property, but abstract class method is the best I
+        # could find a reasonable way of implementing without adding a bunch of extra code
+        raise NotImplemented
+
+    @property
+    def title(self) -> Optional[str]:
+        return self._title
+
+    @property
+    def description(self) -> Optional[str]:
+        return self._description
+
+    @property
+    def output_formats(self) -> List[str]:
+        return self._output_formats if self._output_formats else []
+
+    @property
+    def default_output_format(self) -> Optional[str]:
+        return self._default_output_format
+
+    @property
+    def crs_details(self) -> Optional[List[CrsObject]]:
+        return self._crs_details
+
+    def to_json(self) -> Dict[str, Any]:
+        j_dict = {
+            "query_type": self.get_query_type().name.lower()
+        }
+        if self._title is not None:
+            j_dict["title"] = self._title
+        if self._description is not None:
+            j_dict["description"] = self._description
+        if self._output_formats:  # Slightly different from the others, we only include it if the list has values
+            j_dict["output_formats"] = self._output_formats
+        if self._default_output_format is not None:
+            j_dict["default_output_format"] = self._default_output_format
+        if self._crs_details is not None:
+            j_dict["crs_details"] = [crs.to_json() for crs in self._crs_details]
+
+        return j_dict
+
+    @classmethod
+    def from_json(cls, json_dict: Dict[str, Any]) -> E:
+        kwargs = json_dict.copy()
+
+        if "query_type" in json_dict:
+            expected_query_type = cls.get_query_type().name.lower()
+            if json_dict["query_type"] != expected_query_type:
+                raise InvalidEdrJsonError(f"JSON has 'query_type'={json_dict['query_type']!r}"
+                                          f" but {expected_query_type!r} was expected")
+            del kwargs["query_type"]
+
+        if "crs_details" in kwargs:
+            kwargs["crs_details"] = [CrsObject.from_json(crs) for crs in kwargs["crs_details"]]
+
+        return cls(**kwargs)
+
+
+class AreaDataQuery(AbstractDataQuery["AreaDataQuery"]):
+
+    def __init__(
+            self,
+            output_formats: Optional[List[str]] = None, default_output_format: Optional[str] = None,
+            crs_details: Optional[List[CrsObject]] = None,
+            title: Optional[str] = "Area Data Query",
+            description: Optional[str] = "Query to return data for a defined area",
+    ):
+        super().__init__(output_formats, default_output_format, crs_details, title, description)
+
+    @classmethod
+    def get_query_type(cls) -> EdrDataQuery:
+        return EdrDataQuery.AREA
+
+
+CORRIDOR = "corridor"
+CUBE = "cube"
+ITEMS = "items"
+LOCATIONS = "locations"
+POSITION = "position"
+RADIUS = "radius"
+TRAJECTORY = "trajectory"
 
 
 @dataclass
@@ -130,7 +254,7 @@ class DataQueryLink:
     # Duplication was the easiest workaround
     href: URL
     rel: str
-    variables: DataQuery
+    variables: OldDataQuery
     type: Optional[str] = None
     hreflang: Optional[str] = None
     title: Optional[str] = None
@@ -150,7 +274,7 @@ class DataQueryLink:
             height_units: List[str] = None,
             width_units: List[str] = None,
             within_units: List[str] = None,
-            crs_details: List[pyproj.CRS] = None
+            crs_details: List[CRS] = None
     ) -> "DataQueryLink":
         if crs_details is None:
             crs_details = [DEFAULT_CRS]
@@ -158,7 +282,7 @@ class DataQueryLink:
         return DataQueryLink(
             href=urls.COLLECTION_DATA_QUERY_MAP[query_type](collection_id),
             rel="data",
-            variables=DataQuery.get_data_query(
+            variables=OldDataQuery.get_data_query(
                 query_type, output_formats, height_units, width_units, within_units, crs_details),
             type=query_type.name.lower(),
             hreflang="en",

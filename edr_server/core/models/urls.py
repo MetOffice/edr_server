@@ -37,7 +37,7 @@ class EdrUrlResolver:
 
     It could be extended to add additional implementation specific functionality.
     """
-    api_base: str
+    api_base: URL
 
     def __post_init__(self):
         # https://docs.python.org/3/library/dataclasses.html#post-init-processing

@@ -15,7 +15,7 @@ from shapely.geometry import box, Polygon
 from ..models import EdrDataQuery
 from ..models.extents import TemporalExtent, Extents, SpatialExtent, VerticalExtent
 from ..models.i18n import LanguageMap
-from ..models.links import Link, DataQuery, DataQueryLink
+from ..models.links import Link, OldDataQuery, DataQueryLink
 from ..models.metadata import CollectionMetadata, CollectionMetadataList
 from ..models.parameters import Symbol, Unit, Category, ObservedProperty, Parameter
 from ..models.time import DateTimeInterval
@@ -77,11 +77,11 @@ def json_decode_data_query_link(encoded_dq_link: Dict[str, Any]) -> DataQueryLin
     return DataQueryLink(**kwargs)
 
 
-def json_decode_data_query(encoded_dq: Dict[str, Any]) -> DataQuery:
+def json_decode_data_query(encoded_dq: Dict[str, Any]) -> OldDataQuery:
     kwargs = encoded_dq
     kwargs["query_type"] = EdrDataQuery[kwargs["query_type"].upper()]
     kwargs["crs_details"] = [pyproj.CRS(encoded_crs["wkt"]) for encoded_crs in kwargs["crs_details"]]
-    return DataQuery(**kwargs)
+    return OldDataQuery(**kwargs)
 
 
 def json_decode_extents(encoded_extents: Dict[str, Any]) -> Extents:

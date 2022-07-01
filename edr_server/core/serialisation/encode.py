@@ -4,10 +4,14 @@ from typing import Any, Callable, Dict, Optional, Tuple, Type
 
 from ..models.extents import TemporalExtent, Extents, SpatialExtent, VerticalExtent
 from ..models.i18n import LanguageMap
-from ..models.links import Link, DataQuery, DataQueryLink
+from ..models.links import Link, OldDataQuery, DataQueryLink, AreaDataQuery
 from ..models.metadata import CollectionMetadata, CollectionMetadataList
 from ..models.parameters import Symbol, Unit, Category, ObservedProperty, Parameter
 from ..models.urls import EdrUrlResolver
+
+
+def json_encode_area_data_query(area_dq: AreaDataQuery, _encoder: "EdrJsonEncoder") -> Dict[str, Any]:
+    return area_dq.to_json()
 
 
 def json_encode_category(category: Category, encoder: "EdrJsonEncoder") -> Dict[str, Any]:
@@ -31,7 +35,8 @@ def json_encode_collection(collection: CollectionMetadata, encoder: "EdrJsonEnco
         "description": collection.description,
         "keywords": collection.keywords,
         "extent": encoder.default(collection.extent),
-        "data_queries": {dl.type: {"link": encoder.default(dl)} for dl in collection.get_data_query_links(encoder.urls)},
+        "data_queries": {dl.type: {"link": encoder.default(dl)}
+                         for dl in collection.get_data_query_links(encoder.urls)},
         "crs_details": [str(collection.extent.spatial.crs)],
         "output_formats": collection.output_formats,
         "parameter_names": {param.id: encoder.default(param) for param in collection.parameters},
@@ -82,7 +87,7 @@ def json_encode_data_query_link(dq_link: DataQueryLink, encoder: "EdrJsonEncoder
     return encoded_link
 
 
-def json_encode_data_query(dq: DataQuery, _encoder: Optional["EdrJsonEncoder"] = None) -> Dict[str, Any]:
+def json_encode_data_query(dq: OldDataQuery, _encoder: Optional["EdrJsonEncoder"] = None) -> Dict[str, Any]:
     encoded_dq = {
         "title": dq.title,
         "descriptions": dq.description,
@@ -247,7 +252,7 @@ class EdrJsonEncoder(json.JSONEncoder):
         CollectionMetadata: json_encode_collection,
         CollectionMetadataList: json_encode_collection_metadata_list,
         datetime: json_encode_datetime,
-        DataQuery: json_encode_data_query,
+        OldDataQuery: json_encode_data_query,
         DataQueryLink: json_encode_data_query_link,
         Extents: json_encode_extents,
         LanguageMap: json_encode_language_map,
