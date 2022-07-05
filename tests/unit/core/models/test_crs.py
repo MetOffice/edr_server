@@ -1,6 +1,8 @@
 import unittest
 
-from edr_server.core.models.crs import CrsObject
+import pytest
+
+from edr_server.core.models.crs import CrsObject, DEFAULT_CRS, DEFAULT_VRS, DEFAULT_TRS
 
 
 class CrsObjectTest(unittest.TestCase):
@@ -20,6 +22,17 @@ class CrsObjectTest(unittest.TestCase):
                  'ANGLEUNIT["degree",0.0174532925199433]],USAGE[SCOPE["Horizontal component of 3D system."],'
                  'AREA["World."],BBOX[-90,-180,90,180]],ID["EPSG",4326]]')
 
+    def test__repr__(self):
+        crs1 = CrsObject(4326)
+        expected_repr_crs1 = "CrsObject(4326)"
+        self.assertEqual(expected_repr_crs1, repr(crs1))
+
+        crs2_wkt = ('VERTCS["WGS_1984",DATUM["D_WGS_1984",SPHEROID["WGS_1984",6378137.0,298.257223563]],'
+                    'PARAMETER["Vertical_Shift",0.0],PARAMETER["Direction",1.0],UNIT["Meter",1.0]],AXIS["Up",UP]')
+        crs2 = CrsObject(crs2_wkt)
+        expected_repr_crs2 = f"CrsObject({crs2_wkt!r})"
+        self.assertEqual(expected_repr_crs2, repr(crs2))
+
     def test_to_json(self):
         expected = {"crs": "WGS 84", "wkt": self.WGS84_WKT}
         actual = CrsObject("WGS84").to_json()
@@ -29,3 +42,16 @@ class CrsObjectTest(unittest.TestCase):
         expected = CrsObject("WGS84")
         actual = CrsObject.from_json({"crs": "WGS 84", "wkt": self.WGS84_WKT})
         self.assertEqual(expected, actual)
+
+
+@pytest.mark.parametrize("default, expected", (
+        (DEFAULT_CRS, CrsObject(4326)),
+        (DEFAULT_VRS, CrsObject(
+            'VERTCS["WGS_1984",DATUM["D_WGS_1984",SPHEROID["WGS_1984",6378137.0,298.257223563]],'
+            'PARAMETER["Vertical_Shift",0.0],PARAMETER["Direction",1.0],UNIT["Meter",1.0]],AXIS["Up",UP]'
+        )),
+        (DEFAULT_TRS, CrsObject(
+            'TIMECRS["DateTime",TDATUM["Gregorian Calendar"],CS[TemporalDateTime,1],AXIS["Time (T)",future]]')),
+))
+def test_default_crs(default: CrsObject, expected: CrsObject):
+    assert default == expected

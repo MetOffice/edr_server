@@ -38,8 +38,7 @@ class TemporalExtent:
     trs: CrsObject = DEFAULT_TRS
 
     def __repr__(self) -> str:
-        return (f"{self.__class__.__name__}("
-                f"values={self.values!r}, intervals={self.intervals!r}, trs=pyproj.CRS({self.trs.to_wkt()!r}))")
+        return f"{self.__class__.__name__}(values={self.values!r}, intervals={self.intervals!r}, trs={self.trs!r})"
 
     @property
     def interval(self) -> "ScalarBounds[Optional[datetime]]":
@@ -91,7 +90,7 @@ class SpatialExtent:
     crs: CrsObject = DEFAULT_CRS
 
     def __repr__(self):
-        return f"{self.__class__.__name__}(shapely.wkt.loads({self.bbox.wkt!r}), pyproj.CRS({self.crs.to_wkt()!r}))"
+        return f"{self.__class__.__name__}(shapely.wkt.loads({self.bbox.wkt!r}), {self.crs!r})"
 
     @property
     def bounds(self) -> SpatialBounds:
@@ -113,7 +112,7 @@ class VerticalExtent:
     #       The value `null` is supported and indicates an open vertical interval.
 
     def __repr__(self) -> str:
-        return f"{self.__class__.__name__}({self.values!r}, pyproj.CRS({self.vrs.to_wkt()!r}))"
+        return f"{self.__class__.__name__}({self.values!r}, {self.vrs!r})"
 
     @property
     def interval(self) -> "List[ScalarBounds[float]]":
