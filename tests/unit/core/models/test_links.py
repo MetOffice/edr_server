@@ -3,7 +3,7 @@ import unittest
 from edr_server.core.exceptions import InvalidEdrJsonError
 from edr_server.core.models import EdrDataQuery
 from edr_server.core.models.crs import CrsObject
-from edr_server.core.models.links import AreaDataQuery, CorridorDataQuery, CubeDataQuery
+from edr_server.core.models.links import AreaDataQuery, CorridorDataQuery, CubeDataQuery, LocationsDataQuery
 
 
 class AreaDataQueryTest(unittest.TestCase):
@@ -12,9 +12,7 @@ class AreaDataQueryTest(unittest.TestCase):
         test_title = "Area Data Query"
         test_description = "This is a description that doesn't describe anything"
         test_output_formats = ["application/netcdf", "application/geo+json", "application/prs.coverage+json"]
-        test_crs_details = [
-            CrsObject(4326), CrsObject(4277), CrsObject(4188)
-        ]
+        test_crs_details = [CrsObject(4326), CrsObject(4277), CrsObject(4188)]
 
         self.test_area_query = AreaDataQuery(
             test_output_formats, test_output_formats[0], test_crs_details, test_title, test_description)
@@ -38,7 +36,7 @@ class AreaDataQueryTest(unittest.TestCase):
         actual_area_dq = AreaDataQuery()
 
         self.assertEqual(actual_area_dq.title, "Area Data Query")
-        self.assertEqual(actual_area_dq.description, "Query to return data for a defined area")
+        self.assertEqual(actual_area_dq.description, "Select data that is within a defined area.")
         self.assertEqual(actual_area_dq.get_query_type(), EdrDataQuery.AREA)
         self.assertEqual(actual_area_dq.output_formats, [])
         self.assertEqual(actual_area_dq.default_output_format, None)
@@ -86,7 +84,7 @@ class AreaDataQueryTest(unittest.TestCase):
         gps_crs = CrsObject(4326)
         expected_json = {
             "title": "Area Data Query",
-            "description": "Query to return data for a defined area",
+            "description": "Select data that is within a defined area.",
             "query_type": "area",
             "crs_details": {
                 gps_crs.name: {
@@ -108,7 +106,7 @@ class AreaDataQueryTest(unittest.TestCase):
         gps_crs = CrsObject(4326)
         expected_json = {
             "title": "Area Data Query",
-            "description": "Query to return data for a defined area",
+            "description": "Select data that is within a defined area.",
             "query_type": "area",
             "crs_details": {
                 gps_crs.name: {
@@ -214,11 +212,11 @@ class CorridorDataQueryTest(unittest.TestCase):
         }
 
     def test_init_defaults(self):
-        """GIVEN no arguments are supplied WHEN an CorridorDataQuery is instantiated THEN default values are set"""
+        """GIVEN no arguments are supplied WHEN a corridorDataQuery is instantiated THEN default values are set"""
         actual_corridor_dq = CorridorDataQuery()
 
         self.assertEqual(actual_corridor_dq.title, "Corridor Data Query")
-        self.assertEqual(actual_corridor_dq.description, "Query to return data for a defined corridor")
+        self.assertEqual(actual_corridor_dq.description, "Select data that is within a defined corridor.")
         self.assertEqual(actual_corridor_dq.get_query_type(), EdrDataQuery.CORRIDOR)
         self.assertEqual(actual_corridor_dq.output_formats, [])
         self.assertEqual(actual_corridor_dq.default_output_format, None)
@@ -229,7 +227,7 @@ class CorridorDataQueryTest(unittest.TestCase):
     def test_init_default_output_format_inferred(self):
         """
         GIVEN output_formats is provided AND default_output_format is not
-        WHEN an CorridorDataQuery is instantiated
+        WHEN a corridorDataQuery is instantiated
         THEN default_output_format is inferred from the provided output_formats
         """
         test_output_formats = ["application/netcdf", "application/geo+json", "application/prs.coverage+json"]
@@ -276,7 +274,7 @@ class CorridorDataQueryTest(unittest.TestCase):
         self.assertNotEqual(cdq2, self.test_corridor_query)
 
     def test_to_json(self):
-        """GIVEN an CorridorDataQuery WHEN to_json() is called THEN the expected JSON is produced"""
+        """GIVEN a corridorDataQuery WHEN to_json() is called THEN the expected JSON is produced"""
         expected_json = self.test_serialised_corridor_data_query
 
         actual_json = self.test_corridor_query.to_json()
@@ -285,7 +283,7 @@ class CorridorDataQueryTest(unittest.TestCase):
 
     def test_to_json_defaults(self):
         """
-        GIVEN an CorridorDataQuery created using default values
+        GIVEN a corridorDataQuery created using default values
         WHEN to_json() is called
         THEN the expected JSON is produced
         """
@@ -293,7 +291,7 @@ class CorridorDataQueryTest(unittest.TestCase):
         gps_crs = CrsObject(4326)
         expected_json = {
             "title": "Corridor Data Query",
-            "description": "Query to return data for a defined corridor",
+            "description": "Select data that is within a defined corridor.",
             "query_type": "corridor",
             "crs_details": {
                 gps_crs.name: {
@@ -315,7 +313,7 @@ class CorridorDataQueryTest(unittest.TestCase):
         gps_crs = CrsObject(4326)
         expected_json = {
             "title": "Corridor Data Query",
-            "description": "Query to return data for a defined corridor",
+            "description": "Select data that is within a defined corridor.",
             "query_type": "corridor",
             "crs_details": {
                 gps_crs.name: {
@@ -337,7 +335,7 @@ class CorridorDataQueryTest(unittest.TestCase):
         gps_crs = CrsObject(4326)
         expected_json = {
             "title": "Corridor Data Query",
-            "description": "Query to return data for a defined corridor",
+            "description": "Select data that is within a defined corridor.",
             "query_type": "corridor",
             "crs_details": {
                 gps_crs.name: {
@@ -359,7 +357,7 @@ class CorridorDataQueryTest(unittest.TestCase):
         gps_crs = CrsObject(4326)
         expected_json = {
             "title": "Corridor Data Query",
-            "description": "Query to return data for a defined corridor",
+            "description": "Select data that is within a defined corridor.",
             "query_type": "corridor",
             "crs_details": {
                 gps_crs.name: {
@@ -375,9 +373,9 @@ class CorridorDataQueryTest(unittest.TestCase):
 
     def test_from_json(self):
         """
-        GIVEN a dict deserialised from valid JSON for an AreaDataQuery
+        GIVEN a dict deserialised from valid JSON for a CorridorDataQuery
         WHEN from_json() is called
-        THEN an CorridorDataQuery is returned with equivalent values
+        THEN anCorridorDataQuery is returned with equivalent values
         """
         expected_cdq = self.test_corridor_query
 
@@ -389,7 +387,7 @@ class CorridorDataQueryTest(unittest.TestCase):
         """
         GIVEN an empty dictionary
         WHEN the empty dict is passed to from_json()
-        THEN an CorridorDataQuery with default values is returned
+        THEN a corridorDataQuery with default values is returned
         """
         expected_corridor_dq = CorridorDataQuery()
 
@@ -399,7 +397,7 @@ class CorridorDataQueryTest(unittest.TestCase):
 
     def test_from_json_query_type_wrong(self):
         """
-        GIVEN a dict where the query_type key is not "area"
+        GIVEN a dict where the query_type key is not "corridor"
         WHEN the dict is passed to from_json()
         THEN an InvalidEdrJsonError is raised
         """
@@ -410,7 +408,7 @@ class CorridorDataQueryTest(unittest.TestCase):
         """
         GIVEN a JSON dict that doesn't have a "query_type" key
         WHEN the dict is passed to from_json()
-        THEN an CorridorDataQuery with equivalent values is returned
+        THEN a corridorDataQuery with equivalent values is returned
         """
         expected_corridor_dq = self.test_corridor_query
         test_json = self.test_serialised_corridor_data_query.copy()
@@ -463,11 +461,11 @@ class CubeDataQueryTest(unittest.TestCase):
         }
 
     def test_init_defaults(self):
-        """GIVEN no arguments are supplied WHEN an CubeDataQuery is instantiated THEN default values are set"""
+        """GIVEN no arguments are supplied WHEN a CubeDataQuery is instantiated THEN default values are set"""
         actual_cube_dq = CubeDataQuery()
 
         self.assertEqual(actual_cube_dq.title, "Cube Data Query")
-        self.assertEqual(actual_cube_dq.description, "Query to return data for a cube defined by well known text")
+        self.assertEqual(actual_cube_dq.description, "Select data that is within a defined cube.")
         self.assertEqual(actual_cube_dq.get_query_type(), EdrDataQuery.CUBE)
         self.assertEqual(actual_cube_dq.output_formats, [])
         self.assertEqual(actual_cube_dq.default_output_format, None)
@@ -477,7 +475,7 @@ class CubeDataQueryTest(unittest.TestCase):
     def test_init_default_output_format_inferred(self):
         """
         GIVEN output_formats is provided AND default_output_format is not
-        WHEN an CubeDataQuery is instantiated
+        WHEN a CubeDataQuery is instantiated
         THEN default_output_format is inferred from the provided output_formats
         """
         test_output_formats = ["application/netcdf", "application/geo+json", "application/prs.coverage+json"]
@@ -519,7 +517,7 @@ class CubeDataQueryTest(unittest.TestCase):
         self.assertNotEqual(cdq2, self.test_cube_query)
 
     def test_to_json(self):
-        """GIVEN an CubeDataQuery WHEN to_json() is called THEN the expected JSON is produced"""
+        """GIVEN a CubeDataQuery WHEN to_json() is called THEN the expected JSON is produced"""
         expected_json = self.test_serialised_cube_data_query
 
         actual_json = self.test_cube_query.to_json()
@@ -528,7 +526,7 @@ class CubeDataQueryTest(unittest.TestCase):
 
     def test_to_json_defaults(self):
         """
-        GIVEN an CubeDataQuery created using default values
+        GIVEN a CubeDataQuery created using default values
         WHEN to_json() is called
         THEN the expected JSON is produced
         """
@@ -536,7 +534,7 @@ class CubeDataQueryTest(unittest.TestCase):
         gps_crs = CrsObject(4326)
         expected_json = {
             "title": "Cube Data Query",
-            "description": "Query to return data for a cube defined by well known text",
+            "description": "Select data that is within a defined cube.",
             "query_type": "cube",
             "crs_details": {
                 gps_crs.name: {
@@ -558,7 +556,7 @@ class CubeDataQueryTest(unittest.TestCase):
         gps_crs = CrsObject(4326)
         expected_json = {
             "title": "Cube Data Query",
-            "description": "Query to return data for a cube defined by well known text",
+            "description": "Select data that is within a defined cube.",
             "query_type": "cube",
             "crs_details": {
                 gps_crs.name: {
@@ -580,7 +578,7 @@ class CubeDataQueryTest(unittest.TestCase):
         gps_crs = CrsObject(4326)
         expected_json = {
             "title": "Cube Data Query",
-            "description": "Query to return data for a cube defined by well known text",
+            "description": "Select data that is within a defined cube.",
             "query_type": "cube",
             "crs_details": {
                 gps_crs.name: {
@@ -596,9 +594,9 @@ class CubeDataQueryTest(unittest.TestCase):
 
     def test_from_json(self):
         """
-        GIVEN a dict deserialised from valid JSON for an AreaDataQuery
+        GIVEN a dict deserialised from valid JSON for a CubeDataQuery
         WHEN from_json() is called
-        THEN an CubeDataQuery is returned with equivalent values
+        THEN a CubeDataQuery is returned with equivalent values
         """
         expected_cdq = self.test_cube_query
 
@@ -610,7 +608,7 @@ class CubeDataQueryTest(unittest.TestCase):
         """
         GIVEN an empty dictionary
         WHEN the empty dict is passed to from_json()
-        THEN an CubeDataQuery with default values is returned
+        THEN a CubeDataQuery with default values is returned
         """
         expected_cube_dq = CubeDataQuery()
 
@@ -620,7 +618,7 @@ class CubeDataQueryTest(unittest.TestCase):
 
     def test_from_json_query_type_wrong(self):
         """
-        GIVEN a dict where the query_type key is not "area"
+        GIVEN a dict where the query_type key is not "cube"
         WHEN the dict is passed to from_json()
         THEN an InvalidEdrJsonError is raised
         """
@@ -631,7 +629,7 @@ class CubeDataQueryTest(unittest.TestCase):
         """
         GIVEN a JSON dict that doesn't have a "query_type" key
         WHEN the dict is passed to from_json()
-        THEN an CubeDataQuery with equivalent values is returned
+        THEN a CubeDataQuery with equivalent values is returned
         """
         expected_cube_dq = self.test_cube_query
         test_json = self.test_serialised_cube_data_query.copy()
@@ -652,3 +650,181 @@ class CubeDataQueryTest(unittest.TestCase):
         test_json["what the hell is this?"] = "12355"
 
         self.assertRaises(InvalidEdrJsonError, CubeDataQuery.from_json, test_json)
+
+
+class LocationsDataQueryTest(unittest.TestCase):
+
+    def setUp(self) -> None:
+        test_title = "Locations Data Query"
+        test_description = "This is a description that doesn't describe anything"
+        test_output_formats = ["application/netcdf", "application/geo+json", "application/prs.coverage+json"]
+        test_crs_details = [CrsObject(4326), CrsObject(4277), CrsObject(4188)]
+
+        self.test_locations_query = LocationsDataQuery(
+            test_output_formats, test_output_formats[0], test_crs_details, test_title, test_description)
+
+        # According to
+        # https://github.com/opengeospatial/ogcapi-environmental-data-retrieval/blob/a0ab69d/standard/openapi/schemas/collections/locationsDataQuery.yaml
+        # none of these fields are required, so they could all potentially be missing
+        self.test_serialised_locations_data_query = {
+            "title": test_title,
+            "description": test_description,
+            "query_type": "locations",
+            "output_formats": test_output_formats,
+            "default_output_format": test_output_formats[0],
+            "crs_details": {
+                crs.name: {"crs": crs.name, "wkt": crs.to_wkt()} for crs in test_crs_details
+            }
+        }
+
+    def test_init_defaults(self):
+        """GIVEN no arguments are supplied WHEN a LocationsDataQuery is instantiated THEN default values are set"""
+        actual_locations_dq = LocationsDataQuery()
+
+        self.assertEqual(actual_locations_dq.title, "Locations Data Query")
+        self.assertEqual(actual_locations_dq.description, "Select data that is within a defined location.")
+        self.assertEqual(actual_locations_dq.get_query_type(), EdrDataQuery.LOCATIONS)
+        self.assertEqual(actual_locations_dq.output_formats, [])
+        self.assertEqual(actual_locations_dq.default_output_format, None)
+        self.assertEqual(actual_locations_dq.crs_details, [CrsObject(4326)])
+
+    def test_init_default_output_format_inferred(self):
+        """
+        GIVEN output_formats is provided AND default_output_format is not
+        WHEN a LocationsDataQuery is instantiated
+        THEN default_output_format is inferred from the provided output_formats
+        """
+        test_output_formats = ["application/netcdf", "application/geo+json", "application/prs.coverage+json"]
+        expected_default_output_format = test_output_formats[0]
+
+        test_locations_dq = LocationsDataQuery(output_formats=test_output_formats)
+
+        self.assertEqual(test_locations_dq.default_output_format, expected_default_output_format)
+
+    def test__eq__(self):
+        """GIVEN 2 LocationsDataQuery objects that have the same values WHEN they are compared THEN they are equal"""
+        self.assertEqual(LocationsDataQuery(), LocationsDataQuery())
+
+        adq1 = LocationsDataQuery.from_json(self.test_serialised_locations_data_query)
+        adq2 = LocationsDataQuery.from_json(self.test_serialised_locations_data_query)
+        self.assertEqual(adq1, adq2)
+
+    def test__neq__(self):
+        """
+        GIVEN 2 LocationsDataQuery objects that have different values WHEN they are compared THEN they are not equal
+        """
+        self.assertNotEqual(self.test_locations_query, LocationsDataQuery())
+        self.assertNotEqual(LocationsDataQuery(), CorridorDataQuery())
+
+    def test_to_json(self):
+        """GIVEN a LocationsDataQuery WHEN to_json() is called THEN the expected JSON is produced"""
+        expected_json = self.test_serialised_locations_data_query
+
+        actual_json = self.test_locations_query.to_json()
+
+        self.assertEqual(actual_json, expected_json)
+
+    def test_to_json_defaults(self):
+        """
+        GIVEN a LocationsDataQuery created using default values
+        WHEN to_json() is called
+        THEN the expected JSON is produced
+        """
+        test_locations_dq = LocationsDataQuery()
+        gps_crs = CrsObject(4326)
+        expected_json = {
+            "title": "Locations Data Query",
+            "description": "Select data that is within a defined location.",
+            "query_type": "locations",
+            "crs_details": {
+                gps_crs.name: {
+                    "crs": gps_crs.name,
+                    "wkt": gps_crs.to_wkt(),
+                }
+            },
+        }
+
+        actual_json = test_locations_dq.to_json()
+
+        self.assertEqual(expected_json, actual_json)
+
+    def test_to_json_output_formats_empty_list(self):
+        """
+        GIVEN output_formats is an empty list WHEN to_json() is called THEN output_formats is not included in the JSON
+        """
+        test_locations_dq = LocationsDataQuery(output_formats=[])
+        gps_crs = CrsObject(4326)
+        expected_json = {
+            "title": "Locations Data Query",
+            "description": "Select data that is within a defined location.",
+            "query_type": "locations",
+            "crs_details": {
+                gps_crs.name: {
+                    "crs": gps_crs.name,
+                    "wkt": gps_crs.to_wkt(),
+                }
+            },
+        }
+
+        actual_json = test_locations_dq.to_json()
+
+        self.assertEqual(actual_json, expected_json)
+
+    def test_from_json(self):
+        """
+        GIVEN a dict deserialised from valid JSON for a LocationsDataQuery
+        WHEN from_json() is called
+        THEN a LocationsDataQuery is returned with equivalent values
+        """
+        expected_adq = self.test_locations_query
+
+        actual_adq = LocationsDataQuery.from_json(self.test_serialised_locations_data_query)
+
+        self.assertEqual(actual_adq, expected_adq)
+
+    def test_from_json_empty_dict(self):
+        """
+        GIVEN an empty dictionary
+        WHEN the empty dict is passed to from_json()
+        THEN a LocationsDataQuery with default values is returned
+        """
+        expected_locations_dq = LocationsDataQuery()
+
+        actual_locations_dq = LocationsDataQuery.from_json({})
+
+        self.assertEqual(actual_locations_dq, expected_locations_dq)
+
+    def test_from_json_query_type_wrong(self):
+        """
+        GIVEN a dict where the query_type key is not "locations"
+        WHEN the dict is passed to from_json()
+        THEN an InvalidEdrJsonError is raised
+        """
+
+        self.assertRaises(InvalidEdrJsonError, LocationsDataQuery.from_json, {"query_type": "wrong!"})
+
+    def test_from_json_query_type_missing(self):
+        """
+        GIVEN a JSON dict that doesn't have a "query_type" key
+        WHEN the dict is passed to from_json()
+        THEN a LocationsDataQuery with equivalent values is returned
+        """
+        expected_locations_dq = self.test_locations_query
+        test_json = self.test_serialised_locations_data_query.copy()
+        del test_json["query_type"]
+
+        actual_locations_dq = LocationsDataQuery.from_json(test_json)
+
+        self.assertEqual(actual_locations_dq, expected_locations_dq)
+
+    def test_from_json_unexpected_key(self):
+        """
+        GIVEN a JSON dict that has all the expected keys with valid values
+        AND an unexpected key
+        WHEN the dict is passed to from_json()
+        THEN an InvalidEdrJsonError is raised
+        """
+        test_json = self.test_serialised_locations_data_query.copy()
+        test_json["what the hell is this?"] = "12355"
+
+        self.assertRaises(InvalidEdrJsonError, LocationsDataQuery.from_json, test_json)

@@ -138,8 +138,16 @@ class AbstractDataQuery(EdrModel[E]):
         if crs_details is None:
             crs_details = [DEFAULT_CRS]
 
-        self._title = title
-        self._description = description
+        if title is None:
+            self._title = f"{self.get_query_type().name.title()} Data Query"
+        else:
+            self._title = title
+
+        if description is None:
+            query_type = self.get_query_type().name.lower().rstrip('s')
+            self._description = f"Select data that is within a defined {query_type}."
+        else:
+            self._description = description
         self._output_formats = output_formats
 
         if default_output_format:
@@ -206,8 +214,8 @@ class AbstractDataQuery(EdrModel[E]):
     @abstractmethod
     def get_query_type(cls) -> EdrDataQuery:
         # I want each subclass to provide the correct value for this, and also want it accessible to the class method
-        # from_json(). I'd prefer it to be an abstract class property, but abstract class method is the best I
-        # could find a reasonable way of implementing without adding a bunch of extra code
+        # from_json(). I'd prefer it to be an abstract class property, but that's not a standard feature of python, and
+        # I wanted to avoid adding a bunch of extra code to support it.
         raise NotImplemented
 
     def __str__(self):
@@ -217,8 +225,6 @@ class AbstractDataQuery(EdrModel[E]):
         """
         Gets a python representation of this object. It's intended that it's valid code that could be copy/pasted
         and executed to create an equivalent object.
-
-        Override the `_prep_for_repr()` method to add additional arguments
         """
         str_args = ", ".join(repr(v) for v in self._key())
         return f"{self.__class__.__name__}({str_args})"
@@ -287,15 +293,6 @@ class AbstractDataQuery(EdrModel[E]):
 class AreaDataQuery(AbstractDataQuery["AreaDataQuery"]):
     """Class that describes any metadata that's specific to Area queries"""
 
-    def __init__(
-            self,
-            output_formats: Optional[List[str]] = None, default_output_format: Optional[str] = None,
-            crs_details: Optional[List[CrsObject]] = None,
-            title: Optional[str] = "Area Data Query",
-            description: Optional[str] = "Query to return data for a defined area",
-    ):
-        super().__init__(output_formats, default_output_format, crs_details, title, description)
-
     @classmethod
     def get_query_type(cls) -> EdrDataQuery:
         return EdrDataQuery.AREA
@@ -312,10 +309,9 @@ class CorridorDataQuery(AbstractDataQuery["CorridorDataQuery"]):
     def __init__(
             self,
             output_formats: Optional[List[str]] = None, default_output_format: Optional[str] = None,
-            crs_details: Optional[List[CrsObject]] = None,
-            title: Optional[str] = "Corridor Data Query",
-            description: Optional[str] = "Query to return data for a defined corridor",
-            width_units: Optional[List[str]] = None, height_units: Optional[List[str]] = None,
+            crs_details: Optional[List[CrsObject]] = None, title: Optional[str] = None,
+            description: Optional[str] = None, width_units: Optional[List[str]] = None,
+            height_units: Optional[List[str]] = None,
     ):
         super().__init__(output_formats, default_output_format, crs_details, title, description)
         self._width_units = width_units
@@ -366,10 +362,8 @@ class CubeDataQuery(AbstractDataQuery["CubeDataQuery"]):
     def __init__(
             self,
             output_formats: Optional[List[str]] = None, default_output_format: Optional[str] = None,
-            crs_details: Optional[List[CrsObject]] = None,
-            title: Optional[str] = "Cube Data Query",
-            description: Optional[str] = "Query to return data for a cube defined by well known text",
-            height_units: Optional[List[str]] = None,
+            crs_details: Optional[List[CrsObject]] = None, title: Optional[str] = None,
+            description: Optional[str] = None, height_units: Optional[List[str]] = None,
     ) -> None:
         super().__init__(output_formats, default_output_format, crs_details, title, description)
         self._height_units = height_units
@@ -397,7 +391,19 @@ class CubeDataQuery(AbstractDataQuery["CubeDataQuery"]):
 
 
 ITEMS = "items"
-LOCATIONS = "locations"
+
+
+class LocationsDataQuery(AbstractDataQuery["LocationsDataQuery"]):
+    """Collection-specific metadata for locations queries"""
+
+    @classmethod
+    def get_query_type(cls) -> EdrDataQuery:
+        return EdrDataQuery.LOCATIONS
+
+    def _key(self) -> tuple:
+        return super()._key()
+
+
 POSITION = "position"
 RADIUS = "radius"
 TRAJECTORY = "trajectory"
