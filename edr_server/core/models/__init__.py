@@ -16,7 +16,7 @@ class EdrModel(abc.ABC, Generic[T]):
     @abc.abstractmethod
     def to_json(self) -> Dict[str, Any]:
         """
-        Convert this object to its EDR compliant JSON dict (which can then be passed to `json.dumps()`
+        Convert this object to its EDR compliant JSON dict (which can then be passed to `json.dumps()`)
 
         E.g.
         >>> import json
@@ -36,5 +36,8 @@ class EdrModel(abc.ABC, Generic[T]):
         >>> json_str = "{...}"
         >>> my_json_dict = json.loads(json_str)
         >>> json.dumps(my_json_dict)
+
+        Will raise an `InvalidEdrJsonError` if the provided dict has unexpected keys or otherwise can't be
+        converted.
         """
         raise NotImplemented

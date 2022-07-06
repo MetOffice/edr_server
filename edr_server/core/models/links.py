@@ -1,6 +1,6 @@
 from abc import abstractmethod
 from dataclasses import dataclass, field
-from typing import List, Optional, Dict, Any, TypeVar
+from typing import List, Optional, Dict, Any, TypeVar, Set
 
 from pyproj import CRS
 
@@ -112,9 +112,23 @@ class OldDataQuery:
 
 
 E = TypeVar("E", bound="AbstractDataQuery")
+JsonDict = Dict[str, Any]
 
 
 class AbstractDataQuery(EdrModel[E]):
+    """
+    The Data Query objects describe any metadata that's specific to particular EDR queries.
+    They are tied to specific collections, and hence can vary from collection to collection.
+    """
+
+    _EXPECTED_JSON_KEYS: Set[str] = {
+        "title",
+        "description",
+        "query_type",
+        "output_formats",
+        "default_output_format",
+        "crs_details",
+    }
 
     def __init__(
             self, output_formats: Optional[List[str]] = None, default_output_format: Optional[str] = None,
@@ -137,12 +151,56 @@ class AbstractDataQuery(EdrModel[E]):
 
         self._crs_details = crs_details
 
-    def _key(self) -> tuple:
-        """Used to construct a tuple of values to use in hashing and equality comparisons"""
-        return self._title, self._description, self._output_formats, self._default_output_format, self._crs_details
+    @classmethod
+    def _validate_json_keys(cls, json_dict: JsonDict) -> None:
+        """
+        Raises an InvalidJsonError if any unexpected keys are found.
+        `_EXPECTED_JSON_KEYS` can be overridden in subclasses to add additional expected keys, so in practice you
+        shouldn't need to modify this method.
+        """
+        if invalid_keys := json_dict.keys() - cls._EXPECTED_JSON_KEYS:  # Performs set difference.
+            # The dictionary view returned by .keys() doesn't support the named set methods, but does support the set
+            # operators defined in collections.abc.Set
+            raise InvalidEdrJsonError(f"Unexpected keys in JSON dict: {invalid_keys!r}")
 
-    def __eq__(self, other: Any) -> bool:
-        return self._key() == other._key() if isinstance(other, AbstractDataQuery) else False
+    @classmethod
+    def _prepare_json_for_init(cls, json_dict: JsonDict) -> JsonDict:
+        """
+        Does any necessary conversion to the json dict to prep it for passing to the class' `__init__` method.
+        E.g. converting nested objects.
+        This method can be extended by subclasses to perform additional preparation, e.g.
+        >>> # noinspection PyProtectedMember, PyShadowingNames, PyUnresolvedReferences
+        >>> def _prepare_json_for_init(cls, json_dict: JsonDict) -> JsonDict:
+        >>>     json_dict =  super()._prepare_json_for_init(json_dict)
+        >>>     # Do extra prep...
+        >>>     return json_dict
+
+        Creates a shallow copy of the input dict, so be careful about modifying nested lists/dicts in place!
+        """
+        kwargs = json_dict.copy()
+
+        if "query_type" in json_dict:
+            expected_query_type = cls.get_query_type().name.lower()
+            if json_dict["query_type"] != expected_query_type:
+                raise InvalidEdrJsonError(
+                    f"JSON has 'query_type'={json_dict['query_type']!r} but {expected_query_type!r} was expected")
+            del kwargs["query_type"]
+
+        if "crs_details" in kwargs:
+            kwargs["crs_details"] = [CrsObject.from_json(crs) for crs in kwargs["crs_details"].values()]
+
+        return kwargs
+
+    @classmethod
+    def from_json(cls, json_dict: JsonDict) -> E:
+        # docstring inherited from EdrModel
+        # Subclasses may need different behaviour for converting from JSON, but implementors shouldn't need to modify
+        # this method. `_prepare_json_for_init` can be overridden to control how the JSON dict is converted into a form
+        # that can be passed to the __init__ method, and additional keys for validation can be added to
+        # `_EXPECTED_JSON_KEYS`.
+        cls._validate_json_keys(json_dict)
+        prepared_dict = cls._prepare_json_for_init(json_dict)
+        return cls(**prepared_dict)
 
     @classmethod
     @abstractmethod
@@ -151,6 +209,41 @@ class AbstractDataQuery(EdrModel[E]):
         # from_json(). I'd prefer it to be an abstract class property, but abstract class method is the best I
         # could find a reasonable way of implementing without adding a bunch of extra code
         raise NotImplemented
+
+    def __str__(self):
+        return f"{self.title} ({self.description})"
+
+    def __repr__(self) -> str:
+        """
+        Gets a python representation of this object. It's intended that it's valid code that could be copy/pasted
+        and executed to create an equivalent object.
+
+        Override the `_prep_for_repr()` method to add additional arguments
+        """
+        str_args = ", ".join(repr(v) for v in self._key())
+        return f"{self.__class__.__name__}({str_args})"
+
+    def __eq__(self, other: Any) -> bool:
+        """
+        Returns `True` if argument is equal to this object, `False` otherwise.
+        You shouldn't need to modify this method, just override and extend the `_key()` method
+        """
+        return self._key() == other._key() if isinstance(other, AbstractDataQuery) else False
+
+    @abstractmethod
+    def _key(self) -> tuple:
+        """
+        Used to construct a tuple of values to use in hashing, equality comparisons, and __repr__ (so it's important
+        the order matches __init__)
+
+        Marked as abstract to provide a prompt to implementors of subclasses to remember to check if they need to
+        extend it. In some cases this will result in subclasses having to implement something like this:
+        >>> # noinspection PyProtectedMember, PyShadowingNames, PyUnresolvedReferences
+        >>> def _key(self) -> tuple:
+        >>>     return super()._key()
+        On the whole however, this reduces the risk of bugs arising from missing attributes from equality comparisons
+        """
+        return self._title, self._description, self._output_formats, self._default_output_format, self._crs_details
 
     @property
     def title(self) -> Optional[str]:
@@ -172,7 +265,8 @@ class AbstractDataQuery(EdrModel[E]):
     def crs_details(self) -> Optional[List[CrsObject]]:
         return self._crs_details
 
-    def to_json(self) -> Dict[str, Any]:
+    def to_json(self) -> JsonDict:
+        # docstring inherited from EdrModel
         j_dict = {
             "query_type": self.get_query_type().name.lower()
         }
@@ -185,28 +279,13 @@ class AbstractDataQuery(EdrModel[E]):
         if self._default_output_format is not None:
             j_dict["default_output_format"] = self._default_output_format
         if self._crs_details is not None:
-            j_dict["crs_details"] = [crs.to_json() for crs in self._crs_details]
+            j_dict["crs_details"] = {crs.name: crs.to_json() for crs in self._crs_details}
 
         return j_dict
 
-    @classmethod
-    def from_json(cls, json_dict: Dict[str, Any]) -> E:
-        kwargs = json_dict.copy()
-
-        if "query_type" in json_dict:
-            expected_query_type = cls.get_query_type().name.lower()
-            if json_dict["query_type"] != expected_query_type:
-                raise InvalidEdrJsonError(f"JSON has 'query_type'={json_dict['query_type']!r}"
-                                          f" but {expected_query_type!r} was expected")
-            del kwargs["query_type"]
-
-        if "crs_details" in kwargs:
-            kwargs["crs_details"] = [CrsObject.from_json(crs) for crs in kwargs["crs_details"]]
-
-        return cls(**kwargs)
-
 
 class AreaDataQuery(AbstractDataQuery["AreaDataQuery"]):
+    """Class that describes any metadata that's specific to Area queries"""
 
     def __init__(
             self,
@@ -221,9 +300,102 @@ class AreaDataQuery(AbstractDataQuery["AreaDataQuery"]):
     def get_query_type(cls) -> EdrDataQuery:
         return EdrDataQuery.AREA
 
+    def _key(self) -> tuple:
+        return super()._key()
 
-CORRIDOR = "corridor"
-CUBE = "cube"
+
+class CorridorDataQuery(AbstractDataQuery["CorridorDataQuery"]):
+    """Collection-specific metadata for corridor queries"""
+
+    _EXPECTED_JSON_KEYS = AbstractDataQuery._EXPECTED_JSON_KEYS.union({"width_units", "height_units"})
+
+    def __init__(
+            self,
+            output_formats: Optional[List[str]] = None, default_output_format: Optional[str] = None,
+            crs_details: Optional[List[CrsObject]] = None,
+            title: Optional[str] = "Corridor Data Query",
+            description: Optional[str] = "Query to return data for a defined corridor",
+            width_units: Optional[List[str]] = None, height_units: Optional[List[str]] = None,
+    ):
+        super().__init__(output_formats, default_output_format, crs_details, title, description)
+        self._width_units = width_units
+        self._height_units = height_units
+
+    @classmethod
+    def get_query_type(cls) -> EdrDataQuery:
+        # docstring inherited
+        return EdrDataQuery.CORRIDOR
+
+    @classmethod
+    def from_json(cls, json_dict: JsonDict) -> E:
+        # docstring inherited
+        return super().from_json(json_dict)
+
+    def _key(self) -> tuple:
+        # docstring inherited
+        return super()._key() + (self._width_units, self._height_units)
+
+    @property
+    def width_units(self) -> List[str]:
+        """Units that can be used to specify corridor width in queries"""
+        return self._width_units if self._width_units is not None else []
+
+    @property
+    def height_units(self) -> List[str]:
+        """Units that can be used to specify corridor height in queries"""
+        return self._height_units if self._height_units is not None else []
+
+    def to_json(self) -> JsonDict:
+        # docstring inherited
+        j_dict = super().to_json()
+
+        if self._width_units:  # Only include when list has values
+            j_dict["width_units"] = self._width_units
+
+        if self._height_units:  # Only include when list has values
+            j_dict["height_units"] = self._height_units
+
+        return j_dict
+
+
+class CubeDataQuery(AbstractDataQuery["CubeDataQuery"]):
+    """Collection-specific metadata for cube queries"""
+
+    _EXPECTED_JSON_KEYS = AbstractDataQuery._EXPECTED_JSON_KEYS.union({"height_units"})
+
+    def __init__(
+            self,
+            output_formats: Optional[List[str]] = None, default_output_format: Optional[str] = None,
+            crs_details: Optional[List[CrsObject]] = None,
+            title: Optional[str] = "Cube Data Query",
+            description: Optional[str] = "Query to return data for a cube defined by well known text",
+            height_units: Optional[List[str]] = None,
+    ) -> None:
+        super().__init__(output_formats, default_output_format, crs_details, title, description)
+        self._height_units = height_units
+
+    @classmethod
+    def get_query_type(cls) -> EdrDataQuery:
+        # docstring inherited
+        return EdrDataQuery.CUBE
+
+    def _key(self) -> tuple:
+        # docstring inherited
+        # The alternative was `tuple([self._height_units])` and I wanted to avoid the unnecessary creation of a list
+        return super()._key() + (self._height_units,)  # Brackets and comma indicate this is a literal tuple.
+
+    @property
+    def height_units(self) -> List[str]:
+        """Units that can be used to specify corridor height in queries"""
+        return self._height_units if self._height_units is not None else []
+
+    def to_json(self) -> JsonDict:
+        j_dict = super().to_json()
+        if self._height_units:
+            j_dict["height_units"] = self._height_units
+        return j_dict
+
+
 ITEMS = "items"
 LOCATIONS = "locations"
 POSITION = "position"
@@ -254,7 +426,7 @@ class DataQueryLink:
     # Duplication was the easiest workaround
     href: URL
     rel: str
-    variables: OldDataQuery
+    variables: OldDataQuery  # TODO replace with new AbstractDataQuery. How to handle heterogenous subclasses though?
     type: Optional[str] = None
     hreflang: Optional[str] = None
     title: Optional[str] = None
