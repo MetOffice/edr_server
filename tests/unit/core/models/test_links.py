@@ -3,7 +3,8 @@ import unittest
 from edr_server.core.exceptions import InvalidEdrJsonError
 from edr_server.core.models import EdrDataQuery
 from edr_server.core.models.crs import CrsObject
-from edr_server.core.models.links import AreaDataQuery, CorridorDataQuery, CubeDataQuery, LocationsDataQuery
+from edr_server.core.models.links import AreaDataQuery, CorridorDataQuery, CubeDataQuery, LocationsDataQuery, \
+    PositionDataQuery
 
 
 class AreaDataQueryTest(unittest.TestCase):
@@ -828,3 +829,181 @@ class LocationsDataQueryTest(unittest.TestCase):
         test_json["what the hell is this?"] = "12355"
 
         self.assertRaises(InvalidEdrJsonError, LocationsDataQuery.from_json, test_json)
+
+
+class PositionDataQueryTest(unittest.TestCase):
+
+    def setUp(self) -> None:
+        test_title = "Position Data Query"
+        test_description = "This is a description that doesn't describe anything"
+        test_output_formats = ["application/netcdf", "application/geo+json", "application/prs.coverage+json"]
+        test_crs_details = [CrsObject(4326), CrsObject(4277), CrsObject(4188)]
+
+        self.test_position_query = PositionDataQuery(
+            test_output_formats, test_output_formats[0], test_crs_details, test_title, test_description)
+
+        # According to
+        # https://github.com/opengeospatial/ogcapi-environmental-data-retrieval/blob/a0ab69d/standard/openapi/schemas/collections/positionDataQuery.yaml
+        # none of these fields are required, so they could all potentially be missing
+        self.test_serialised_position_data_query = {
+            "title": test_title,
+            "description": test_description,
+            "query_type": "position",
+            "output_formats": test_output_formats,
+            "default_output_format": test_output_formats[0],
+            "crs_details": {
+                crs.name: {"crs": crs.name, "wkt": crs.to_wkt()} for crs in test_crs_details
+            }
+        }
+
+    def test_init_defaults(self):
+        """GIVEN no arguments are supplied WHEN a PositionDataQuery is instantiated THEN default values are set"""
+        actual_position_dq = PositionDataQuery()
+
+        self.assertEqual(actual_position_dq.title, "Position Data Query")
+        self.assertEqual(actual_position_dq.description, "Select data that is within a defined position.")
+        self.assertEqual(actual_position_dq.get_query_type(), EdrDataQuery.POSITION)
+        self.assertEqual(actual_position_dq.output_formats, [])
+        self.assertEqual(actual_position_dq.default_output_format, None)
+        self.assertEqual(actual_position_dq.crs_details, [CrsObject(4326)])
+
+    def test_init_default_output_format_inferred(self):
+        """
+        GIVEN output_formats is provided AND default_output_format is not
+        WHEN a PositionDataQuery is instantiated
+        THEN default_output_format is inferred from the provided output_formats
+        """
+        test_output_formats = ["application/netcdf", "application/geo+json", "application/prs.coverage+json"]
+        expected_default_output_format = test_output_formats[0]
+
+        test_position_dq = PositionDataQuery(output_formats=test_output_formats)
+
+        self.assertEqual(test_position_dq.default_output_format, expected_default_output_format)
+
+    def test__eq__(self):
+        """GIVEN 2 PositionDataQuery objects that have the same values WHEN they are compared THEN they are equal"""
+        self.assertEqual(PositionDataQuery(), PositionDataQuery())
+
+        adq1 = PositionDataQuery.from_json(self.test_serialised_position_data_query)
+        adq2 = PositionDataQuery.from_json(self.test_serialised_position_data_query)
+        self.assertEqual(adq1, adq2)
+
+    def test__neq__(self):
+        """
+        GIVEN 2 PositionDataQuery objects that have different values WHEN they are compared THEN they are not equal
+        """
+        self.assertNotEqual(self.test_position_query, PositionDataQuery())
+        self.assertNotEqual(PositionDataQuery(), CorridorDataQuery())
+
+    def test_to_json(self):
+        """GIVEN a PositionDataQuery WHEN to_json() is called THEN the expected JSON is produced"""
+        expected_json = self.test_serialised_position_data_query
+
+        actual_json = self.test_position_query.to_json()
+
+        self.assertEqual(actual_json, expected_json)
+
+    def test_to_json_defaults(self):
+        """
+        GIVEN a PositionDataQuery created using default values
+        WHEN to_json() is called
+        THEN the expected JSON is produced
+        """
+        test_position_dq = PositionDataQuery()
+        gps_crs = CrsObject(4326)
+        expected_json = {
+            "title": "Position Data Query",
+            "description": "Select data that is within a defined position.",
+            "query_type": "position",
+            "crs_details": {
+                gps_crs.name: {
+                    "crs": gps_crs.name,
+                    "wkt": gps_crs.to_wkt(),
+                }
+            },
+        }
+
+        actual_json = test_position_dq.to_json()
+
+        self.assertEqual(expected_json, actual_json)
+
+    def test_to_json_output_formats_empty_list(self):
+        """
+        GIVEN output_formats is an empty list WHEN to_json() is called THEN output_formats is not included in the JSON
+        """
+        test_position_dq = PositionDataQuery(output_formats=[])
+        gps_crs = CrsObject(4326)
+        expected_json = {
+            "title": "Position Data Query",
+            "description": "Select data that is within a defined position.",
+            "query_type": "position",
+            "crs_details": {
+                gps_crs.name: {
+                    "crs": gps_crs.name,
+                    "wkt": gps_crs.to_wkt(),
+                }
+            },
+        }
+
+        actual_json = test_position_dq.to_json()
+
+        self.assertEqual(actual_json, expected_json)
+
+    def test_from_json(self):
+        """
+        GIVEN a dict deserialised from valid JSON for a PositionDataQuery
+        WHEN from_json() is called
+        THEN a PositionDataQuery is returned with equivalent values
+        """
+        expected_adq = self.test_position_query
+
+        actual_adq = PositionDataQuery.from_json(self.test_serialised_position_data_query)
+
+        self.assertEqual(actual_adq, expected_adq)
+
+    def test_from_json_empty_dict(self):
+        """
+        GIVEN an empty dictionary
+        WHEN the empty dict is passed to from_json()
+        THEN a PositionDataQuery with default values is returned
+        """
+        expected_position_dq = PositionDataQuery()
+
+        actual_position_dq = PositionDataQuery.from_json({})
+
+        self.assertEqual(actual_position_dq, expected_position_dq)
+
+    def test_from_json_query_type_wrong(self):
+        """
+        GIVEN a dict where the query_type key is not "position"
+        WHEN the dict is passed to from_json()
+        THEN an InvalidEdrJsonError is raised
+        """
+
+        self.assertRaises(InvalidEdrJsonError, PositionDataQuery.from_json, {"query_type": "wrong!"})
+
+    def test_from_json_query_type_missing(self):
+        """
+        GIVEN a JSON dict that doesn't have a "query_type" key
+        WHEN the dict is passed to from_json()
+        THEN a PositionDataQuery with equivalent values is returned
+        """
+        expected_position_dq = self.test_position_query
+        test_json = self.test_serialised_position_data_query.copy()
+        del test_json["query_type"]
+
+        actual_position_dq = PositionDataQuery.from_json(test_json)
+
+        self.assertEqual(actual_position_dq, expected_position_dq)
+
+    def test_from_json_unexpected_key(self):
+        """
+        GIVEN a JSON dict that has all the expected keys with valid values
+        AND an unexpected key
+        WHEN the dict is passed to from_json()
+        THEN an InvalidEdrJsonError is raised
+        """
+        test_json = self.test_serialised_position_data_query.copy()
+        test_json["what the hell is this?"] = "12355"
+
+        self.assertRaises(InvalidEdrJsonError, PositionDataQuery.from_json, test_json)

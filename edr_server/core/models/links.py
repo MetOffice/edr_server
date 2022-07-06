@@ -404,7 +404,17 @@ class LocationsDataQuery(AbstractDataQuery["LocationsDataQuery"]):
         return super()._key()
 
 
-POSITION = "position"
+class PositionDataQuery(AbstractDataQuery["PositionDataQuery"]):
+    """Collection-specific metadata for locations queries"""
+
+    @classmethod
+    def get_query_type(cls) -> EdrDataQuery:
+        return EdrDataQuery.POSITION
+
+    def _key(self) -> tuple:
+        return super()._key()
+
+
 RADIUS = "radius"
 TRAJECTORY = "trajectory"
 
