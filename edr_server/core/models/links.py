@@ -111,53 +111,16 @@ class OldDataQuery:
         return OldDataQuery(**kwargs)
 
 
-E = TypeVar("E", bound="AbstractDataQuery")
 JsonDict = Dict[str, Any]
+U = TypeVar("U", bound="AbstractDataQuery")
 
 
-class AbstractDataQuery(EdrModel[E]):
-    """
-    The Data Query objects describe any metadata that's specific to particular EDR queries.
-    They are tied to specific collections, and hence can vary from collection to collection.
-    """
-
+class AbstractDataQuery(EdrModel[U]):
     _EXPECTED_JSON_KEYS: Set[str] = {
         "title",
         "description",
         "query_type",
-        "output_formats",
-        "default_output_format",
-        "crs_details",
     }
-
-    def __init__(
-            self, output_formats: Optional[List[str]] = None, default_output_format: Optional[str] = None,
-            crs_details: Optional[List[CrsObject]] = None, title: Optional[str] = None,
-            description: Optional[str] = None,
-    ):
-        if crs_details is None:
-            crs_details = [DEFAULT_CRS]
-
-        if title is None:
-            self._title = f"{self.get_query_type().name.title()} Data Query"
-        else:
-            self._title = title
-
-        if description is None:
-            query_type = self.get_query_type().name.lower().rstrip('s')
-            self._description = f"Select data that is within a defined {query_type}."
-        else:
-            self._description = description
-        self._output_formats = output_formats
-
-        if default_output_format:
-            self._default_output_format = default_output_format
-        elif self._output_formats:
-            self._default_output_format = self._output_formats[0]
-        else:
-            self._default_output_format = None
-
-        self._crs_details = crs_details
 
     @classmethod
     def _validate_json_keys(cls, json_dict: JsonDict) -> None:
@@ -194,13 +157,10 @@ class AbstractDataQuery(EdrModel[E]):
                     f"JSON has 'query_type'={json_dict['query_type']!r} but {expected_query_type!r} was expected")
             del kwargs["query_type"]
 
-        if "crs_details" in kwargs:
-            kwargs["crs_details"] = [CrsObject.from_json(crs) for crs in kwargs["crs_details"].values()]
-
         return kwargs
 
     @classmethod
-    def from_json(cls, json_dict: JsonDict) -> E:
+    def from_json(cls, json_dict: JsonDict) -> U:
         # docstring inherited from EdrModel
         # Subclasses may need different behaviour for converting from JSON, but implementors shouldn't need to modify
         # this method. `_prepare_json_for_init` can be overridden to control how the JSON dict is converted into a form
@@ -217,6 +177,19 @@ class AbstractDataQuery(EdrModel[E]):
         # from_json(). I'd prefer it to be an abstract class property, but that's not a standard feature of python, and
         # I wanted to avoid adding a bunch of extra code to support it.
         raise NotImplemented
+
+    def __init__(self, title: Optional[str] = None, description: Optional[str] = None):
+
+        if title is None:
+            self._title = f"{self.get_query_type().name.title()} Data Query"
+        else:
+            self._title = title
+
+        if description is None:
+            query_type = self.get_query_type().name.lower().rstrip('s')
+            self._description = f"Select data that is within a defined {query_type}."
+        else:
+            self._description = description
 
     def __str__(self):
         return f"{self.title} ({self.description})"
@@ -249,7 +222,114 @@ class AbstractDataQuery(EdrModel[E]):
         >>>     return super()._key()
         On the whole however, this reduces the risk of bugs arising from missing attributes from equality comparisons
         """
-        return self._title, self._description, self._output_formats, self._default_output_format, self._crs_details
+        return self._title, self._description, self.get_query_type()
+
+    @property
+    def title(self) -> Optional[str]:
+        return self._title
+
+    @property
+    def description(self) -> Optional[str]:
+        return self._description
+
+    def to_json(self) -> Dict[str, Any]:
+        # Docstring inherited from EdrModel
+        j_dict = {
+            "query_type": self.get_query_type().name.lower()
+        }
+        if self._title is not None:
+            j_dict["title"] = self._title
+        if self._description is not None:
+            j_dict["description"] = self._description
+
+        return j_dict
+
+
+class ItemsDataQuery(AbstractDataQuery["ItemsDataQuery"]):
+
+    def __init__(
+            self,
+            title: Optional[str] = None,
+            description: Optional[str] = 'Select data based on predetermined groupings of data organised into items.'
+    ):
+        super().__init__(title, description)
+
+    @classmethod
+    def get_query_type(cls) -> EdrDataQuery:
+        return EdrDataQuery.ITEMS
+
+    def _key(self) -> tuple:
+        return super()._key()
+
+
+E = TypeVar("E", bound="AbstractSpatialDataQuery")
+
+
+class AbstractSpatialDataQuery(AbstractDataQuery[E]):
+    """
+    The Data Query objects describe any metadata that's specific to particular EDR queries.
+    They are tied to specific collections, and hence can vary from collection to collection.
+    """
+
+    _EXPECTED_JSON_KEYS: Set[str] = AbstractDataQuery._EXPECTED_JSON_KEYS.union({
+        "output_formats",
+        "default_output_format",
+        "crs_details",
+    })
+
+    def __init__(  # TODO change order of arguments so that subclass args come after superclass
+            self, title: Optional[str] = None, description: Optional[str] = None,
+            output_formats: Optional[List[str]] = None, default_output_format: Optional[str] = None,
+            crs_details: Optional[List[CrsObject]] = None,
+    ):
+        super().__init__(title, description)
+
+        self._output_formats = output_formats
+
+        if default_output_format:
+            self._default_output_format = default_output_format
+        elif self._output_formats:
+            self._default_output_format = self._output_formats[0]
+        else:
+            self._default_output_format = None
+
+        self._crs_details = [DEFAULT_CRS] if crs_details is None else crs_details
+
+    @classmethod
+    def _prepare_json_for_init(cls, json_dict: JsonDict) -> JsonDict:
+        """
+        Does any necessary conversion to the json dict to prep it for passing to the class' `__init__` method.
+        E.g. converting nested objects.
+        This method can be extended by subclasses to perform additional preparation, e.g.
+        >>> # noinspection PyProtectedMember, PyShadowingNames, PyUnresolvedReferences
+        >>> def _prepare_json_for_init(cls, json_dict: JsonDict) -> JsonDict:
+        >>>     json_dict =  super()._prepare_json_for_init(json_dict)
+        >>>     # Do extra prep...
+        >>>     return json_dict
+
+        Creates a shallow copy of the input dict, so be careful about modifying nested lists/dicts in place!
+        """
+        kwargs = super()._prepare_json_for_init(json_dict)
+
+        if "crs_details" in kwargs:
+            kwargs["crs_details"] = [CrsObject.from_json(crs) for crs in kwargs["crs_details"].values()]
+
+        return kwargs
+
+    @abstractmethod
+    def _key(self) -> tuple:
+        """
+        Used to construct a tuple of values to use in hashing, equality comparisons, and __repr__ (so it's important
+        the order matches __init__)
+
+        Marked as abstract to provide a prompt to implementors of subclasses to remember to check if they need to
+        extend it. In some cases this will result in subclasses having to implement something like this:
+        >>> # noinspection PyProtectedMember, PyShadowingNames, PyUnresolvedReferences
+        >>> def _key(self) -> tuple:
+        >>>     return super()._key()
+        On the whole however, this reduces the risk of bugs arising from missing attributes from equality comparisons
+        """
+        return super()._key() + (self._output_formats, self._default_output_format, self._crs_details)
 
     @property
     def title(self) -> Optional[str]:
@@ -273,13 +353,7 @@ class AbstractDataQuery(EdrModel[E]):
 
     def to_json(self) -> JsonDict:
         # docstring inherited from EdrModel
-        j_dict = {
-            "query_type": self.get_query_type().name.lower()
-        }
-        if self._title is not None:
-            j_dict["title"] = self._title
-        if self._description is not None:
-            j_dict["description"] = self._description
+        j_dict = super().to_json()
         if self._output_formats:  # Slightly different from the others, we only include it if the list has values
             j_dict["output_formats"] = self._output_formats
         if self._default_output_format is not None:
@@ -290,7 +364,7 @@ class AbstractDataQuery(EdrModel[E]):
         return j_dict
 
 
-class AreaDataQuery(AbstractDataQuery["AreaDataQuery"]):
+class AreaDataQuery(AbstractSpatialDataQuery["AreaDataQuery"]):
     """Class that describes any metadata that's specific to Area queries"""
 
     @classmethod
@@ -301,10 +375,10 @@ class AreaDataQuery(AbstractDataQuery["AreaDataQuery"]):
         return super()._key()
 
 
-class CorridorDataQuery(AbstractDataQuery["CorridorDataQuery"]):
+class CorridorDataQuery(AbstractSpatialDataQuery["CorridorDataQuery"]):
     """Collection-specific metadata for corridor queries"""
 
-    _EXPECTED_JSON_KEYS = AbstractDataQuery._EXPECTED_JSON_KEYS.union({"width_units", "height_units"})
+    _EXPECTED_JSON_KEYS = AbstractSpatialDataQuery._EXPECTED_JSON_KEYS.union({"width_units", "height_units"})
 
     def __init__(
             self,
@@ -313,7 +387,7 @@ class CorridorDataQuery(AbstractDataQuery["CorridorDataQuery"]):
             description: Optional[str] = None, width_units: Optional[List[str]] = None,
             height_units: Optional[List[str]] = None,
     ):
-        super().__init__(output_formats, default_output_format, crs_details, title, description)
+        super().__init__(title, description, output_formats, default_output_format, crs_details)
         self._width_units = width_units
         self._height_units = height_units
 
@@ -354,10 +428,10 @@ class CorridorDataQuery(AbstractDataQuery["CorridorDataQuery"]):
         return j_dict
 
 
-class CubeDataQuery(AbstractDataQuery["CubeDataQuery"]):
+class CubeDataQuery(AbstractSpatialDataQuery["CubeDataQuery"]):
     """Collection-specific metadata for cube queries"""
 
-    _EXPECTED_JSON_KEYS = AbstractDataQuery._EXPECTED_JSON_KEYS.union({"height_units"})
+    _EXPECTED_JSON_KEYS = AbstractSpatialDataQuery._EXPECTED_JSON_KEYS.union({"height_units"})
 
     def __init__(
             self,
@@ -365,7 +439,7 @@ class CubeDataQuery(AbstractDataQuery["CubeDataQuery"]):
             crs_details: Optional[List[CrsObject]] = None, title: Optional[str] = None,
             description: Optional[str] = None, height_units: Optional[List[str]] = None,
     ) -> None:
-        super().__init__(output_formats, default_output_format, crs_details, title, description)
+        super().__init__(title, description, output_formats, default_output_format, crs_details)
         self._height_units = height_units
 
     @classmethod
@@ -390,10 +464,7 @@ class CubeDataQuery(AbstractDataQuery["CubeDataQuery"]):
         return j_dict
 
 
-ITEMS = "items"
-
-
-class LocationsDataQuery(AbstractDataQuery["LocationsDataQuery"]):
+class LocationsDataQuery(AbstractSpatialDataQuery["LocationsDataQuery"]):
     """Collection-specific metadata for locations queries"""
 
     @classmethod
@@ -404,7 +475,7 @@ class LocationsDataQuery(AbstractDataQuery["LocationsDataQuery"]):
         return super()._key()
 
 
-class PositionDataQuery(AbstractDataQuery["PositionDataQuery"]):
+class PositionDataQuery(AbstractSpatialDataQuery["PositionDataQuery"]):
     """Collection-specific metadata for locations queries"""
 
     @classmethod
@@ -442,7 +513,7 @@ class DataQueryLink:
     # Duplication was the easiest workaround
     href: URL
     rel: str
-    variables: OldDataQuery  # TODO replace with new AbstractDataQuery. How to handle heterogenous subclasses though?
+    variables: OldDataQuery  # TODO replace with new AbstractSpatialDataQuery. How to handle heterogeneous subclasses though?
     type: Optional[str] = None
     hreflang: Optional[str] = None
     title: Optional[str] = None
