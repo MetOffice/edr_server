@@ -186,8 +186,11 @@ class AbstractDataQuery(EdrModel[U]):
             self._title = title
 
         if description is None:
-            query_type = self.get_query_type().name.lower().rstrip('s')
-            self._description = f"Select data that is within a defined {query_type}."
+            query_type = self.get_query_type()
+            query_type_str = query_type.name.lower()
+            if query_type is not EdrDataQuery.RADIUS:
+                query_type_str = query_type_str.rstrip('s')
+            self._description = f"Select data that is within a defined {query_type_str}."
         else:
             self._description = description
 
@@ -382,10 +385,9 @@ class CorridorDataQuery(AbstractSpatialDataQuery["CorridorDataQuery"]):
 
     def __init__(
             self,
-            output_formats: Optional[List[str]] = None, default_output_format: Optional[str] = None,
-            crs_details: Optional[List[CrsObject]] = None, title: Optional[str] = None,
-            description: Optional[str] = None, width_units: Optional[List[str]] = None,
-            height_units: Optional[List[str]] = None,
+            title: Optional[str] = None, description: Optional[str] = None, output_formats: Optional[List[str]] = None,
+            default_output_format: Optional[str] = None, crs_details: Optional[List[CrsObject]] = None,
+            width_units: Optional[List[str]] = None, height_units: Optional[List[str]] = None
     ):
         super().__init__(title, description, output_formats, default_output_format, crs_details)
         self._width_units = width_units
@@ -435,9 +437,9 @@ class CubeDataQuery(AbstractSpatialDataQuery["CubeDataQuery"]):
 
     def __init__(
             self,
-            output_formats: Optional[List[str]] = None, default_output_format: Optional[str] = None,
-            crs_details: Optional[List[CrsObject]] = None, title: Optional[str] = None,
-            description: Optional[str] = None, height_units: Optional[List[str]] = None,
+            title: Optional[str] = None, description: Optional[str] = None, output_formats: Optional[List[str]] = None,
+            default_output_format: Optional[str] = None, crs_details: Optional[List[CrsObject]] = None,
+            height_units: Optional[List[str]] = None
     ) -> None:
         super().__init__(title, description, output_formats, default_output_format, crs_details)
         self._height_units = height_units
@@ -484,6 +486,35 @@ class PositionDataQuery(AbstractSpatialDataQuery["PositionDataQuery"]):
 
     def _key(self) -> tuple:
         return super()._key()
+
+
+class RadiusDataQuery(AbstractSpatialDataQuery["RadiusDataQuery"]):
+    _EXPECTED_JSON_KEYS = AbstractSpatialDataQuery._EXPECTED_JSON_KEYS.union({"within_units"})
+
+    def __init__(
+            self, title: Optional[str] = None, description: Optional[str] = None,
+            output_formats: Optional[List[str]] = None, default_output_format: Optional[str] = None,
+            crs_details: Optional[List[CrsObject]] = None, within_units: Optional[List[str]] = None
+    ):
+        super().__init__(title, description, output_formats, default_output_format, crs_details)
+        self._within_units = within_units
+
+    def to_json(self) -> JsonDict:
+        j_dict = super().to_json()
+        if self._within_units:
+            j_dict["within_units"] = self._within_units
+        return j_dict
+
+    @classmethod
+    def get_query_type(cls) -> EdrDataQuery:
+        return EdrDataQuery.RADIUS
+
+    def _key(self) -> tuple:
+        return super()._key() + (self._within_units,)
+
+    @property
+    def within_units(self) -> Optional[List[str]]:
+        return self._within_units if self._within_units is not None else []
 
 
 RADIUS = "radius"

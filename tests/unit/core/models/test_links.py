@@ -4,7 +4,7 @@ from edr_server.core.exceptions import InvalidEdrJsonError
 from edr_server.core.models import EdrDataQuery
 from edr_server.core.models.crs import CrsObject
 from edr_server.core.models.links import AreaDataQuery, CorridorDataQuery, CubeDataQuery, LocationsDataQuery, \
-    PositionDataQuery, ItemsDataQuery
+    PositionDataQuery, ItemsDataQuery, RadiusDataQuery
 
 
 class AreaDataQueryTest(unittest.TestCase):
@@ -194,7 +194,7 @@ class CorridorDataQueryTest(unittest.TestCase):
         test_width_units = ["mi", "km"]
 
         self.test_corridor_query = CorridorDataQuery(
-            test_output_formats, test_output_formats[0], test_crs_details, test_title, test_description,
+            test_title, test_description, test_output_formats, test_output_formats[0], test_crs_details,
             test_width_units, test_height_units,
         )
 
@@ -577,7 +577,7 @@ class CubeDataQueryTest(unittest.TestCase):
         test_height_units = ["m", "hPa"]
 
         self.test_cube_query = CubeDataQuery(
-            test_output_formats, test_output_formats[0], test_crs_details, test_title, test_description,
+            test_title, test_description, test_output_formats, test_output_formats[0], test_crs_details,
             test_height_units,
         )
 
@@ -1140,3 +1140,224 @@ class PositionDataQueryTest(unittest.TestCase):
         test_json["what the hell is this?"] = "12355"
 
         self.assertRaises(InvalidEdrJsonError, PositionDataQuery.from_json, test_json)
+
+
+class RadiusDataQueryTest(unittest.TestCase):
+
+    def setUp(self) -> None:
+        test_title = "Radius Data Query"
+        test_description = "This is a description that doesn't describe anything"
+        test_output_formats = ["application/netcdf", "application/geo+json", "application/prs.coverage+json"]
+        test_crs_details = [
+            CrsObject(4326), CrsObject(4277), CrsObject(4188)
+        ]
+        test_within_units = ["m", "KM"]
+
+        self.test_radius_query = RadiusDataQuery(
+            test_title, test_description, test_output_formats, test_output_formats[0], test_crs_details,
+            test_within_units
+        )
+
+        # According to
+        # https://github.com/opengeospatial/ogcapi-environmental-data-retrieval/blob/8427963/standard/openapi/schemas/collections/radiusDataQuery.yaml
+        # none of these fields are required, so they could all potentially be missing
+        self.test_serialised_radius_data_query = {
+            "title": test_title,
+            "description": test_description,
+            "query_type": "radius",
+            "output_formats": test_output_formats,
+            "default_output_format": test_output_formats[0],
+            "crs_details": {crs.name: {"crs": crs.name, "wkt": crs.to_wkt()} for crs in test_crs_details},
+            "within_units": test_within_units,
+        }
+
+    def test_init_defaults(self):
+        """GIVEN no arguments are supplied WHEN a RadiusDataQuery is instantiated THEN default values are set"""
+        actual_radius_dq = RadiusDataQuery()
+
+        self.assertEqual("Radius Data Query", actual_radius_dq.title)
+        self.assertEqual("Select data that is within a defined radius.", actual_radius_dq.description, )
+        self.assertEqual(EdrDataQuery.RADIUS, actual_radius_dq.get_query_type())
+        self.assertEqual([], actual_radius_dq.output_formats)
+        self.assertEqual(None, actual_radius_dq.default_output_format)
+        self.assertEqual([CrsObject(4326)], actual_radius_dq.crs_details)
+        self.assertEqual([], actual_radius_dq.within_units)
+
+    def test_init_default_output_format_inferred(self):
+        """
+        GIVEN output_formats is provided AND default_output_format is not
+        WHEN a RadiusDataQuery is instantiated
+        THEN default_output_format is inferred from the provided output_formats
+        """
+        test_output_formats = ["application/netcdf", "application/geo+json", "application/prs.coverage+json"]
+        expected_default_output_format = test_output_formats[0]
+
+        test_radius_dq = RadiusDataQuery(output_formats=test_output_formats)
+
+        self.assertEqual(test_radius_dq.default_output_format, expected_default_output_format)
+
+    def test__eq__(self):
+        """GIVEN 2 RadiusDataQuery objects that have the same values WHEN they are compared THEN they are equal"""
+        self.assertEqual(RadiusDataQuery(), RadiusDataQuery())
+
+        rdq1 = RadiusDataQuery.from_json(self.test_serialised_radius_data_query)
+        rdq2 = RadiusDataQuery.from_json(self.test_serialised_radius_data_query)
+        self.assertEqual(rdq1, rdq2)
+
+    def test__neq__(self):
+        """
+        GIVEN 2 RadiusDataQuery objects that have different values WHEN they are compared THEN they are not equal
+        """
+        self.assertNotEqual(self.test_radius_query, RadiusDataQuery())
+        self.assertNotEqual(RadiusDataQuery(), AreaDataQuery())
+
+    def test__neq__extra_fields(self):
+        """
+        This test checks that we've updated the equality comparison logic to include any attributes we've extended the
+        class with
+
+        GIVEN 2 RadiusDataQuery instances
+        AND any attributes added to the class (i.e. those not defined by the superclass) differ
+        AND inherited fields are the same
+        WHEN they are compared
+        THEN they are not equal
+        """
+        json2 = self.test_serialised_radius_data_query.copy()
+        json2["within_units"] = ["Eiffel Towers"]
+        cdq2 = RadiusDataQuery.from_json(json2)
+        self.assertNotEqual(cdq2, self.test_radius_query)
+
+    def test_to_json(self):
+        """GIVEN a RadiusDataQuery WHEN to_json() is called THEN the expected JSON is produced"""
+        expected_json = self.test_serialised_radius_data_query
+
+        actual_json = self.test_radius_query.to_json()
+
+        self.assertEqual(actual_json, expected_json)
+
+    def test_to_json_defaults(self):
+        """
+        GIVEN a RadiusDataQuery created using default values
+        WHEN to_json() is called
+        THEN the expected JSON is produced
+        """
+        test_radius_dq = RadiusDataQuery()
+        gps_crs = CrsObject(4326)
+        expected_json = {
+            "title": "Radius Data Query",
+            "description": "Select data that is within a defined radius.",
+            "query_type": "radius",
+            "crs_details": {
+                gps_crs.name: {
+                    "crs": gps_crs.name,
+                    "wkt": gps_crs.to_wkt(),
+                }
+            },
+        }
+
+        actual_json = test_radius_dq.to_json()
+
+        self.assertEqual(expected_json, actual_json)
+
+    def test_to_json_output_formats_empty_list(self):
+        """
+        GIVEN output_formats is an empty list WHEN to_json() is called THEN output_formats is not included in the JSON
+        """
+        test_radius_dq = RadiusDataQuery(output_formats=[])
+        gps_crs = CrsObject(4326)
+        expected_json = {
+            "title": "Radius Data Query",
+            "description": "Select data that is within a defined radius.",
+            "query_type": "radius",
+            "crs_details": {
+                gps_crs.name: {
+                    "crs": gps_crs.name,
+                    "wkt": gps_crs.to_wkt(),
+                }
+            },
+        }
+
+        actual_json = test_radius_dq.to_json()
+
+        self.assertEqual(expected_json, actual_json)
+
+    def test_to_json_within_units_empty_list(self):
+        """
+        GIVEN within_units is an empty list WHEN to_json() is called THEN within_units is not included in the JSON
+        """
+        test_radius_dq = RadiusDataQuery(within_units=[])
+        gps_crs = CrsObject(4326)
+        expected_json = {
+            "title": "Radius Data Query",
+            "description": "Select data that is within a defined radius.",
+            "query_type": "radius",
+            "crs_details": {
+                gps_crs.name: {
+                    "crs": gps_crs.name,
+                    "wkt": gps_crs.to_wkt(),
+                }
+            },
+        }
+
+        actual_json = test_radius_dq.to_json()
+
+        self.assertEqual(expected_json, actual_json)
+
+    def test_from_json(self):
+        """
+        GIVEN a dict deserialised from valid JSON for a RadiusDataQuery
+        WHEN from_json() is called
+        THEN a RadiusDataQuery is returned with equivalent values
+        """
+        expected_cdq = self.test_radius_query
+
+        actual_cdq = RadiusDataQuery.from_json(self.test_serialised_radius_data_query)
+
+        self.assertEqual(actual_cdq, expected_cdq)
+
+    def test_from_json_empty_dict(self):
+        """
+        GIVEN an empty dictionary
+        WHEN the empty dict is passed to from_json()
+        THEN a RadiusDataQuery with default values is returned
+        """
+        expected_radius_dq = RadiusDataQuery()
+
+        actual_radius_dq = RadiusDataQuery.from_json({})
+
+        self.assertEqual(actual_radius_dq, expected_radius_dq)
+
+    def test_from_json_query_type_wrong(self):
+        """
+        GIVEN a dict where the query_type key is not "radius"
+        WHEN the dict is passed to from_json()
+        THEN an InvalidEdrJsonError is raised
+        """
+
+        self.assertRaises(InvalidEdrJsonError, RadiusDataQuery.from_json, {"query_type": "wrong!"})
+
+    def test_from_json_query_type_missing(self):
+        """
+        GIVEN a JSON dict that doesn't have a "query_type" key
+        WHEN the dict is passed to from_json()
+        THEN a RadiusDataQuery with equivalent values is returned
+        """
+        expected_radius_dq = self.test_radius_query
+        test_json = self.test_serialised_radius_data_query.copy()
+        del test_json["query_type"]
+
+        actual_radius_dq = RadiusDataQuery.from_json(test_json)
+
+        self.assertEqual(actual_radius_dq, expected_radius_dq)
+
+    def test_from_json_unexpected_key(self):
+        """
+        GIVEN a JSON dict that has all the expected keys with valid values
+        AND an unexpected key
+        WHEN the dict is passed to from_json()
+        THEN an InvalidEdrJsonError is raised
+        """
+        test_json = self.test_serialised_radius_data_query.copy()
+        test_json["what the hell is this?"] = "12355"
+
+        self.assertRaises(InvalidEdrJsonError, RadiusDataQuery.from_json, test_json)
