@@ -4,7 +4,7 @@ from edr_server.core.exceptions import InvalidEdrJsonError
 from edr_server.core.models import EdrDataQuery
 from edr_server.core.models.crs import CrsObject
 from edr_server.core.models.links import AreaDataQuery, CorridorDataQuery, CubeDataQuery, LocationsDataQuery, \
-    PositionDataQuery, ItemsDataQuery, RadiusDataQuery
+    PositionDataQuery, ItemsDataQuery, RadiusDataQuery, TrajectoryDataQuery
 
 
 class AreaDataQueryTest(unittest.TestCase):
@@ -1361,3 +1361,181 @@ class RadiusDataQueryTest(unittest.TestCase):
         test_json["what the hell is this?"] = "12355"
 
         self.assertRaises(InvalidEdrJsonError, RadiusDataQuery.from_json, test_json)
+
+
+class TrajectoryDataQueryTest(unittest.TestCase):
+
+    def setUp(self) -> None:
+        test_title = "Trajectory Data Query"
+        test_description = "This is a description that doesn't describe anything"
+        test_output_formats = ["application/netcdf", "application/geo+json", "application/prs.coverage+json"]
+        test_crs_details = [CrsObject(4326), CrsObject(4277), CrsObject(4188)]
+
+        self.test_trajectory_query = TrajectoryDataQuery(
+            test_title, test_description, test_output_formats, test_output_formats[0], test_crs_details)
+
+        # According to
+        # https://github.com/opengeospatial/ogcapi-environmental-data-retrieval/blob/a0ab69d/standard/openapi/schemas/collections/trajectoryDataQuery.yaml
+        # none of these fields are required, so they could all potentially be missing
+        self.test_serialised_trajectory_data_query = {
+            "title": test_title,
+            "description": test_description,
+            "query_type": "trajectory",
+            "output_formats": test_output_formats,
+            "default_output_format": test_output_formats[0],
+            "crs_details": {
+                crs.name: {"crs": crs.name, "wkt": crs.to_wkt()} for crs in test_crs_details
+            }
+        }
+
+    def test_init_defaults(self):
+        """GIVEN no arguments are supplied WHEN a TrajectoryDataQuery is instantiated THEN default values are set"""
+        actual_trajectory_dq = TrajectoryDataQuery()
+
+        self.assertEqual(actual_trajectory_dq.title, "Trajectory Data Query")
+        self.assertEqual(actual_trajectory_dq.description, "Select data that is within a defined trajectory.")
+        self.assertEqual(actual_trajectory_dq.get_query_type(), EdrDataQuery.TRAJECTORY)
+        self.assertEqual(actual_trajectory_dq.output_formats, [])
+        self.assertEqual(actual_trajectory_dq.default_output_format, None)
+        self.assertEqual(actual_trajectory_dq.crs_details, [CrsObject(4326)])
+
+    def test_init_default_output_format_inferred(self):
+        """
+        GIVEN output_formats is provided AND default_output_format is not
+        WHEN a TrajectoryDataQuery is instantiated
+        THEN default_output_format is inferred from the provided output_formats
+        """
+        test_output_formats = ["application/netcdf", "application/geo+json", "application/prs.coverage+json"]
+        expected_default_output_format = test_output_formats[0]
+
+        test_trajectory_dq = TrajectoryDataQuery(output_formats=test_output_formats)
+
+        self.assertEqual(test_trajectory_dq.default_output_format, expected_default_output_format)
+
+    def test__eq__(self):
+        """GIVEN 2 TrajectoryDataQuery objects that have the same values WHEN they are compared THEN they are equal"""
+        self.assertEqual(TrajectoryDataQuery(), TrajectoryDataQuery())
+
+        adq1 = TrajectoryDataQuery.from_json(self.test_serialised_trajectory_data_query)
+        adq2 = TrajectoryDataQuery.from_json(self.test_serialised_trajectory_data_query)
+        self.assertEqual(adq1, adq2)
+
+    def test__neq__(self):
+        """
+        GIVEN 2 TrajectoryDataQuery objects that have different values WHEN they are compared THEN they are not equal
+        """
+        self.assertNotEqual(self.test_trajectory_query, TrajectoryDataQuery())
+        self.assertNotEqual(TrajectoryDataQuery(), CorridorDataQuery())
+
+    def test_to_json(self):
+        """GIVEN a TrajectoryDataQuery WHEN to_json() is called THEN the expected JSON is produced"""
+        expected_json = self.test_serialised_trajectory_data_query
+
+        actual_json = self.test_trajectory_query.to_json()
+
+        self.assertEqual(actual_json, expected_json)
+
+    def test_to_json_defaults(self):
+        """
+        GIVEN a TrajectoryDataQuery created using default values
+        WHEN to_json() is called
+        THEN the expected JSON is produced
+        """
+        test_trajectory_dq = TrajectoryDataQuery()
+        gps_crs = CrsObject(4326)
+        expected_json = {
+            "title": "Trajectory Data Query",
+            "description": "Select data that is within a defined trajectory.",
+            "query_type": "trajectory",
+            "crs_details": {
+                gps_crs.name: {
+                    "crs": gps_crs.name,
+                    "wkt": gps_crs.to_wkt(),
+                }
+            },
+        }
+
+        actual_json = test_trajectory_dq.to_json()
+
+        self.assertEqual(expected_json, actual_json)
+
+    def test_to_json_output_formats_empty_list(self):
+        """
+        GIVEN output_formats is an empty list WHEN to_json() is called THEN output_formats is not included in the JSON
+        """
+        test_trajectory_dq = TrajectoryDataQuery(output_formats=[])
+        gps_crs = CrsObject(4326)
+        expected_json = {
+            "title": "Trajectory Data Query",
+            "description": "Select data that is within a defined trajectory.",
+            "query_type": "trajectory",
+            "crs_details": {
+                gps_crs.name: {
+                    "crs": gps_crs.name,
+                    "wkt": gps_crs.to_wkt(),
+                }
+            },
+        }
+
+        actual_json = test_trajectory_dq.to_json()
+
+        self.assertEqual(actual_json, expected_json)
+
+    def test_from_json(self):
+        """
+        GIVEN a dict deserialised from valid JSON for a TrajectoryDataQuery
+        WHEN from_json() is called
+        THEN a TrajectoryDataQuery is returned with equivalent values
+        """
+        expected_adq = self.test_trajectory_query
+
+        actual_adq = TrajectoryDataQuery.from_json(self.test_serialised_trajectory_data_query)
+
+        self.assertEqual(actual_adq, expected_adq)
+
+    def test_from_json_empty_dict(self):
+        """
+        GIVEN an empty dictionary
+        WHEN the empty dict is passed to from_json()
+        THEN a TrajectoryDataQuery with default values is returned
+        """
+        expected_trajectory_dq = TrajectoryDataQuery()
+
+        actual_trajectory_dq = TrajectoryDataQuery.from_json({})
+
+        self.assertEqual(actual_trajectory_dq, expected_trajectory_dq)
+
+    def test_from_json_query_type_wrong(self):
+        """
+        GIVEN a dict where the query_type key is not "trajectory"
+        WHEN the dict is passed to from_json()
+        THEN an InvalidEdrJsonError is raised
+        """
+
+        self.assertRaises(InvalidEdrJsonError, TrajectoryDataQuery.from_json, {"query_type": "wrong!"})
+
+    def test_from_json_query_type_missing(self):
+        """
+        GIVEN a JSON dict that doesn't have a "query_type" key
+        WHEN the dict is passed to from_json()
+        THEN a TrajectoryDataQuery with equivalent values is returned
+        """
+        expected_trajectory_dq = self.test_trajectory_query
+        test_json = self.test_serialised_trajectory_data_query.copy()
+        del test_json["query_type"]
+
+        actual_trajectory_dq = TrajectoryDataQuery.from_json(test_json)
+
+        self.assertEqual(actual_trajectory_dq, expected_trajectory_dq)
+
+    def test_from_json_unexpected_key(self):
+        """
+        GIVEN a JSON dict that has all the expected keys with valid values
+        AND an unexpected key
+        WHEN the dict is passed to from_json()
+        THEN an InvalidEdrJsonError is raised
+        """
+        test_json = self.test_serialised_trajectory_data_query.copy()
+        test_json["what the hell is this?"] = "12355"
+
+        self.assertRaises(InvalidEdrJsonError, TrajectoryDataQuery.from_json, test_json)

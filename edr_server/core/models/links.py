@@ -517,8 +517,14 @@ class RadiusDataQuery(AbstractSpatialDataQuery["RadiusDataQuery"]):
         return self._within_units if self._within_units is not None else []
 
 
-RADIUS = "radius"
-TRAJECTORY = "trajectory"
+class TrajectoryDataQuery(AbstractSpatialDataQuery["TrajectoryDataQuery"]):
+
+    def _key(self) -> tuple:
+        return super()._key()
+
+    @classmethod
+    def get_query_type(cls) -> EdrDataQuery:
+        return EdrDataQuery.TRAJECTORY
 
 
 @dataclass
