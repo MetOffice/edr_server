@@ -1,27 +1,62 @@
 from abc import abstractmethod
+from contextlib import suppress
 from dataclasses import dataclass, field
-from typing import List, Optional, Dict, Any, TypeVar, Set
+from typing import List, Optional, Dict, Any, TypeVar, Set, Type
 
 from pyproj import CRS
 
-from . import EdrModel
+from . import EdrModel, JsonDict
 from ._types_and_defaults import CollectionId, EdrDataQuery
 from .crs import CrsObject, DEFAULT_CRS
+from .i18n import IsoAlpha2LanguageCode
 from .urls import URL, EdrUrlResolver
 from ..exceptions import InvalidEdrJsonError
+
+MimeType = str
+"""
+Type Alias to make intent clearer when declaring attributes & parameters intended to store mime types.
+
+There isn't a comprehensive list of all valid MIME Types, so the best we can do is check against valid formats
+That might still be too restrictive for users of the library, so for now we're not applying any validation here.
+Potentially there's a discussion to be had about to what extent we want to push users to adhere to the spirit and intent
+of the EDR spec, versus leaving it up to them. The answer would perhaps come down to whether EDR standard's OpenAPI
+schemas are permissive by design, or because they couldn't express the concept of "a string following the conventions
+of a MIME type" in that format.
+ 
+Strictly speaking, MIME Types (aka media types) are overseen by the IANA (see 
+https://www.iana.org/assignments/media-types/media-types.xhtml for the registry and 
+https://www.rfc-editor.org/rfc/rfc6838.html for details of registration and registration tress & subtype names).
+However, in practice not every MIME type is registered with the IANA.
+For example, whilst geojson has an official entry, covJSON does not, despite the covJSON specification defining a
+canonical MIME type of application/prs.coverage+json (incidentally, the `prs.` prefix indicates the "personal 
+registration tree" as defined by RFC 6838).
+Another example, netCDF doesn't have an entry in the IANA registry, but seems to be declared by convention as 
+application/netcdf or application/x-netcdf. (Although, if abiding by RFC 6838, application/x.netcdf might be more 
+appropriate, as `x.` is the prefix for unregistered media types. I believe `x-` is a deprecated format predating that 
+RFC)
+"""
 
 
 @dataclass
 class Link:
     """
-    A simple link that can be used in the "links" section of an EDR response
+    A simple link that can be used in the "links" section of an EDR response.
+    EDR draws on RFC8288 for its approach to linking: https://www.rfc-editor.org/rfc/rfc8288.txt
+
     Based on
     https://github.com/opengeospatial/ogcapi-environmental-data-retrieval/blob/546c338/standard/openapi/schemas/link.yaml
     """
-    href: URL
+    href: URL  # The target of the link, the page it links to
     rel: str
-    type: Optional[str] = None
-    hreflang: Optional[str] = None
+    """
+    Relation between the current resource and link target. See https://microformats.org/wiki/rel-faq#How_is_rel_used
+    E.g. See https://html.spec.whatwg.org/multipage/links.html#linkTypes for standard HTML values.
+    E.g. See https://microformats.org/wiki/existing-rel-values for registered HTML extensions and other uses 
+    """
+    type: Optional[MimeType] = None
+    """MIME type of the linked resource. There's some more docs about MimeTypes in general where the type is defined."""
+
+    hreflang: Optional[IsoAlpha2LanguageCode] = None
     title: Optional[str] = None
     length: Optional[int] = None
 
@@ -111,28 +146,10 @@ class OldDataQuery:
         return OldDataQuery(**kwargs)
 
 
-JsonDict = Dict[str, Any]
 U = TypeVar("U", bound="AbstractDataQuery")
 
 
 class AbstractDataQuery(EdrModel[U]):
-    _EXPECTED_JSON_KEYS: Set[str] = {
-        "title",
-        "description",
-        "query_type",
-    }
-
-    @classmethod
-    def _validate_json_keys(cls, json_dict: JsonDict) -> None:
-        """
-        Raises an InvalidJsonError if any unexpected keys are found.
-        `_EXPECTED_JSON_KEYS` can be overridden in subclasses to add additional expected keys, so in practice you
-        shouldn't need to modify this method.
-        """
-        if invalid_keys := json_dict.keys() - cls._EXPECTED_JSON_KEYS:  # Performs set difference.
-            # The dictionary view returned by .keys() doesn't support the named set methods, but does support the set
-            # operators defined in collections.abc.Set
-            raise InvalidEdrJsonError(f"Unexpected keys in JSON dict: {invalid_keys!r}")
 
     @classmethod
     def _prepare_json_for_init(cls, json_dict: JsonDict) -> JsonDict:
@@ -160,26 +177,19 @@ class AbstractDataQuery(EdrModel[U]):
         return kwargs
 
     @classmethod
-    def from_json(cls, json_dict: JsonDict) -> U:
-        # docstring inherited from EdrModel
-        # Subclasses may need different behaviour for converting from JSON, but implementors shouldn't need to modify
-        # this method. `_prepare_json_for_init` can be overridden to control how the JSON dict is converted into a form
-        # that can be passed to the __init__ method, and additional keys for validation can be added to
-        # `_EXPECTED_JSON_KEYS`.
-        cls._validate_json_keys(json_dict)
-        prepared_dict = cls._prepare_json_for_init(json_dict)
-        return cls(**prepared_dict)
-
-    @classmethod
     @abstractmethod
     def get_query_type(cls) -> EdrDataQuery:
         # I want each subclass to provide the correct value for this, and also want it accessible to the class method
         # from_json(). I'd prefer it to be an abstract class property, but that's not a standard feature of python, and
         # I wanted to avoid adding a bunch of extra code to support it.
-        raise NotImplemented
+        raise NotImplementedError
+
+    @classmethod
+    def _get_expected_keys(cls) -> Set[str]:
+        return {"title", "description", "query_type"}
 
     def __init__(self, title: Optional[str] = None, description: Optional[str] = None):
-
+        super().__init__(self)
         if title is None:
             self._title = f"{self.get_query_type().name.title()} Data Query"
         else:
@@ -274,13 +284,7 @@ class AbstractSpatialDataQuery(AbstractDataQuery[E]):
     They are tied to specific collections, and hence can vary from collection to collection.
     """
 
-    _EXPECTED_JSON_KEYS: Set[str] = AbstractDataQuery._EXPECTED_JSON_KEYS.union({
-        "output_formats",
-        "default_output_format",
-        "crs_details",
-    })
-
-    def __init__(  # TODO change order of arguments so that subclass args come after superclass
+    def __init__(
             self, title: Optional[str] = None, description: Optional[str] = None,
             output_formats: Optional[List[str]] = None, default_output_format: Optional[str] = None,
             crs_details: Optional[List[CrsObject]] = None,
@@ -297,6 +301,10 @@ class AbstractSpatialDataQuery(AbstractDataQuery[E]):
             self._default_output_format = None
 
         self._crs_details = [DEFAULT_CRS] if crs_details is None else crs_details
+
+    @classmethod
+    def _get_expected_keys(cls) -> Set[str]:
+        return super()._get_expected_keys().union({"output_formats", "default_output_format", "crs_details"})
 
     @classmethod
     def _prepare_json_for_init(cls, json_dict: JsonDict) -> JsonDict:
@@ -381,8 +389,6 @@ class AreaDataQuery(AbstractSpatialDataQuery["AreaDataQuery"]):
 class CorridorDataQuery(AbstractSpatialDataQuery["CorridorDataQuery"]):
     """Collection-specific metadata for corridor queries"""
 
-    _EXPECTED_JSON_KEYS = AbstractSpatialDataQuery._EXPECTED_JSON_KEYS.union({"width_units", "height_units"})
-
     def __init__(
             self,
             title: Optional[str] = None, description: Optional[str] = None, output_formats: Optional[List[str]] = None,
@@ -392,6 +398,10 @@ class CorridorDataQuery(AbstractSpatialDataQuery["CorridorDataQuery"]):
         super().__init__(title, description, output_formats, default_output_format, crs_details)
         self._width_units = width_units
         self._height_units = height_units
+
+    @classmethod
+    def _get_expected_keys(cls) -> Set[str]:
+        return super()._get_expected_keys().union({"width_units", "height_units"})
 
     @classmethod
     def get_query_type(cls) -> EdrDataQuery:
@@ -433,8 +443,6 @@ class CorridorDataQuery(AbstractSpatialDataQuery["CorridorDataQuery"]):
 class CubeDataQuery(AbstractSpatialDataQuery["CubeDataQuery"]):
     """Collection-specific metadata for cube queries"""
 
-    _EXPECTED_JSON_KEYS = AbstractSpatialDataQuery._EXPECTED_JSON_KEYS.union({"height_units"})
-
     def __init__(
             self,
             title: Optional[str] = None, description: Optional[str] = None, output_formats: Optional[List[str]] = None,
@@ -443,6 +451,10 @@ class CubeDataQuery(AbstractSpatialDataQuery["CubeDataQuery"]):
     ) -> None:
         super().__init__(title, description, output_formats, default_output_format, crs_details)
         self._height_units = height_units
+
+    @classmethod
+    def _get_expected_keys(cls) -> Set[str]:
+        return super()._get_expected_keys().union({"height_units"})
 
     @classmethod
     def get_query_type(cls) -> EdrDataQuery:
@@ -489,8 +501,6 @@ class PositionDataQuery(AbstractSpatialDataQuery["PositionDataQuery"]):
 
 
 class RadiusDataQuery(AbstractSpatialDataQuery["RadiusDataQuery"]):
-    _EXPECTED_JSON_KEYS = AbstractSpatialDataQuery._EXPECTED_JSON_KEYS.union({"within_units"})
-
     def __init__(
             self, title: Optional[str] = None, description: Optional[str] = None,
             output_formats: Optional[List[str]] = None, default_output_format: Optional[str] = None,
@@ -498,6 +508,10 @@ class RadiusDataQuery(AbstractSpatialDataQuery["RadiusDataQuery"]):
     ):
         super().__init__(title, description, output_formats, default_output_format, crs_details)
         self._within_units = within_units
+
+    @classmethod
+    def _get_expected_keys(cls) -> Set[str]:
+        return super()._get_expected_keys().union({"within_units"})
 
     def to_json(self) -> JsonDict:
         j_dict = super().to_json()
@@ -528,10 +542,13 @@ class TrajectoryDataQuery(AbstractSpatialDataQuery["TrajectoryDataQuery"]):
 
 
 @dataclass
-class DataQueryLink:
+class DataQueryLink(EdrModel):
     """
-    Extended version of a simple link for use in the data_queries section of a collection metadata response
-    Based on
+    Extended version of a simple link for use in the data_queries section of a collection metadata response.
+
+    EDR draws on RFC8288 for its approach to linking: https://www.rfc-editor.org/rfc/rfc8288.txt
+
+    Object based on these EDR schemas (as they were in commit 546c338):
     https://github.com/opengeospatial/ogcapi-environmental-data-retrieval/blob/546c338/standard/openapi/schemas/link.yaml
     https://github.com/opengeospatial/ogcapi-environmental-data-retrieval/blob/546c338/standard/openapi/schemas/areaLink.yaml
     https://github.com/opengeospatial/ogcapi-environmental-data-retrieval/blob/546c338/standard/openapi/schemas/corridorLink.yaml
@@ -547,19 +564,43 @@ class DataQueryLink:
     # values in the fields. TLDR: it leads to a "Non-default argument(s) follows default argument(s) defined in 'Link'"
     # error. Further detail here:
     # https://stackoverflow.com/questions/51575931/class-inheritance-in-python-3-7-dataclasses
-    # Duplication was the easiest workaround
-    href: URL
+    # Duplication was the easiest workaround <- TODO this doesn't apply if I allow variables to be optional: review
+    href: URL  # The target of the link, the page it links to
     rel: str
-    variables: OldDataQuery  # TODO replace with new AbstractSpatialDataQuery. How to handle heterogeneous subclasses though?
-    type: Optional[str] = None
-    hreflang: Optional[str] = None
+    """
+    Relation between the current resource and link target. See https://microformats.org/wiki/rel-faq#How_is_rel_used
+    E.g. See https://html.spec.whatwg.org/multipage/links.html#linkTypes for standard HTML values.
+    E.g. See https://microformats.org/wiki/existing-rel-values for registered HTML extensions and other uses 
+    """
+    variables: Optional[AbstractDataQuery] = None
+    type: Optional[MimeType] = None
+    """MIME type of the linked resource. There's some more docs about MimeTypes in general where the type is defined."""
+
+    @classmethod
+    def _get_expected_keys(cls) -> Set[str]:
+        return {"title", "href", "rel", "type", "hreflang", "length", "templated", "variables"}
+
+    @classmethod
+    def _prepare_json_for_init(cls, json_dict: JsonDict) -> JsonDict:
+        if "variables" in json_dict:
+            # if "query_type" not in json_dict["variables"] TODO Add test case for this check
+            actual_query_type = json_dict["variables"]["query_type"]
+            data_query_cls = DATA_QUERY_MAP[actual_query_type]
+            json_dict["variables"] = data_query_cls.from_json(json_dict["variables"])
+
+        with suppress(KeyError):
+            del json_dict["templated"]
+
+        return json_dict
+
+    hreflang: Optional[IsoAlpha2LanguageCode] = None
     title: Optional[str] = None
     length: Optional[int] = None
 
     @property
-    def templated(self):
+    def templated(self) -> bool:
         """All EDR's data query links are templated"""
-        return True
+        return self.variables is not None
 
     @staticmethod
     def get_data_query_link(
@@ -575,6 +616,7 @@ class DataQueryLink:
         if crs_details is None:
             crs_details = [DEFAULT_CRS]
 
+        # TODO - update this to use AbstractDataQuery et al.
         return DataQueryLink(
             href=urls.COLLECTION_DATA_QUERY_MAP[query_type](collection_id),
             rel="data",
@@ -584,3 +626,40 @@ class DataQueryLink:
             hreflang="en",
             title=query_type.name.title(),
         )
+
+    def to_json(self) -> Dict[str, Any]:
+        j_dict = {
+            "href": self.href,
+            "rel": self.rel,
+        }
+
+        if self.variables:
+            j_dict["variables"] = self.variables.to_json()
+            j_dict["templated"] = True
+
+        if self.title:
+            j_dict["title"] = self.title
+        if self.length:
+            j_dict["length"] = self.length
+        if self.hreflang:
+            j_dict["hreflang"] = self.hreflang
+        if self.type:
+            j_dict["type"] = self.type
+
+        return j_dict
+
+
+DATA_QUERY_MAP: Dict[str, Type[AbstractDataQuery]] = {
+    "area": AreaDataQuery,
+    "corridor": CorridorDataQuery,
+    "cube": CubeDataQuery,
+    "items": ItemsDataQuery,
+    "locations": LocationsDataQuery,
+    "position": PositionDataQuery,
+    "radius": RadiusDataQuery,
+    "trajectory": TrajectoryDataQuery,
+}
+"""
+A map of EdrDataQuery enum values to the Data Query classes that represent those query types. 
+Keys belong to this set: {edr_data_query.value for edr_data_query in EdrDataQuery}
+"""

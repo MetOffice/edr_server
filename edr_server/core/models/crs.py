@@ -1,8 +1,8 @@
-from typing import Dict, Any
+from typing import Dict, Any, Set
 
 from pyproj import CRS
 
-from edr_server.core.models import EdrModel
+from edr_server.core.models import EdrModel, JsonDict
 
 
 class CrsObject(EdrModel["CrsObject"], CRS):
@@ -13,6 +13,25 @@ class CrsObject(EdrModel["CrsObject"], CRS):
     This class maps to the crsObject in the EDR OpenAPI, as defined here:
     https://github.com/opengeospatial/ogcapi-environmental-data-retrieval/blob/8427963/standard/openapi/schemas/collections/crsObject.yaml
     """
+
+    def __init__(self, projparams: Any = None, **kwargs):
+        # Override the usual MRO and use the CRS __init__ method instead of EdrModel
+        # We do this rather than switch the order of the declared base classes because in most cases where there's a
+        # choice of inherited methods with the same name, we want EdrModel to take precedence over CRS
+        CRS.__init__(self, projparams, **kwargs)
+
+    @classmethod
+    def _get_expected_keys(cls) -> Set[str]:
+        # Required to satisfy the Abstract Base Class, but actually we've overridden the from_json method,
+        # so we don't actually use this and don't need it to do anything.
+        pass
+
+    @classmethod
+    def _prepare_json_for_init(cls, json_dict: JsonDict) -> JsonDict:
+        # Required to satisfy the Abstract Base Class, but actually we've overridden the from_json method,
+        # so we don't actually use this and don't need it to do anything. This is relevant to the inherited abstract
+        # methods and ensuring python applies the abstract base class correctly
+        pass
 
     def to_json(self) -> Dict[str, Any]:
         return {"crs": self.name, "wkt": self.to_wkt()}

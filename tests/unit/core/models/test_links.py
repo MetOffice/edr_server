@@ -4,7 +4,8 @@ from edr_server.core.exceptions import InvalidEdrJsonError
 from edr_server.core.models import EdrDataQuery
 from edr_server.core.models.crs import CrsObject
 from edr_server.core.models.links import AreaDataQuery, CorridorDataQuery, CubeDataQuery, LocationsDataQuery, \
-    PositionDataQuery, ItemsDataQuery, RadiusDataQuery, TrajectoryDataQuery
+    PositionDataQuery, ItemsDataQuery, RadiusDataQuery, TrajectoryDataQuery, DataQueryLink, DATA_QUERY_MAP
+from edr_server.core.models.urls import URL
 
 
 class AreaDataQueryTest(unittest.TestCase):
@@ -1539,3 +1540,409 @@ class TrajectoryDataQueryTest(unittest.TestCase):
         test_json["what the hell is this?"] = "12355"
 
         self.assertRaises(InvalidEdrJsonError, TrajectoryDataQuery.from_json, test_json)
+
+
+class DataQueryLinkTest(unittest.TestCase):
+
+    def setUp(self) -> None:
+        test_position_data_query = PositionDataQuery("Test Query")
+        self.test_dql = DataQueryLink(
+            URL("https://localhost"), "alternate", test_position_data_query, "text", "en", "Test Link", 42)
+
+        self.test_json = {
+            "title": "Test Link",
+            "href": "https://localhost",
+            "rel": "alternate",
+            "type": "text",
+            "hreflang": "en",
+            "length": 42,
+            "templated": True,
+            "variables": test_position_data_query.to_json(),
+        }
+
+    def test__eq__(self):
+        """
+        GIVEN 2 different DataQueryLink instances that hold the same data
+        WHEN they are compared
+        THEN True is returned
+        """
+        dql1 = DataQueryLink(
+            URL("http://localhost"), "test", PositionDataQuery("test query"), "test", "en", "Test Link", 1)
+        dql2 = DataQueryLink(
+            URL("http://localhost"), "test", PositionDataQuery("test query"), "test", "en", "Test Link", 1)
+
+        self.assertEqual(dql1, dql2)
+
+    def test__eq__with_different_data_queries(self):
+        """
+        GIVEN 2 DataQueryLinks that differ only by the Data Query stored in DataQueryLink.variables
+        WHEN they are compared
+        THEN False is returned
+        """
+        dql1 = DataQueryLink(
+            URL("https://localhost"), "test", PositionDataQuery("test query"), "test", "en", "Test Link", 1)
+        dql2 = DataQueryLink(URL("https://localhost"), "test", PositionDataQuery("test query"))
+
+        self.assertNotEqual(dql1, dql2)
+
+    def test_from_json_all_fields(self):
+        """
+        GIVEN a JSON dict with all the possible acceptable fields
+        WHEN from_json is called
+        THEN the corresponding object is returned
+        """
+        expected = self.test_dql
+
+        actual = DataQueryLink.from_json(self.test_json)
+
+        self.assertEqual(expected, actual)
+
+    def test_from_json_required_fields_only(self):
+        """
+        GIVEN a JSON dict that only contains mandatory fields
+        WHEN from_json is called
+        THEN the corresponding object is returned
+        """
+        test_json = {
+            "href": URL("https://localhost"),
+            "rel": "test",
+        }
+        expected = DataQueryLink(URL("https://localhost"), "test")
+
+        actual = DataQueryLink.from_json(test_json)
+
+        self.assertEqual(expected, actual)
+
+    def test_from_json_unexpected_field(self):
+        """
+        GIVEN a JSON dict that contains the mandatory fields
+        AND an unexpected field
+        WHEN from_json is called
+        THEN an InvalidEdrJsonError is raised
+        """
+        self.test_json["what's this?"] = None
+        self.assertRaises(InvalidEdrJsonError, DataQueryLink.from_json, self.test_json)
+
+    def test_from_json_area_data_query(self):
+        """
+        GIVEN a DataQueryLink JSON dict with an embedded AreaDataQuery
+        WHEN from_json is called
+        THEN the correct objects are returned
+        """
+        test_area_query = AreaDataQuery("Area Q", "test an area query", ["application/netcdf"])
+        self.test_json["variables"] = test_area_query.to_json()
+        self.test_dql.variables = test_area_query
+
+        actual = DataQueryLink.from_json(self.test_json)
+
+        self.assertEqual(self.test_dql, actual)
+
+    def test_from_json_corridor_data_query(self):
+        """
+        GIVEN a DataQueryLink JSON dict with an embedded CorridorDataQuery
+        WHEN from_json is called
+        THEN the correct objects are returned
+        """
+        test_corridor_query = CorridorDataQuery(
+            "Corridor Q", "test an area query", ["application/netcdf"], width_units=["m", "km"], height_units=["hPa"])
+        self.test_json["variables"] = test_corridor_query.to_json()
+        self.test_dql.variables = test_corridor_query
+
+        actual = DataQueryLink.from_json(self.test_json)
+
+        self.assertEqual(self.test_dql, actual)
+
+    def test_from_json_items_data_query(self):
+        """
+        GIVEN a DataQueryLink JSON dict with an embedded ItemsDataQuery
+        WHEN from_json is called
+        THEN the correct objects are returned
+        """
+        test_items_query = ItemsDataQuery("Items Q", "test an area query")
+        self.test_json["variables"] = test_items_query.to_json()
+        self.test_dql.variables = test_items_query
+
+        actual = DataQueryLink.from_json(self.test_json)
+
+        self.assertEqual(self.test_dql, actual)
+
+    def test_from_json_cube_data_query(self):
+        """
+        GIVEN a DataQueryLink JSON dict with an embedded CubeDataQuery
+        WHEN from_json is called
+        THEN the correct objects are returned
+        """
+        test_cube_query = CubeDataQuery(
+            "Cube Q", "test an area query", ["application/netcdf"], height_units=["km", "mi"])
+        self.test_json["variables"] = test_cube_query.to_json()
+        self.test_dql.variables = test_cube_query
+
+        actual = DataQueryLink.from_json(self.test_json)
+
+        self.assertEqual(self.test_dql, actual)
+
+    def test_from_json_locations_data_query(self):
+        """
+        GIVEN a DataQueryLink JSON dict with an embedded LocationsDataQuery
+        WHEN from_json is called
+        THEN the correct objects are returned
+        """
+        test_locations_query = LocationsDataQuery("Locations Q", "test an area query", ["application/netcdf"])
+        self.test_json["variables"] = test_locations_query.to_json()
+        self.test_dql.variables = test_locations_query
+
+        actual = DataQueryLink.from_json(self.test_json)
+
+        self.assertEqual(self.test_dql, actual)
+
+    def test_from_json_position_data_query(self):
+        """
+        GIVEN a DataQueryLink JSON dict with an embedded PositionDataQuery
+        WHEN from_json is called
+        THEN the correct objects are returned
+        """
+        test_position_query = PositionDataQuery("Position Q", "test an area query", ["application/netcdf"])
+        self.test_json["variables"] = test_position_query.to_json()
+        self.test_dql.variables = test_position_query
+
+        actual = DataQueryLink.from_json(self.test_json)
+
+        self.assertEqual(self.test_dql, actual)
+
+    def test_from_json_radius_data_query(self):
+        """
+        GIVEN a DataQueryLink JSON dict with an embedded RadiusDataQuery
+        WHEN from_json is called
+        THEN the correct objects are returned
+        """
+        test_radius_query = RadiusDataQuery(
+            "Radius Q", "test an area query", ["application/netcdf"], within_units=["m", "km"])
+        self.test_json["variables"] = test_radius_query.to_json()
+        self.test_dql.variables = test_radius_query
+
+        actual = DataQueryLink.from_json(self.test_json)
+
+        self.assertEqual(self.test_dql, actual)
+
+    def test_from_json_trajectory_data_query(self):
+        """
+        GIVEN a DataQueryLink JSON dict with an embedded TrajectoryDataQuery
+        WHEN from_json is called
+        THEN the correct objects are returned
+        """
+        test_trajectory_query = TrajectoryDataQuery("Trajectory Q", "test an area query", ["application/netcdf"])
+        self.test_json["variables"] = test_trajectory_query.to_json()
+        self.test_dql.variables = test_trajectory_query
+
+        actual = DataQueryLink.from_json(self.test_json)
+
+        self.assertEqual(self.test_dql, actual)
+
+    def test_to_json_all_fields(self):
+        """GIVEN a DataQueryLink with all fields set WHEN to_json is called THEN the correct JSON dict is produced"""
+        self.assertEqual(self.test_json, self.test_dql.to_json())
+
+    def test_to_json_variables_not_set(self):
+        """
+        GIVEN a DataQueryLink with all fields set except variables
+        WHEN to_json is called
+        THEN the correct JSON dict is produced
+
+        Specifically, we only expect the "templated" field to be included if variables is provided, and omitted if
+        variables is not provided
+        """
+        del self.test_json["variables"]
+        del self.test_json["templated"]
+
+        test_dql = DataQueryLink(
+            self.test_dql.href, self.test_dql.rel, None, self.test_dql.type, self.test_dql.hreflang,
+            self.test_dql.title, self.test_dql.length
+        )
+
+        actual = test_dql.to_json()
+
+        self.assertEqual(self.test_json, actual)
+
+    def test_to_json_required_fields_only(self):
+        """
+        GIVEN a DataQueryLink with only mandatory fields set
+        WHEN to_json is called
+        THEN the correct JSON dict is produced
+        """
+        test_dql = DataQueryLink(URL("https://localhost"), "alternate")
+        expected_json = {
+            "href": "https://localhost",
+            "rel": "alternate",
+        }
+
+        actual = test_dql.to_json()
+
+        self.assertEqual(expected_json, actual)
+
+    def test_to_json_area_data_query(self):
+        """
+        GIVEN a DataQueryLink instance with an embedded AreaDataQuery
+        WHEN to_json is called
+        THEN the correct JSON dict is returned
+        """
+        test_area_query = AreaDataQuery("Area Q", "test an area query", ["application/netcdf"])
+        self.test_dql.variables = test_area_query
+        self.test_json["variables"] = test_area_query.to_json()
+
+        actual = self.test_dql.to_json()
+
+        self.assertEqual(self.test_json, actual)
+
+    def test_to_json_corridor_data_query(self):
+        """
+        GIVEN a DataQueryLink instance with an embedded CorridorDataQuery
+        WHEN to_json is called
+        THEN the correct JSON dict is returned
+        """
+        test_corridor_query = CorridorDataQuery(
+            "Corridor Q", "test an corridor query", ["application/netcdf"], width_units=["m"], height_units=["m"])
+        self.test_dql.variables = test_corridor_query
+        self.test_json["variables"] = test_corridor_query.to_json()
+
+        actual = self.test_dql.to_json()
+
+        self.assertEqual(self.test_json, actual)
+
+    def test_to_json_items_data_query(self):
+        """
+        GIVEN a DataQueryLink instance with an embedded ItemsDataQuery
+        WHEN to_json is called
+        THEN the correct JSON dict is returned
+        """
+        test_items_query = ItemsDataQuery("Items Q", "test an items query")
+        self.test_dql.variables = test_items_query
+        self.test_json["variables"] = test_items_query.to_json()
+
+        actual = self.test_dql.to_json()
+
+        self.assertEqual(self.test_json, actual)
+
+    def test_to_json_cube_data_query(self):
+        """
+        GIVEN a DataQueryLink instance with an embedded CubeDataQuery
+        WHEN to_json is called
+        THEN the correct JSON dict is returned
+        """
+        test_cube_query = CubeDataQuery(
+            "Cube Q", "test an cube query", ["application/netcdf"], height_units=["km", "mi"])
+        self.test_dql.variables = test_cube_query
+        self.test_json["variables"] = test_cube_query.to_json()
+
+        actual = self.test_dql.to_json()
+
+        self.assertEqual(self.test_json, actual)
+
+    def test_to_json_locations_data_query(self):
+        """
+        GIVEN a DataQueryLink instance with an embedded LocationsDataQuery
+        WHEN to_json is called
+        THEN the correct JSON dict is returned
+        """
+        test_locations_query = LocationsDataQuery("Locations Q", "test an locations query", ["application/netcdf"])
+        self.test_dql.variables = test_locations_query
+        self.test_json["variables"] = test_locations_query.to_json()
+
+        actual = self.test_dql.to_json()
+
+        self.assertEqual(self.test_json, actual)
+
+    def test_to_json_position_data_query(self):
+        """
+        GIVEN a DataQueryLink instance with an embedded PositionDataQuery
+        WHEN to_json is called
+        THEN the correct JSON dict is returned
+        """
+        test_position_query = PositionDataQuery("Position Q", "test an position query", ["application/netcdf"])
+        self.test_dql.variables = test_position_query
+        self.test_json["variables"] = test_position_query.to_json()
+
+        actual = self.test_dql.to_json()
+
+        self.assertEqual(self.test_json, actual)
+
+    def test_to_json_radius_data_query(self):
+        """
+        GIVEN a DataQueryLink instance with an embedded RadiusDataQuery
+        WHEN to_json is called
+        THEN the correct JSON dict is returned
+        """
+        test_radius_query = RadiusDataQuery(
+            "Radius Q", "test an radius query", ["application/netcdf"], within_units=["m", "ft"])
+        self.test_dql.variables = test_radius_query
+        self.test_json["variables"] = test_radius_query.to_json()
+
+        actual = self.test_dql.to_json()
+
+        self.assertEqual(self.test_json, actual)
+
+    def test_to_json_trajectory_data_query(self):
+        """
+        GIVEN a DataQueryLink instance with an embedded TrajectoryDataQuery
+        WHEN to_json is called
+        THEN the correct JSON dict is returned
+        """
+        test_trajectory_query = TrajectoryDataQuery("Trajectory Q", "test an trajectory query", ["application/netcdf"])
+        self.test_dql.variables = test_trajectory_query
+        self.test_json["variables"] = test_trajectory_query.to_json()
+
+        actual = self.test_dql.to_json()
+
+        self.assertEqual(self.test_json, actual)
+
+    def test_templated_variables_set(self):
+        """
+        GIVEN a DataQueryLink with a value for `variables`
+        WHEN the `templated` property is accessed
+        THEN True is returned
+        """
+        self.assertIsNotNone(self.test_dql.variables)  # Just to check we have the expected test state
+        self.assertTrue(self.test_dql.templated)
+
+    def test_templated_variables_unset(self):
+        """
+        GIVEN a DataQueryLink that has `variables` unset
+        WHEN the `templated` property is accessed
+        THEN False is returned
+        """
+        self.test_dql.variables = None
+        self.assertFalse(self.test_dql.templated)
+
+
+class DataQueryMapTest(unittest.TestCase):
+
+    def test_is_dict(self):
+        self.assertIsInstance(DATA_QUERY_MAP, dict)
+
+    def test_expected_keys(self):
+        expected_keys = {dq.value for dq in EdrDataQuery}
+        actual_keys = set(DATA_QUERY_MAP.keys())
+        self.assertEqual(expected_keys, actual_keys)
+
+    def test_area(self):
+        self.assertEqual(AreaDataQuery, DATA_QUERY_MAP["area"])
+
+    def test_corridor(self):
+        self.assertEqual(CorridorDataQuery, DATA_QUERY_MAP["corridor"])
+
+    def test_items(self):
+        self.assertEqual(ItemsDataQuery, DATA_QUERY_MAP["items"])
+
+    def test_cube(self):
+        self.assertEqual(CubeDataQuery, DATA_QUERY_MAP["cube"])
+
+    def test_locations(self):
+        self.assertEqual(LocationsDataQuery, DATA_QUERY_MAP["locations"])
+
+    def test_position(self):
+        self.assertEqual(PositionDataQuery, DATA_QUERY_MAP["position"])
+
+    def test_radius(self):
+        self.assertEqual(RadiusDataQuery, DATA_QUERY_MAP["radius"])
+
+    def test_trajectory(self):
+        self.assertEqual(TrajectoryDataQuery, DATA_QUERY_MAP["trajectory"])
