@@ -1623,6 +1623,18 @@ class DataQueryLinkTest(unittest.TestCase):
         self.test_json["what's this?"] = None
         self.assertRaises(InvalidEdrJsonError, DataQueryLink.from_json, self.test_json)
 
+    def test_from_json_query_type_missing_from_variables(self):
+        """
+        GIVEN a JSON dict with all the possible acceptable fields
+        AND the "query_type" field is missing from the DataQueryLink JSON in the "variables" field
+        AND the JSON is otherwise valid
+        WHEN from_json is called
+        THEN an InvalidEdrJsonError is raised
+        """
+        del self.test_json["variables"]["query_type"]
+        # We only need to test absence, as invalid values are handled by the DataQuery class' `from_json` method
+        self.assertRaises(InvalidEdrJsonError, DataQueryLink.from_json, self.test_json)
+
     def test_from_json_area_data_query(self):
         """
         GIVEN a DataQueryLink JSON dict with an embedded AreaDataQuery

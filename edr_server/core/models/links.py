@@ -2,6 +2,7 @@ from abc import abstractmethod
 from contextlib import suppress
 from dataclasses import dataclass, field
 from typing import List, Optional, Dict, Any, TypeVar, Set, Type
+from warnings import warn
 
 from pyproj import CRS
 
@@ -560,6 +561,7 @@ class DataQueryLink(EdrModel):
     https://github.com/opengeospatial/ogcapi-environmental-data-retrieval/blob/546c338/standard/openapi/schemas/trajectoryLink.yaml
 
     """
+    # TODO: Review decision to not use inheritance here
     # Didn't use inheritance here due to the way dataclasses interacts with the mixture of default and non-default
     # values in the fields. TLDR: it leads to a "Non-default argument(s) follows default argument(s) defined in 'Link'"
     # error. Further detail here:
@@ -583,8 +585,20 @@ class DataQueryLink(EdrModel):
     @classmethod
     def _prepare_json_for_init(cls, json_dict: JsonDict) -> JsonDict:
         if "variables" in json_dict:
-            # if "query_type" not in json_dict["variables"] TODO Add test case for this check
-            actual_query_type = json_dict["variables"]["query_type"]
+
+            try:
+                actual_query_type = json_dict["variables"]["query_type"]
+            except KeyError:
+                # Interesting point, the structure of the `data_queries` object in the collections JSON uses query type
+                # as a key, so we could infer query type from that if it's not otherwise present. However, we don't have
+                # access to that here. A simple approach would be for the `CollectionMetadata.from_json` method to check
+                # if the query_type is missing and add one based on the inferred type before calling
+                # `DataQueryLink.from_json`, but that'd break the encapsulation of knowledge of the DataQueryLink JSON
+                # format within this class. We could wrap that logic in a method on `DataQueryLink`, however, that'd
+                # update the JSON with the inferred type and then call the `DataQueryLink.from_json` method as normal.
+                # The awkwardness with that would be how would `CollectionMetadata` know to call it? We'd need a more
+                # specialised exception subclass to identify that error case from other invalid JSON errors
+                raise InvalidEdrJsonError("'query_type' missing from data query JSON")
             data_query_cls = DATA_QUERY_MAP[actual_query_type]
             json_dict["variables"] = data_query_cls.from_json(json_dict["variables"])
 
@@ -613,6 +627,7 @@ class DataQueryLink(EdrModel):
             within_units: List[str] = None,
             crs_details: List[CRS] = None
     ) -> "DataQueryLink":
+        warn(DeprecationWarning())
         if crs_details is None:
             crs_details = [DEFAULT_CRS]
 
