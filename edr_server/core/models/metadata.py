@@ -1,11 +1,11 @@
 from dataclasses import dataclass, field
 from typing import List
 
-import pyproj
-
 from ._types_and_defaults import CollectionId, EdrDataQuery
+from .crs import CrsObject
 from .extents import Extents
-from .links import DataQueryLink, Link
+from .links import DataQueryLink, Link, AreaDataQuery, CorridorDataQuery, CubeDataQuery, ItemsDataQuery, \
+    LocationsDataQuery, PositionDataQuery, RadiusDataQuery, TrajectoryDataQuery
 from .parameters import Parameter
 from .urls import EdrUrlResolver
 
@@ -44,7 +44,7 @@ class CollectionMetadata:
                 f")")
 
     @property
-    def crs(self) -> pyproj.CRS:
+    def crs(self) -> CrsObject:
         return self.extent.spatial.crs
 
     def get_links(self, url_resolver: EdrUrlResolver) -> List[Link]:
@@ -71,19 +71,106 @@ class CollectionMetadata:
         return collection_links
 
     def get_data_query_links(self, url_resolver: EdrUrlResolver) -> List[DataQueryLink]:
-        return [
-            DataQueryLink.get_data_query_link(
-                query_type=query,
-                collection_id=self.id,
-                urls=url_resolver,
-                output_formats=self.output_formats,
-                height_units=self.height_units,
-                width_units=self.width_units,
-                within_units=self.within_units,
-                crs_details=[self.crs]
-            )
-            for query in self.supported_data_queries
-        ]
+        dql_list = []
+        for query_type in self.supported_data_queries:
+            if query_type is EdrDataQuery.AREA:
+                dql_list.append(
+                    DataQueryLink(
+                        href=url_resolver.COLLECTION_DATA_QUERY_MAP[query_type](self.id),
+                        rel="data",
+                        variables=AreaDataQuery(output_formats=self.output_formats, crs_details=[self.crs]),
+                        type=query_type.name.lower(),
+                        hreflang="en",
+                        title=query_type.name.title(),
+                    )
+                )
+            elif query_type is EdrDataQuery.CORRIDOR:
+                dql_list.append(
+                    DataQueryLink(
+                        href=url_resolver.COLLECTION_DATA_QUERY_MAP[query_type](self.id),
+                        rel="data",
+                        variables=CorridorDataQuery(
+                            output_formats=self.output_formats, crs_details=[self.crs], width_units=self.width_units,
+                            height_units=self.height_units
+                        ),
+                        type=query_type.name.lower(),
+                        hreflang="en",
+                        title=query_type.name.title(),
+                    )
+                )
+            elif query_type is EdrDataQuery.CUBE:
+                dql_list.append(
+                    DataQueryLink(
+                        href=url_resolver.COLLECTION_DATA_QUERY_MAP[query_type](self.id),
+                        rel="data",
+                        variables=CubeDataQuery(
+                            output_formats=self.output_formats, crs_details=[self.crs], height_units=self.height_units
+                        ),
+                        type=query_type.name.lower(),
+                        hreflang="en",
+                        title=query_type.name.title(),
+                    )
+                )
+            elif query_type is EdrDataQuery.ITEMS:
+                dql_list.append(
+                    DataQueryLink(
+                        href=url_resolver.COLLECTION_DATA_QUERY_MAP[query_type](self.id),
+                        rel="data",
+                        variables=ItemsDataQuery(),
+                        type=query_type.name.lower(),
+                        hreflang="en",
+                        title=query_type.name.title(),
+                    )
+                )
+
+            elif query_type is EdrDataQuery.LOCATIONS:
+                dql_list.append(
+                    DataQueryLink(
+                        href=url_resolver.COLLECTION_DATA_QUERY_MAP[query_type](self.id),
+                        rel="data",
+                        variables=LocationsDataQuery(output_formats=self.output_formats, crs_details=[self.crs]),
+                        type=query_type.name.lower(),
+                        hreflang="en",
+                        title=query_type.name.title(),
+                    )
+                )
+            elif query_type is EdrDataQuery.POSITION:
+                dql_list.append(
+                    DataQueryLink(
+                        href=url_resolver.COLLECTION_DATA_QUERY_MAP[query_type](self.id),
+                        rel="data",
+                        variables=PositionDataQuery(output_formats=self.output_formats, crs_details=[self.crs]),
+                        type=query_type.name.lower(),
+                        hreflang="en",
+                        title=query_type.name.title(),
+                    )
+                )
+            elif query_type is EdrDataQuery.RADIUS:
+                dql_list.append(
+                    DataQueryLink(
+                        href=url_resolver.COLLECTION_DATA_QUERY_MAP[query_type](self.id),
+                        rel="data",
+                        variables=RadiusDataQuery(
+                            output_formats=self.output_formats, crs_details=[self.crs], within_units=self.within_units
+                        ),
+                        type=query_type.name.lower(),
+                        hreflang="en",
+                        title=query_type.name.title(),
+                    )
+                )
+            elif query_type is EdrDataQuery.TRAJECTORY:
+                dql_list.append(
+                    DataQueryLink(
+                        href=url_resolver.COLLECTION_DATA_QUERY_MAP[query_type](self.id),
+                        rel="data",
+                        variables=TrajectoryDataQuery(output_formats=self.output_formats, crs_details=[self.crs]),
+                        type=query_type.name.lower(),
+                        hreflang="en",
+                        title=query_type.name.title(),
+                    )
+                )
+
+        return dql_list
 
 
 @dataclass

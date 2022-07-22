@@ -12,10 +12,10 @@ import dateutil.parser
 import pyproj
 from shapely.geometry import box, Polygon
 
-from ..models import EdrDataQuery
+from ..models.crs import CrsObject
 from ..models.extents import TemporalExtent, Extents, SpatialExtent, VerticalExtent
 from ..models.i18n import LanguageMap
-from ..models.links import Link, OldDataQuery, DataQueryLink
+from ..models.links import Link, DataQueryLink
 from ..models.metadata import CollectionMetadata, CollectionMetadataList
 from ..models.parameters import Symbol, Unit, Category, ObservedProperty, Parameter
 from ..models.time import DateTimeInterval
@@ -38,7 +38,7 @@ def json_decode_collection(encoded_collection: Dict[str, Any]) -> CollectionMeta
 
     kwargs["links"] = [json_decode_link(encoded_link) for encoded_link in kwargs["links"]]
     kwargs["extent"] = json_decode_extents(kwargs["extent"])
-    kwargs["data_queries"] = [json_decode_data_query(encoded_dq) for encoded_dq in kwargs["data_queries"]]
+    kwargs["data_queries"] = [DataQueryLink.from_json(encoded_dq) for encoded_dq in kwargs["data_queries"].values()]
     del kwargs["crs_details"]
     kwargs["parameters"] = [json_decode_parameter(encoded_param) for encoded_param in kwargs["parameter_names"]]
     del kwargs["parameter_names"]
@@ -62,26 +62,6 @@ def json_decode_datetime(dt_str: str) -> datetime:
     # EdrJsondecoder.decodeR_MAP, so it gets hooked into the JSON decoder correctly. Also, it documents that datetime
     # objects should be decoded using the ISO 8601 datetime format.
     return datetime.fromisoformat(dt_str)
-
-
-def json_decode_data_query_link(encoded_dq_link: Dict[str, Any]) -> DataQueryLink:
-    kwargs = encoded_dq_link
-
-    # Optional stuff
-    if "variables" in kwargs:
-        kwargs["variables"] = [json_decode_data_query(encoded_dq) for encoded_dq in kwargs["variables"]]
-
-    if "templated" in kwargs:
-        del kwargs["templated"]
-
-    return DataQueryLink(**kwargs)
-
-
-def json_decode_data_query(encoded_dq: Dict[str, Any]) -> OldDataQuery:
-    kwargs = encoded_dq
-    kwargs["query_type"] = EdrDataQuery[kwargs["query_type"].upper()]
-    kwargs["crs_details"] = [pyproj.CRS(encoded_crs["wkt"]) for encoded_crs in kwargs["crs_details"]]
-    return OldDataQuery(**kwargs)
 
 
 def json_decode_extents(encoded_extents: Dict[str, Any]) -> Extents:
@@ -145,7 +125,7 @@ def json_decode_parameter(encoded_param: Dict[str, Any]) -> Parameter:
 
 
 def json_decode_spatial_extent(encoded_spatial_extent: Dict[str, Any]) -> SpatialExtent:
-    crs = pyproj.CRS(encoded_spatial_extent["crs_details"])
+    crs = CrsObject(encoded_spatial_extent["crs_details"])
 
     # TODO support multiple bounding boxes (https://github.com/ADAQ-AQI/edr_server/issues/31)
     encoded_bbox: List[float] = encoded_spatial_extent["bbox"][0]
@@ -166,7 +146,7 @@ def json_decode_symbol(encoded_symbol: Dict[str, Any]) -> Symbol:
 
 
 def json_decode_temporal_extent(encoded_temporal_extent: Dict[str, Any]) -> TemporalExtent:
-    trs = pyproj.CRS(encoded_temporal_extent["trs"])
+    trs = CrsObject(encoded_temporal_extent["trs"])
 
     values = []
     intervals = []

@@ -35,7 +35,7 @@ def json_encode_collection(collection: CollectionMetadata, encoder: "EdrJsonEnco
         "description": collection.description,
         "keywords": collection.keywords,
         "extent": encoder.default(collection.extent),
-        "data_queries": {dl.type: {"link": encoder.default(dl)}
+        "data_queries": {dl.type: {"link": dl.to_json()}
                          for dl in collection.get_data_query_links(encoder.urls)},
         "crs_details": [str(collection.extent.spatial.crs)],
         "output_formats": collection.output_formats,

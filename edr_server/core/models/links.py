@@ -2,15 +2,14 @@ from abc import abstractmethod
 from contextlib import suppress
 from dataclasses import dataclass, field
 from typing import List, Optional, Dict, Any, TypeVar, Set, Type
-from warnings import warn
 
 from pyproj import CRS
 
 from . import EdrModel, JsonDict
-from ._types_and_defaults import CollectionId, EdrDataQuery
+from ._types_and_defaults import EdrDataQuery
 from .crs import CrsObject, DEFAULT_CRS
 from .i18n import IsoAlpha2LanguageCode
-from .urls import URL, EdrUrlResolver
+from .urls import URL
 from ..exceptions import InvalidEdrJsonError
 
 MimeType = str
@@ -615,32 +614,6 @@ class DataQueryLink(EdrModel):
     def templated(self) -> bool:
         """All EDR's data query links are templated"""
         return self.variables is not None
-
-    @staticmethod
-    def get_data_query_link(
-            query_type,
-            collection_id: CollectionId,
-            urls: EdrUrlResolver,
-            output_formats: List[str],
-            height_units: List[str] = None,
-            width_units: List[str] = None,
-            within_units: List[str] = None,
-            crs_details: List[CRS] = None
-    ) -> "DataQueryLink":
-        warn(DeprecationWarning())
-        if crs_details is None:
-            crs_details = [DEFAULT_CRS]
-
-        # TODO - update this to use AbstractDataQuery et al.
-        return DataQueryLink(
-            href=urls.COLLECTION_DATA_QUERY_MAP[query_type](collection_id),
-            rel="data",
-            variables=OldDataQuery.get_data_query(
-                query_type, output_formats, height_units, width_units, within_units, crs_details),
-            type=query_type.name.lower(),
-            hreflang="en",
-            title=query_type.name.title(),
-        )
 
     def to_json(self) -> Dict[str, Any]:
         j_dict = {
