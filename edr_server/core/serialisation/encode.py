@@ -4,7 +4,7 @@ from typing import Any, Callable, Dict, Optional, Tuple, Type
 
 from ..models.extents import TemporalExtent, Extents, SpatialExtent, VerticalExtent
 from ..models.i18n import LanguageMap
-from ..models.links import Link, OldDataQuery, DataQueryLink, AreaDataQuery
+from ..models.links import Link, DataQueryLink, AreaDataQuery
 from ..models.metadata import CollectionMetadata, CollectionMetadataList
 from ..models.parameters import Symbol, Unit, Category, ObservedProperty, Parameter
 from ..models.urls import EdrUrlResolver
@@ -85,26 +85,6 @@ def json_encode_data_query_link(dq_link: DataQueryLink, encoder: "EdrJsonEncoder
         encoded_link["templated"] = dq_link.templated
 
     return encoded_link
-
-
-def json_encode_data_query(dq: OldDataQuery, _encoder: Optional["EdrJsonEncoder"] = None) -> Dict[str, Any]:
-    encoded_dq = {
-        "title": dq.title,
-        "descriptions": dq.description,
-        "query_type": dq.query_type.name.lower(),
-        "output_formats": dq.output_formats,
-        "default_output_format": dq.default_output_format,
-        "crs_details": [{"crs_details": crs.name, "wkt": crs.to_wkt()} for crs in dq.crs_details]
-    }
-
-    if dq.height_units:
-        encoded_dq["height_units"] = dq.height_units
-    if dq.width_units:
-        encoded_dq["width_units"] = dq.width_units
-    if dq.within_units:
-        encoded_dq["within_units"] = dq.within_units
-
-    return encoded_dq
 
 
 def json_encode_extents(extents: Extents, encoder: "EdrJsonEncoder") -> Dict[str, Any]:
@@ -252,7 +232,6 @@ class EdrJsonEncoder(json.JSONEncoder):
         CollectionMetadata: json_encode_collection,
         CollectionMetadataList: json_encode_collection_metadata_list,
         datetime: json_encode_datetime,
-        OldDataQuery: json_encode_data_query,
         DataQueryLink: json_encode_data_query_link,
         Extents: json_encode_extents,
         LanguageMap: json_encode_language_map,
