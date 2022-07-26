@@ -45,7 +45,7 @@ class TemporalExtent(EdrModel["TemporalExtent"]):
 
     @classmethod
     def _prepare_json_for_init(cls, json_dict: JsonDict) -> JsonDict:
-        json_dict["trs"] = CrsObject(json_dict["trs"])
+        json_dict["trs"] = CrsObject.from_wkt(json_dict["trs"])
 
         values = []
         intervals = []
@@ -135,7 +135,7 @@ class SpatialExtent(EdrModel["SpatialExtent"]):
 
     @classmethod
     def _prepare_json_for_init(cls, json_dict: JsonDict) -> JsonDict:
-        crs = CrsObject(json_dict["crs_details"])
+        crs = CrsObject.from_wkt(json_dict["crs_details"])
 
         # TODO support multiple bounding boxes (https://github.com/ADAQ-AQI/edr_server/issues/31)
         encoded_bbox: List[float] = json_dict["bbox"][0]
@@ -171,8 +171,9 @@ class SpatialExtent(EdrModel["SpatialExtent"]):
 
 
 @dataclass
-class VerticalExtent:
+class VerticalExtent(EdrModel["VerticalExtent"]):
     """"""
+
     values: List[float]
     vrs: CrsObject = DEFAULT_VRS
 
@@ -183,6 +184,15 @@ class VerticalExtent:
     #       * number of repetitions / min level / interval (e.g."R5/100/50")
     #       * list of vertical levels (e.g. "2",10,"80","100"}
     #       The value `null` is supported and indicates an open vertical interval.
+
+    @classmethod
+    def _prepare_json_for_init(cls, json_dict: JsonDict) -> JsonDict:
+        json_dict["vrs"] = CrsObject.from_wkt(json_dict["vrs"])
+        return json_dict
+
+    @classmethod
+    def _get_expected_keys(cls) -> Set[str]:
+        return {"interval", "values", "vrs", "name"}
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}({self.values!r}, {self.vrs!r})"
@@ -199,6 +209,14 @@ class VerticalExtent:
     @property
     def bounds(self) -> "ScalarBounds[float]":
         return ScalarBounds(min(self.values), max(self.values))
+
+    def to_json(self) -> Dict[str, Any]:
+        return {
+            "interval": list(map(str, self.interval)),
+            "values": list(map(str, self.values)),
+            "vrs": self.vrs.to_wkt(),
+            "name": self.vrs.name,
+        }
 
 
 @dataclass

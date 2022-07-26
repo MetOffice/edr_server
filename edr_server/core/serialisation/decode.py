@@ -6,8 +6,6 @@ E.g. `json.loads(encoded_collection, object_hook=json_decode_collection)`
 from datetime import datetime
 from typing import Any, Dict
 
-import pyproj
-
 from ..models.extents import TemporalExtent, Extents, SpatialExtent, VerticalExtent
 from ..models.i18n import LanguageMap
 from ..models.links import DataQueryLink, Link
@@ -66,7 +64,7 @@ def json_decode_extents(encoded_extents: Dict[str, Any]) -> Extents:
     if "temporal" in encoded_extents:
         kwargs["temporal"] = TemporalExtent.from_json(encoded_extents["temporal"])
     if "vertical" in encoded_extents:
-        kwargs["vertical"] = json_decode_vertical_extent(encoded_extents["vertical"])
+        kwargs["vertical"] = VerticalExtent.from_json(encoded_extents["vertical"])
 
     return Extents(**kwargs)
 
@@ -119,8 +117,3 @@ def json_decode_unit(encoded_unit: Dict[str, Any]) -> Unit:
             encoded_unit["label"] = LanguageMap.from_json(encoded_unit["label"])
 
     return Unit(**encoded_unit)
-
-
-def json_decode_vertical_extent(encoded_vertical_extent: Dict[str, Any]) -> VerticalExtent:
-    encoded_vertical_extent["vrs"] = pyproj.CRS(encoded_vertical_extent["vrs"])
-    return VerticalExtent(**encoded_vertical_extent)

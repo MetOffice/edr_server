@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import Any, Callable, Dict, Optional, Tuple, Type
 
 from ..models import EdrModel
-from ..models.extents import Extents, VerticalExtent
+from ..models.extents import Extents
 from ..models.metadata import CollectionMetadata, CollectionMetadataList
 from ..models.parameters import Symbol, Unit, Category, ObservedProperty, Parameter
 from ..models.urls import EdrUrlResolver
@@ -135,16 +135,6 @@ def json_encode_unit(unit: Unit, encoder: Optional["EdrJsonEncoder"] = None) -> 
     return encoded_unit
 
 
-def json_encode_vertical_extent(
-        vertical_extent: VerticalExtent, _encoder: Optional["EdrJsonEncoder"] = None) -> Dict[str, Any]:
-    return {
-        "interval": list(map(str, vertical_extent.interval)),
-        "values": list(map(str, vertical_extent.values)),
-        "vrs": vertical_extent.vrs.to_wkt(),
-        "name": vertical_extent.vrs.name,
-    }
-
-
 class EdrJsonEncoder(json.JSONEncoder):
     def __init__(
             self, *, skipkeys: bool = False, ensure_ascii: bool = True, check_circular: bool = True,
@@ -166,7 +156,6 @@ class EdrJsonEncoder(json.JSONEncoder):
         Parameter: json_encode_parameter,
         Symbol: json_encode_symbol,
         Unit: json_encode_unit,
-        VerticalExtent: json_encode_vertical_extent,
     }
 
     def default(self, obj: Any) -> Any:
