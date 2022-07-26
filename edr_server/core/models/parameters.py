@@ -1,6 +1,7 @@
 from dataclasses import dataclass
-from typing import List, Optional, Type, Union
+from typing import List, Optional, Type, Union, Dict, Any, Set
 
+from . import EdrModel, JsonDict
 from .extents import Extents
 from .i18n import LanguageMap
 from .urls import URL
@@ -9,14 +10,26 @@ ParameterDataType = Union[Type[int], Type[float], Type[str]]
 
 
 @dataclass
-class Symbol:
+class Symbol(EdrModel["Symbol"]):
     """
     Based on an except from
     https://github.com/opengeospatial/ogcapi-environmental-data-retrieval/blob/e8a78f9/standard/openapi/schemas/units.yaml
     """
+
     value: str  # Like K for kelvin or KM for kilometer, hPa for hectopascals, etc
     # noinspection HttpUrlsUsage
     type: URL = URL("http://www.opengis.net/def/uom/UCUM/")  # TODO: Is a value we can use as a sensible default?
+
+    @classmethod
+    def _prepare_json_for_init(cls, json_dict: JsonDict) -> JsonDict:
+        return json_dict
+
+    @classmethod
+    def _get_allowed_json_keys(cls) -> Set[str]:
+        return {"value", "type"}
+
+    def to_json(self) -> Dict[str, Any]:
+        return {"value": self.value, "type": self.type}
 
 
 @dataclass

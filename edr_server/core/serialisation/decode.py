@@ -89,14 +89,10 @@ def json_decode_parameter(encoded_param: Dict[str, Any]) -> Parameter:
     return Parameter(**encoded_param)
 
 
-def json_decode_symbol(encoded_symbol: Dict[str, Any]) -> Symbol:
-    return Symbol(**encoded_symbol)
-
-
 def json_decode_unit(encoded_unit: Dict[str, Any]) -> Unit:
     if "symbol" in encoded_unit:
         if isinstance(encoded_unit["symbol"], dict):
-            encoded_unit["symbol"] = json_decode_symbol(encoded_unit["symbol"])
+            encoded_unit["symbol"] = Symbol.from_json(encoded_unit["symbol"])
     if "labels" in encoded_unit:
         # Note, the field is called `label` in the serialised output, even though it can hold multiple values
         if isinstance(encoded_unit["label"], dict):

@@ -4,7 +4,7 @@ from typing import Any, Callable, Dict, Optional, Tuple, Type
 
 from ..models import EdrModel
 from ..models.metadata import CollectionMetadata, CollectionMetadataList
-from ..models.parameters import Symbol, Unit, Category, ObservedProperty, Parameter
+from ..models.parameters import Unit, Category, ObservedProperty, Parameter
 from ..models.urls import EdrUrlResolver
 
 
@@ -99,13 +99,6 @@ def json_encode_parameter(param: Parameter, encoder: Optional["EdrJsonEncoder"] 
     return encoded_param
 
 
-def json_encode_symbol(symbol: Symbol, _encoder: Optional["EdrJsonEncoder"] = None) -> Dict[str, Any]:
-    return {
-        "value": symbol.value,
-        "type": symbol.type,
-    }
-
-
 def json_encode_unit(unit: Unit, encoder: Optional["EdrJsonEncoder"] = None) -> Dict[str, Any]:
     encoded_unit = {}
 
@@ -138,7 +131,6 @@ class EdrJsonEncoder(json.JSONEncoder):
         datetime: json_encode_datetime,
         ObservedProperty: json_encode_observed_property,
         Parameter: json_encode_parameter,
-        Symbol: json_encode_symbol,
         Unit: json_encode_unit,
     }
 
