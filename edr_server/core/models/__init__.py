@@ -38,7 +38,7 @@ class EdrModel(ABC, Generic[T]):
 
     @classmethod
     @abstractmethod
-    def _get_expected_keys(cls) -> Set[str]:
+    def _get_allowed_json_keys(cls) -> Set[str]:
         """
         Get valid keys for the JSON representation of this object. Used by the `from_json` method.
         Creating an abstract class method was the best option for signposting the need to implement this in subclasses.
@@ -67,7 +67,7 @@ class EdrModel(ABC, Generic[T]):
         # that can be passed to the __init__ method, and additional keys for validation can be added to
         # `_EXPECTED_JSON_KEYS`.
 
-        if invalid_keys := json_dict.keys() - cls._get_expected_keys():  # Performs set difference.
+        if invalid_keys := json_dict.keys() - cls._get_allowed_json_keys():  # Performs set difference.
             # The dictionary view returned by .keys() doesn't support the named set methods, but does support the set
             # operators defined in collections.abc.Set
             raise InvalidEdrJsonError(f"Unexpected keys in JSON dict: {invalid_keys!r}")

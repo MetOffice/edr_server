@@ -31,7 +31,7 @@ class LanguageMap(UserDict, EdrModel["LanguageMap"]):
         return json_dict
 
     @classmethod
-    def _get_expected_keys(cls) -> Set[str]:
+    def _get_allowed_json_keys(cls) -> Set[str]:
         return set(VALID_LANGUAGE_CODES)
 
     def to_json(self) -> Dict[str, Any]:

@@ -69,7 +69,7 @@ class TemporalExtent(EdrModel["TemporalExtent"]):
         return json_dict
 
     @classmethod
-    def _get_expected_keys(cls) -> Set[str]:
+    def _get_allowed_json_keys(cls) -> Set[str]:
         return {"name", "trs", "interval", "values"}
 
     def __repr__(self) -> str:
@@ -151,7 +151,7 @@ class SpatialExtent(EdrModel["SpatialExtent"]):
         return {"bbox": bbox, "crs": crs}
 
     @classmethod
-    def _get_expected_keys(cls) -> Set[str]:
+    def _get_allowed_json_keys(cls) -> Set[str]:
         return {"bbox", "crs_details", "name"}
 
     def __repr__(self):
@@ -191,7 +191,7 @@ class VerticalExtent(EdrModel["VerticalExtent"]):
         return json_dict
 
     @classmethod
-    def _get_expected_keys(cls) -> Set[str]:
+    def _get_allowed_json_keys(cls) -> Set[str]:
         return {"interval", "values", "vrs", "name"}
 
     def __repr__(self) -> str:
@@ -220,7 +220,7 @@ class VerticalExtent(EdrModel["VerticalExtent"]):
 
 
 @dataclass
-class Extents:
+class Extents(EdrModel["Extents"]):
     """
     A struct-like container for the geographic area and time range(s) covered by a dataset
     Based on
@@ -229,3 +229,34 @@ class Extents:
     spatial: SpatialExtent
     temporal: Optional[TemporalExtent] = None
     vertical: Optional[VerticalExtent] = None
+
+    @classmethod
+    def _prepare_json_for_init(cls, json_dict: JsonDict) -> JsonDict:
+        kwargs = {}
+
+        # According to the extents.yaml, all 3 properties are optional
+        if "spatial" in json_dict:
+            kwargs["spatial"] = SpatialExtent.from_json(json_dict["spatial"])
+        if "temporal" in json_dict:
+            kwargs["temporal"] = TemporalExtent.from_json(json_dict["temporal"])
+        if "vertical" in json_dict:
+            kwargs["vertical"] = VerticalExtent.from_json(json_dict["vertical"])
+
+        return kwargs
+
+    @classmethod
+    def _get_allowed_json_keys(cls) -> Set[str]:
+        return {"spatial", "temporal", "vertical"}
+
+    def to_json(self) -> Dict[str, Any]:
+        encoded_extents = {}
+
+        # According to the extents.yaml, all 3 properties are optional
+        if self.spatial:
+            encoded_extents["spatial"] = self.spatial.to_json()
+        if self.temporal:
+            encoded_extents["temporal"] = self.temporal.to_json()
+        if self.vertical:
+            encoded_extents["vertical"] = self.vertical.to_json()
+
+        return encoded_extents

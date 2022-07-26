@@ -21,7 +21,7 @@ class CrsObject(EdrModel["CrsObject"], CRS):
         CRS.__init__(self, projparams, **kwargs)
 
     @classmethod
-    def _get_expected_keys(cls) -> Set[str]:
+    def _get_allowed_json_keys(cls) -> Set[str]:
         # Required to satisfy the Abstract Base Class, but actually we've overridden the from_json method,
         # so we don't actually use this and don't need it to do anything.
         pass

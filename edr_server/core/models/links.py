@@ -63,7 +63,7 @@ class Link(EdrModel["Link"]):
         return json_dict
 
     @classmethod
-    def _get_expected_keys(cls) -> Set[str]:
+    def _get_allowed_json_keys(cls) -> Set[str]:
         return {"title", "href", "rel", "type", "hreflang", "length"}
 
     def to_json(self) -> Dict[str, Any]:
@@ -124,7 +124,7 @@ class AbstractDataQuery(EdrModel[U]):
         raise NotImplementedError
 
     @classmethod
-    def _get_expected_keys(cls) -> Set[str]:
+    def _get_allowed_json_keys(cls) -> Set[str]:
         return {"title", "description", "query_type"}
 
     def __init__(self, title: Optional[str] = None, description: Optional[str] = None):
@@ -242,8 +242,8 @@ class AbstractSpatialDataQuery(AbstractDataQuery[E]):
         self._crs_details = [DEFAULT_CRS] if crs_details is None else crs_details
 
     @classmethod
-    def _get_expected_keys(cls) -> Set[str]:
-        return super()._get_expected_keys().union({"output_formats", "default_output_format", "crs_details"})
+    def _get_allowed_json_keys(cls) -> Set[str]:
+        return super()._get_allowed_json_keys().union({"output_formats", "default_output_format", "crs_details"})
 
     @classmethod
     def _prepare_json_for_init(cls, json_dict: JsonDict) -> JsonDict:
@@ -339,8 +339,8 @@ class CorridorDataQuery(AbstractSpatialDataQuery["CorridorDataQuery"]):
         self._height_units = height_units
 
     @classmethod
-    def _get_expected_keys(cls) -> Set[str]:
-        return super()._get_expected_keys().union({"width_units", "height_units"})
+    def _get_allowed_json_keys(cls) -> Set[str]:
+        return super()._get_allowed_json_keys().union({"width_units", "height_units"})
 
     @classmethod
     def get_query_type(cls) -> EdrDataQuery:
@@ -392,8 +392,8 @@ class CubeDataQuery(AbstractSpatialDataQuery["CubeDataQuery"]):
         self._height_units = height_units
 
     @classmethod
-    def _get_expected_keys(cls) -> Set[str]:
-        return super()._get_expected_keys().union({"height_units"})
+    def _get_allowed_json_keys(cls) -> Set[str]:
+        return super()._get_allowed_json_keys().union({"height_units"})
 
     @classmethod
     def get_query_type(cls) -> EdrDataQuery:
@@ -449,8 +449,8 @@ class RadiusDataQuery(AbstractSpatialDataQuery["RadiusDataQuery"]):
         self._within_units = within_units
 
     @classmethod
-    def _get_expected_keys(cls) -> Set[str]:
-        return super()._get_expected_keys().union({"within_units"})
+    def _get_allowed_json_keys(cls) -> Set[str]:
+        return super()._get_allowed_json_keys().union({"within_units"})
 
     def to_json(self) -> JsonDict:
         j_dict = super().to_json()
@@ -502,8 +502,8 @@ class DataQueryLink(Link):
     variables: Optional[AbstractDataQuery] = None
 
     @classmethod
-    def _get_expected_keys(cls) -> Set[str]:
-        return super()._get_expected_keys().union({"templated", "variables"})
+    def _get_allowed_json_keys(cls) -> Set[str]:
+        return super()._get_allowed_json_keys().union({"templated", "variables"})
 
     @classmethod
     def _prepare_json_for_init(cls, json_dict: JsonDict) -> JsonDict:

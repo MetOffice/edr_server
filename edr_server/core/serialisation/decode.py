@@ -6,7 +6,7 @@ E.g. `json.loads(encoded_collection, object_hook=json_decode_collection)`
 from datetime import datetime
 from typing import Any, Dict
 
-from ..models.extents import TemporalExtent, Extents, SpatialExtent, VerticalExtent
+from ..models.extents import Extents
 from ..models.i18n import LanguageMap
 from ..models.links import DataQueryLink, Link
 from ..models.metadata import CollectionMetadata, CollectionMetadataList
@@ -28,7 +28,7 @@ def json_decode_collection(encoded_collection: Dict[str, Any]) -> CollectionMeta
     kwargs = encoded_collection
 
     kwargs["links"] = [Link.from_json(encoded_link) for encoded_link in kwargs["links"]]
-    kwargs["extent"] = json_decode_extents(kwargs["extent"])
+    kwargs["extent"] = Extents.from_json(kwargs["extent"])
     kwargs["data_queries"] = [DataQueryLink.from_json(encoded_dq) for encoded_dq in kwargs["data_queries"].values()]
     del kwargs["crs_details"]
     kwargs["parameters"] = [json_decode_parameter(encoded_param) for encoded_param in kwargs["parameter_names"]]
@@ -53,20 +53,6 @@ def json_decode_datetime(dt_str: str) -> datetime:
     # EdrJsondecoder.decodeR_MAP, so it gets hooked into the JSON decoder correctly. Also, it documents that datetime
     # objects should be decoded using the ISO 8601 datetime format.
     return datetime.fromisoformat(dt_str)
-
-
-def json_decode_extents(encoded_extents: Dict[str, Any]) -> Extents:
-    kwargs = {}
-
-    # According to the extents.yaml, all 3 properties are optional
-    if "spatial" in encoded_extents:
-        kwargs["spatial"] = SpatialExtent.from_json(encoded_extents["spatial"])
-    if "temporal" in encoded_extents:
-        kwargs["temporal"] = TemporalExtent.from_json(encoded_extents["temporal"])
-    if "vertical" in encoded_extents:
-        kwargs["vertical"] = VerticalExtent.from_json(encoded_extents["vertical"])
-
-    return Extents(**kwargs)
 
 
 def json_decode_observed_property(encoded_observed_property: Dict[str, Any]) -> ObservedProperty:
@@ -95,7 +81,7 @@ def json_decode_parameter(encoded_param: Dict[str, Any]) -> Parameter:
         encoded_param["unit"] = json_decode_unit(encoded_param["unit"])
 
     if "extent" in encoded_param:
-        encoded_param["extent"] = json_decode_extents(encoded_param["extent"])
+        encoded_param["extent"] = Extents.from_json(encoded_param["extent"])
 
     # TODO deserialise measurementType once it's added to model
     # TODO deserialise categoryEncoding, once it's added to model
