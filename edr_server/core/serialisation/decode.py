@@ -15,11 +15,10 @@ from shapely.geometry import box, Polygon
 from ..models.crs import CrsObject
 from ..models.extents import TemporalExtent, Extents, SpatialExtent, VerticalExtent
 from ..models.i18n import LanguageMap
-from ..models.links import Link, DataQueryLink
+from ..models.links import DataQueryLink, Link
 from ..models.metadata import CollectionMetadata, CollectionMetadataList
 from ..models.parameters import Symbol, Unit, Category, ObservedProperty, Parameter
 from ..models.time import DateTimeInterval
-from ..models.urls import URL
 
 
 def json_decode_category(encoded_category: Dict[str, Any]) -> Category:
@@ -36,7 +35,7 @@ def json_decode_category(encoded_category: Dict[str, Any]) -> Category:
 def json_decode_collection(encoded_collection: Dict[str, Any]) -> CollectionMetadata:
     kwargs = encoded_collection
 
-    kwargs["links"] = [json_decode_link(encoded_link) for encoded_link in kwargs["links"]]
+    kwargs["links"] = [Link.from_json(encoded_link) for encoded_link in kwargs["links"]]
     kwargs["extent"] = json_decode_extents(kwargs["extent"])
     kwargs["data_queries"] = [DataQueryLink.from_json(encoded_dq) for encoded_dq in kwargs["data_queries"].values()]
     del kwargs["crs_details"]
@@ -48,7 +47,7 @@ def json_decode_collection(encoded_collection: Dict[str, Any]) -> CollectionMeta
 
 def json_decode_collection_metadata_list(encoded_collection_list: Dict[str, Any]) -> CollectionMetadataList:
     kwargs = {
-        "links": [json_decode_link(encoded_link) for encoded_link in encoded_collection_list["links"]],
+        "links": [Link.from_json(encoded_link) for encoded_link in encoded_collection_list["links"]],
         "collections": [
             json_decode_collection(encoded_collection) for encoded_collection in encoded_collection_list["collections"]
         ],
@@ -76,12 +75,6 @@ def json_decode_extents(encoded_extents: Dict[str, Any]) -> Extents:
         kwargs["vertical"] = json_decode_vertical_extent(encoded_extents["vertical"])
 
     return Extents(**kwargs)
-
-
-def json_decode_link(encoded_link: Dict[str, Any]) -> Link:
-    encoded_link["href"] = URL(encoded_link["href"])
-
-    return Link(**encoded_link)
 
 
 def json_decode_observed_property(encoded_observed_property: Dict[str, Any]) -> ObservedProperty:

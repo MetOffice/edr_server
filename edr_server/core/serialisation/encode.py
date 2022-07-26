@@ -4,7 +4,6 @@ from typing import Any, Callable, Dict, Optional, Tuple, Type
 
 from ..models import EdrModel
 from ..models.extents import TemporalExtent, Extents, SpatialExtent, VerticalExtent
-from ..models.links import Link
 from ..models.metadata import CollectionMetadata, CollectionMetadataList
 from ..models.parameters import Symbol, Unit, Category, ObservedProperty, Parameter
 from ..models.urls import EdrUrlResolver
@@ -72,25 +71,6 @@ def json_encode_extents(extents: Extents, encoder: "EdrJsonEncoder") -> Dict[str
         encoded_extents["vertical"] = encoder.default(extents.vertical)
 
     return encoded_extents
-
-
-def json_encode_link(link: Link, _encoder: Optional["EdrJsonEncoder"] = None) -> Dict[str, Any]:
-    encoded_link = {
-        "href": link.href,
-        "rel": link.rel,
-    }
-
-    # Optional stuff
-    if link.title:
-        encoded_link["title"] = link.title
-    if link.type:
-        encoded_link["type"] = link.type
-    if link.hreflang:
-        encoded_link["hreflang"] = link.hreflang
-    if link.length:
-        encoded_link["length"] = link.length
-
-    return encoded_link
 
 
 def json_encode_observed_property(
@@ -202,7 +182,6 @@ class EdrJsonEncoder(json.JSONEncoder):
         CollectionMetadataList: json_encode_collection_metadata_list,
         datetime: json_encode_datetime,
         Extents: json_encode_extents,
-        Link: json_encode_link,
         ObservedProperty: json_encode_observed_property,
         Parameter: json_encode_parameter,
         SpatialExtent: json_encode_spatial_extent,

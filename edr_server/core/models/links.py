@@ -36,7 +36,7 @@ RFC)
 
 
 @dataclass
-class Link:
+class Link(EdrModel["Link"]):
     """
     A simple link that can be used in the "links" section of an EDR response.
     EDR draws on RFC8288 for its approach to linking: https://www.rfc-editor.org/rfc/rfc8288.txt
@@ -53,10 +53,36 @@ class Link:
     """
     type: Optional[MimeType] = None
     """MIME type of the linked resource. There's some more docs about MimeTypes in general where the type is defined."""
-
     hreflang: Optional[Iso639Alpha2LanguageCode] = None
     title: Optional[str] = None
     length: Optional[int] = None
+
+    @classmethod
+    def _prepare_json_for_init(cls, json_dict: JsonDict) -> JsonDict:
+        json_dict["href"] = URL(json_dict["href"])
+        return json_dict
+
+    @classmethod
+    def _get_expected_keys(cls) -> Set[str]:
+        return {"title", "href", "rel", "type", "hreflang", "length"}
+
+    def to_json(self) -> Dict[str, Any]:
+        encoded_link = {
+            "href": self.href,
+            "rel": self.rel,
+        }
+
+        # Optional stuff
+        if self.title:
+            encoded_link["title"] = self.title
+        if self.type:
+            encoded_link["type"] = self.type
+        if self.hreflang:
+            encoded_link["hreflang"] = self.hreflang
+        if self.length:
+            encoded_link["length"] = self.length
+
+        return encoded_link
 
 
 U = TypeVar("U", bound="AbstractDataQuery")
@@ -455,7 +481,7 @@ class TrajectoryDataQuery(AbstractSpatialDataQuery["TrajectoryDataQuery"]):
 
 
 @dataclass
-class DataQueryLink(EdrModel):
+class DataQueryLink(Link):
     """
     Extended version of a simple link for use in the data_queries section of a collection metadata response.
 
@@ -473,29 +499,15 @@ class DataQueryLink(EdrModel):
     https://github.com/opengeospatial/ogcapi-environmental-data-retrieval/blob/546c338/standard/openapi/schemas/trajectoryLink.yaml
 
     """
-    # TODO: Review decision to not use inheritance here
-    # Didn't use inheritance here due to the way dataclasses interacts with the mixture of default and non-default
-    # values in the fields. TLDR: it leads to a "Non-default argument(s) follows default argument(s) defined in 'Link'"
-    # error. Further detail here:
-    # https://stackoverflow.com/questions/51575931/class-inheritance-in-python-3-7-dataclasses
-    # Duplication was the easiest workaround <- TODO this doesn't apply if I allow variables to be optional: review
-    href: URL  # The target of the link, the page it links to
-    rel: str
-    """
-    Relation between the current resource and link target. See https://microformats.org/wiki/rel-faq#How_is_rel_used
-    E.g. See https://html.spec.whatwg.org/multipage/links.html#linkTypes for standard HTML values.
-    E.g. See https://microformats.org/wiki/existing-rel-values for registered HTML extensions and other uses 
-    """
     variables: Optional[AbstractDataQuery] = None
-    type: Optional[MimeType] = None
-    """MIME type of the linked resource. There's some more docs about MimeTypes in general where the type is defined."""
 
     @classmethod
     def _get_expected_keys(cls) -> Set[str]:
-        return {"title", "href", "rel", "type", "hreflang", "length", "templated", "variables"}
+        return super()._get_expected_keys().union({"templated", "variables"})
 
     @classmethod
     def _prepare_json_for_init(cls, json_dict: JsonDict) -> JsonDict:
+        json_dict = super()._prepare_json_for_init(json_dict)
         if "variables" in json_dict:
 
             try:
@@ -519,33 +531,17 @@ class DataQueryLink(EdrModel):
 
         return json_dict
 
-    hreflang: Optional[Iso639Alpha2LanguageCode] = None
-    title: Optional[str] = None
-    length: Optional[int] = None
-
     @property
     def templated(self) -> bool:
         """All EDR's data query links are templated"""
         return self.variables is not None
 
     def to_json(self) -> Dict[str, Any]:
-        j_dict = {
-            "href": self.href,
-            "rel": self.rel,
-        }
+        j_dict = super().to_json()
 
         if self.variables:
             j_dict["variables"] = self.variables.to_json()
             j_dict["templated"] = True
-
-        if self.title:
-            j_dict["title"] = self.title
-        if self.length:
-            j_dict["length"] = self.length
-        if self.hreflang:
-            j_dict["hreflang"] = self.hreflang
-        if self.type:
-            j_dict["type"] = self.type
 
         return j_dict
 

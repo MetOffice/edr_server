@@ -1547,7 +1547,7 @@ class DataQueryLinkTest(unittest.TestCase):
     def setUp(self) -> None:
         test_position_data_query = PositionDataQuery("Test Query")
         self.test_dql = DataQueryLink(
-            URL("https://localhost"), "alternate", test_position_data_query, "text", "en", "Test Link", 42)
+            URL("https://localhost"), "alternate", "text", "en", "Test Link", 42, test_position_data_query)
 
         self.test_json = {
             "title": "Test Link",
@@ -1567,9 +1567,9 @@ class DataQueryLinkTest(unittest.TestCase):
         THEN True is returned
         """
         dql1 = DataQueryLink(
-            URL("http://localhost"), "test", PositionDataQuery("test query"), "test", "en", "Test Link", 1)
+            URL("http://localhost"), "test", "test", "en", "Test Link", 1, PositionDataQuery("test query"))
         dql2 = DataQueryLink(
-            URL("http://localhost"), "test", PositionDataQuery("test query"), "test", "en", "Test Link", 1)
+            URL("http://localhost"), "test", "test", "en", "Test Link", 1, PositionDataQuery("test query"))
 
         self.assertEqual(dql1, dql2)
 
@@ -1580,8 +1580,8 @@ class DataQueryLinkTest(unittest.TestCase):
         THEN False is returned
         """
         dql1 = DataQueryLink(
-            URL("https://localhost"), "test", PositionDataQuery("test query"), "test", "en", "Test Link", 1)
-        dql2 = DataQueryLink(URL("https://localhost"), "test", PositionDataQuery("test query"))
+            URL("https://localhost"), "test", "test", "en", "Test Link", 1, PositionDataQuery("test query"))
+        dql2 = DataQueryLink(URL("https://localhost"), "test", variables=PositionDataQuery("test query"))
 
         self.assertNotEqual(dql1, dql2)
 
@@ -1767,8 +1767,8 @@ class DataQueryLinkTest(unittest.TestCase):
         del self.test_json["templated"]
 
         test_dql = DataQueryLink(
-            self.test_dql.href, self.test_dql.rel, None, self.test_dql.type, self.test_dql.hreflang,
-            self.test_dql.title, self.test_dql.length
+            self.test_dql.href, self.test_dql.rel, self.test_dql.type, self.test_dql.hreflang, self.test_dql.title,
+            self.test_dql.length
         )
 
         actual = test_dql.to_json()
