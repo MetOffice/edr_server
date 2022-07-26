@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import Any, Callable, Dict, Optional, Tuple, Type
 
 from ..models import EdrModel
-from ..models.extents import Extents, SpatialExtent, VerticalExtent
+from ..models.extents import Extents, VerticalExtent
 from ..models.metadata import CollectionMetadata, CollectionMetadataList
 from ..models.parameters import Symbol, Unit, Category, ObservedProperty, Parameter
 from ..models.urls import EdrUrlResolver
@@ -114,16 +114,6 @@ def json_encode_parameter(param: Parameter, encoder: Optional["EdrJsonEncoder"] 
     return encoded_param
 
 
-def json_encode_spatial_extent(
-        spatial_extent: SpatialExtent, _encoder: Optional["EdrJsonEncoder"] = None) -> Dict[str, Any]:
-    return {
-        # TODO support multiple bounding boxes (https://github.com/ADAQ-AQI/edr_server/issues/31)
-        "bbox": [list(spatial_extent.bounds)],
-        "crs_details": spatial_extent.crs.to_wkt(),
-        "name": spatial_extent.crs.name,
-    }
-
-
 def json_encode_symbol(symbol: Symbol, _encoder: Optional["EdrJsonEncoder"] = None) -> Dict[str, Any]:
     return {
         "value": symbol.value,
@@ -174,7 +164,6 @@ class EdrJsonEncoder(json.JSONEncoder):
         Extents: json_encode_extents,
         ObservedProperty: json_encode_observed_property,
         Parameter: json_encode_parameter,
-        SpatialExtent: json_encode_spatial_extent,
         Symbol: json_encode_symbol,
         Unit: json_encode_unit,
         VerticalExtent: json_encode_vertical_extent,

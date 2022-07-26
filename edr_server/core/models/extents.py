@@ -1,4 +1,5 @@
 import dataclasses
+import itertools
 from contextlib import suppress
 from dataclasses import dataclass
 from datetime import datetime
@@ -6,6 +7,7 @@ from typing import Generic, List, NamedTuple, Optional, TypeVar, Dict, Any, Set
 
 import dateutil.parser
 import shapely.geometry
+from shapely.geometry import Polygon, box
 
 from . import EdrModel, JsonDict
 from .crs import DEFAULT_CRS, DEFAULT_TRS, DEFAULT_VRS, CrsObject
@@ -121,14 +123,36 @@ class TemporalExtent(EdrModel["TemporalExtent"]):
 
 
 @dataclass
-class SpatialExtent:
+class SpatialExtent(EdrModel["SpatialExtent"]):
     """
     Based on a portion of
     https://github.com/opengeospatial/ogcapi-environmental-data-retrieval/blob/546c338/standard/openapi/schemas/extent.yaml
     """
+
     # TODO support multiple bounding boxes (https://github.com/ADAQ-AQI/edr_server/issues/31)
     bbox: shapely.geometry.Polygon
     crs: CrsObject = DEFAULT_CRS
+
+    @classmethod
+    def _prepare_json_for_init(cls, json_dict: JsonDict) -> JsonDict:
+        crs = CrsObject(json_dict["crs_details"])
+
+        # TODO support multiple bounding boxes (https://github.com/ADAQ-AQI/edr_server/issues/31)
+        encoded_bbox: List[float] = json_dict["bbox"][0]
+
+        if len(encoded_bbox) == 6:  # 3D bounding box
+            min_x, min_y, min_z, max_x, max_y, max_z = encoded_bbox
+            coords = itertools.product((min_x, max_x), (min_y, max_y), (min_z, max_z))
+            bbox = Polygon(coords)
+
+        else:  # 2D bounding box
+            bbox = box(*encoded_bbox)
+
+        return {"bbox": bbox, "crs": crs}
+
+    @classmethod
+    def _get_expected_keys(cls) -> Set[str]:
+        return {"bbox", "crs_details", "name"}
 
     def __repr__(self):
         return f"{self.__class__.__name__}(shapely.wkt.loads({self.bbox.wkt!r}), {self.crs!r})"
@@ -136,6 +160,14 @@ class SpatialExtent:
     @property
     def bounds(self) -> SpatialBounds:
         return self.bbox.bounds
+
+    def to_json(self) -> Dict[str, Any]:
+        return {
+            # TODO support multiple bounding boxes (https://github.com/ADAQ-AQI/edr_server/issues/31)
+            "bbox": [list(self.bounds)],
+            "crs_details": self.crs.to_wkt(),
+            "name": self.crs.name,
+        }
 
 
 @dataclass

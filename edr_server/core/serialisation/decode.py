@@ -3,14 +3,11 @@ These functions are used by passing them as object_hook parameters to `json.load
 
 E.g. `json.loads(encoded_collection, object_hook=json_decode_collection)`
 """
-import itertools
 from datetime import datetime
-from typing import Any, Dict, List
+from typing import Any, Dict
 
 import pyproj
-from shapely.geometry import box, Polygon
 
-from ..models.crs import CrsObject
 from ..models.extents import TemporalExtent, Extents, SpatialExtent, VerticalExtent
 from ..models.i18n import LanguageMap
 from ..models.links import DataQueryLink, Link
@@ -65,7 +62,7 @@ def json_decode_extents(encoded_extents: Dict[str, Any]) -> Extents:
 
     # According to the extents.yaml, all 3 properties are optional
     if "spatial" in encoded_extents:
-        kwargs["spatial"] = json_decode_spatial_extent(encoded_extents["spatial"])
+        kwargs["spatial"] = SpatialExtent.from_json(encoded_extents["spatial"])
     if "temporal" in encoded_extents:
         kwargs["temporal"] = TemporalExtent.from_json(encoded_extents["temporal"])
     if "vertical" in encoded_extents:
@@ -106,23 +103,6 @@ def json_decode_parameter(encoded_param: Dict[str, Any]) -> Parameter:
     # TODO deserialise categoryEncoding, once it's added to model
 
     return Parameter(**encoded_param)
-
-
-def json_decode_spatial_extent(encoded_spatial_extent: Dict[str, Any]) -> SpatialExtent:
-    crs = CrsObject(encoded_spatial_extent["crs_details"])
-
-    # TODO support multiple bounding boxes (https://github.com/ADAQ-AQI/edr_server/issues/31)
-    encoded_bbox: List[float] = encoded_spatial_extent["bbox"][0]
-
-    if len(encoded_bbox) == 6:  # 3D bounding box
-        min_x, min_y, min_z, max_x, max_y, max_z = encoded_bbox
-        coords = itertools.product((min_x, max_x), (min_y, max_y), (min_z, max_z))
-        bbox = Polygon(coords)
-
-    else:  # 2D bounding box
-        bbox = box(*encoded_bbox)
-
-    return SpatialExtent(bbox=bbox, crs=crs)
 
 
 def json_decode_symbol(encoded_symbol: Dict[str, Any]) -> Symbol:
