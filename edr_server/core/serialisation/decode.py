@@ -10,7 +10,7 @@ from ..models.extents import Extents
 from ..models.i18n import LanguageMap
 from ..models.links import DataQueryLink, Link
 from ..models.metadata import CollectionMetadata, CollectionMetadataList
-from ..models.parameters import Symbol, Unit, Category, ObservedProperty, Parameter
+from ..models.parameters import Category, ObservedProperty, Parameter, Unit
 
 
 def json_decode_category(encoded_category: Dict[str, Any]) -> Category:
@@ -78,7 +78,7 @@ def json_decode_parameter(encoded_param: Dict[str, Any]) -> Parameter:
         del encoded_param["data-type"]
 
     if "unit" in encoded_param:
-        encoded_param["unit"] = json_decode_unit(encoded_param["unit"])
+        encoded_param["unit"] = Unit.from_json(encoded_param["unit"])
 
     if "extent" in encoded_param:
         encoded_param["extent"] = Extents.from_json(encoded_param["extent"])
@@ -87,15 +87,3 @@ def json_decode_parameter(encoded_param: Dict[str, Any]) -> Parameter:
     # TODO deserialise categoryEncoding, once it's added to model
 
     return Parameter(**encoded_param)
-
-
-def json_decode_unit(encoded_unit: Dict[str, Any]) -> Unit:
-    if "symbol" in encoded_unit:
-        if isinstance(encoded_unit["symbol"], dict):
-            encoded_unit["symbol"] = Symbol.from_json(encoded_unit["symbol"])
-    if "labels" in encoded_unit:
-        # Note, the field is called `label` in the serialised output, even though it can hold multiple values
-        if isinstance(encoded_unit["label"], dict):
-            encoded_unit["label"] = LanguageMap.from_json(encoded_unit["label"])
-
-    return Unit(**encoded_unit)

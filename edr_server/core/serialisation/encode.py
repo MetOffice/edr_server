@@ -4,7 +4,7 @@ from typing import Any, Callable, Dict, Optional, Tuple, Type
 
 from ..models import EdrModel
 from ..models.metadata import CollectionMetadata, CollectionMetadataList
-from ..models.parameters import Unit, Category, ObservedProperty, Parameter
+from ..models.parameters import Category, ObservedProperty, Parameter
 from ..models.urls import EdrUrlResolver
 
 
@@ -99,20 +99,6 @@ def json_encode_parameter(param: Parameter, encoder: Optional["EdrJsonEncoder"] 
     return encoded_param
 
 
-def json_encode_unit(unit: Unit, encoder: Optional["EdrJsonEncoder"] = None) -> Dict[str, Any]:
-    encoded_unit = {}
-
-    if unit.symbol:
-        encoded_unit["symbol"] = unit.symbol if isinstance(unit.symbol, str) else encoder.default(unit.symbol)
-    if unit.labels:
-        # Note, the field is called `label` in the serialised output, even though it can hold multiple values
-        encoded_unit["label"] = unit.labels if isinstance(unit.labels, str) else encoder.default(unit.labels)
-    if unit.id:
-        encoded_unit["id"] = unit.id
-
-    return encoded_unit
-
-
 class EdrJsonEncoder(json.JSONEncoder):
     def __init__(
             self, *, skipkeys: bool = False, ensure_ascii: bool = True, check_circular: bool = True,
@@ -131,7 +117,6 @@ class EdrJsonEncoder(json.JSONEncoder):
         datetime: json_encode_datetime,
         ObservedProperty: json_encode_observed_property,
         Parameter: json_encode_parameter,
-        Unit: json_encode_unit,
     }
 
     def default(self, obj: Any) -> Any:

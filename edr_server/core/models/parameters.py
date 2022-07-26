@@ -33,19 +33,49 @@ class Symbol(EdrModel["Symbol"]):
 
 
 @dataclass
-class Unit:
+class Unit(EdrModel["Unit"]):
     """
     Based on
     https://github.com/opengeospatial/ogcapi-environmental-data-retrieval/blob/e8a78f9/standard/openapi/schemas/units.yaml
     """
+
     # Either a string, or a dict of language codes mapped to strings
     labels: Optional[Union[LanguageMap, str]] = None  # The display name, like Kelvin or Meters
     symbol: Optional[Union[Symbol, str]] = None
     id: Optional[str] = None
 
+    @classmethod
+    def _prepare_json_for_init(cls, json_dict: JsonDict) -> JsonDict:
+        if "symbol" in json_dict and isinstance(json_dict["symbol"], dict):
+            json_dict["symbol"] = Symbol.from_json(json_dict["symbol"])
+            
+        if "labels" in json_dict and isinstance(json_dict["label"], dict):
+            # Note, the field is called `label` in the serialised output, even though it can hold multiple values
+            json_dict["label"] = LanguageMap.from_json(json_dict["label"])
+
+        return json_dict
+
+    @classmethod
+    def _get_allowed_json_keys(cls) -> Set[str]:
+        return {"symbol", "label", "id"}
+
     def __post_init__(self):
+        # hook called by Python dataclass after the auto-generated __init__
         if not (self.labels or self.symbol):
             raise ValueError("Arguments for at least one of the 'labels' or 'symbol' parameters must be supplied")
+
+    def to_json(self) -> Dict[str, Any]:
+        encoded_unit = {}
+
+        if self.symbol:
+            encoded_unit["symbol"] = self.symbol if isinstance(self.symbol, str) else self.symbol.to_json()
+        if self.labels:
+            # Note, the field is called `label` in the serialised output, even though it can hold a LanguageMap
+            encoded_unit["label"] = self.labels if isinstance(self.labels, str) else self.labels.to_json()
+        if self.id:
+            encoded_unit["id"] = self.id
+
+        return encoded_unit
 
 
 @dataclass
