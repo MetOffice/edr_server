@@ -1,10 +1,13 @@
 import dataclasses
+from contextlib import suppress
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Generic, List, NamedTuple, Optional, TypeVar
+from typing import Generic, List, NamedTuple, Optional, TypeVar, Dict, Any, Set
 
+import dateutil.parser
 import shapely.geometry
 
+from . import EdrModel, JsonDict
 from .crs import DEFAULT_CRS, DEFAULT_TRS, DEFAULT_VRS, CrsObject
 from .time import DateTimeInterval
 
@@ -24,7 +27,7 @@ class SpatialBounds(NamedTuple):
 
 
 @dataclass
-class TemporalExtent:
+class TemporalExtent(EdrModel["TemporalExtent"]):
     """
     The specific times and time ranges covered by a dataset
     A temporal extent can be made up of one or more DateTimeIntervals, one or more specific datetimes, or a
@@ -33,9 +36,39 @@ class TemporalExtent:
     Based on a portion of
     https://github.com/opengeospatial/ogcapi-environmental-data-retrieval/blob/546c338/standard/openapi/schemas/extent.yaml
     """
+
     values: List[datetime] = dataclasses.field(default_factory=list)
     intervals: List[DateTimeInterval] = dataclasses.field(default_factory=list)
     trs: CrsObject = DEFAULT_TRS
+
+    @classmethod
+    def _prepare_json_for_init(cls, json_dict: JsonDict) -> JsonDict:
+        json_dict["trs"] = CrsObject(json_dict["trs"])
+
+        values = []
+        intervals = []
+        for val_str in json_dict["values"]:
+            try:
+                dti = DateTimeInterval.parse_str(val_str)
+                intervals.append(dti)
+            except ValueError:
+                with suppress(ValueError):
+                    dt = dateutil.parser.isoparse(val_str)
+                    values.append(dt)
+
+        json_dict["intervals"] = intervals
+        json_dict["values"] = values
+
+        with suppress(KeyError):  # Remove things not required by __init__
+            # 'interval' stores the bounds, which is different from the 'intervals' argument to the __init__ method
+            del json_dict["interval"]
+            del json_dict["name"]
+
+        return json_dict
+
+    @classmethod
+    def _get_expected_keys(cls) -> Set[str]:
+        return {"name", "trs", "interval", "values"}
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}(values={self.values!r}, intervals={self.intervals!r}, trs={self.trs!r})"
@@ -77,6 +110,14 @@ class TemporalExtent:
             return ScalarBounds(lower_bound, upper_bound)
         else:
             return ScalarBounds(None, None)
+
+    def to_json(self) -> Dict[str, Any]:
+        return {
+            "name": self.trs.name,
+            "trs": self.trs.to_wkt(),
+            "interval": [self.bounds],
+            "values": [dt.isoformat() for dt in self.values] + list(map(str, self.intervals))
+        }
 
 
 @dataclass

@@ -4,11 +4,9 @@ These functions are used by passing them as object_hook parameters to `json.load
 E.g. `json.loads(encoded_collection, object_hook=json_decode_collection)`
 """
 import itertools
-from contextlib import suppress
 from datetime import datetime
 from typing import Any, Dict, List
 
-import dateutil.parser
 import pyproj
 from shapely.geometry import box, Polygon
 
@@ -18,7 +16,6 @@ from ..models.i18n import LanguageMap
 from ..models.links import DataQueryLink, Link
 from ..models.metadata import CollectionMetadata, CollectionMetadataList
 from ..models.parameters import Symbol, Unit, Category, ObservedProperty, Parameter
-from ..models.time import DateTimeInterval
 
 
 def json_decode_category(encoded_category: Dict[str, Any]) -> Category:
@@ -70,7 +67,7 @@ def json_decode_extents(encoded_extents: Dict[str, Any]) -> Extents:
     if "spatial" in encoded_extents:
         kwargs["spatial"] = json_decode_spatial_extent(encoded_extents["spatial"])
     if "temporal" in encoded_extents:
-        kwargs["temporal"] = json_decode_temporal_extent(encoded_extents["temporal"])
+        kwargs["temporal"] = TemporalExtent.from_json(encoded_extents["temporal"])
     if "vertical" in encoded_extents:
         kwargs["vertical"] = json_decode_vertical_extent(encoded_extents["vertical"])
 
@@ -130,23 +127,6 @@ def json_decode_spatial_extent(encoded_spatial_extent: Dict[str, Any]) -> Spatia
 
 def json_decode_symbol(encoded_symbol: Dict[str, Any]) -> Symbol:
     return Symbol(**encoded_symbol)
-
-
-def json_decode_temporal_extent(encoded_temporal_extent: Dict[str, Any]) -> TemporalExtent:
-    trs = CrsObject(encoded_temporal_extent["trs"])
-
-    values = []
-    intervals = []
-    for val_str in encoded_temporal_extent["values"]:
-        try:
-            dti = DateTimeInterval.parse_str(val_str)
-            intervals.append(dti)
-        except ValueError:
-            with suppress(ValueError):
-                dt = dateutil.parser.isoparse(val_str)
-                values.append(dt)
-
-    return TemporalExtent(values, intervals, trs)
 
 
 def json_decode_unit(encoded_unit: Dict[str, Any]) -> Unit:

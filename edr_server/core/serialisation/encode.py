@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import Any, Callable, Dict, Optional, Tuple, Type
 
 from ..models import EdrModel
-from ..models.extents import TemporalExtent, Extents, SpatialExtent, VerticalExtent
+from ..models.extents import Extents, SpatialExtent, VerticalExtent
 from ..models.metadata import CollectionMetadata, CollectionMetadataList
 from ..models.parameters import Symbol, Unit, Category, ObservedProperty, Parameter
 from ..models.urls import EdrUrlResolver
@@ -131,16 +131,6 @@ def json_encode_symbol(symbol: Symbol, _encoder: Optional["EdrJsonEncoder"] = No
     }
 
 
-def json_encode_temporal_extent(
-        temporal_extent: TemporalExtent, encoder: Optional["EdrJsonEncoder"] = None) -> Dict[str, Any]:
-    return {
-        "name": temporal_extent.trs.name,
-        "trs": temporal_extent.trs.to_wkt(),
-        "interval": [temporal_extent.bounds],
-        "values": [encoder.default(dt) for dt in temporal_extent.values] + list(map(str, temporal_extent.intervals))
-    }
-
-
 def json_encode_unit(unit: Unit, encoder: Optional["EdrJsonEncoder"] = None) -> Dict[str, Any]:
     encoded_unit = {}
 
@@ -186,7 +176,6 @@ class EdrJsonEncoder(json.JSONEncoder):
         Parameter: json_encode_parameter,
         SpatialExtent: json_encode_spatial_extent,
         Symbol: json_encode_symbol,
-        TemporalExtent: json_encode_temporal_extent,
         Unit: json_encode_unit,
         VerticalExtent: json_encode_vertical_extent,
     }
