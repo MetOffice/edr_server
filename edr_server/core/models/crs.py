@@ -2,7 +2,7 @@ from typing import Dict, Any, Set
 
 from pyproj import CRS
 
-from edr_server.core.models import EdrModel, JsonDict
+from . import EdrModel, JsonDict
 
 
 class CrsObject(EdrModel["CrsObject"], CRS):

@@ -2,16 +2,12 @@ import json
 from datetime import datetime
 from typing import Any, Callable, Dict, Optional, Tuple, Type
 
+from ..models import EdrModel
 from ..models.extents import TemporalExtent, Extents, SpatialExtent, VerticalExtent
-from ..models.i18n import LanguageMap
-from ..models.links import Link, DataQueryLink, AreaDataQuery
+from ..models.links import Link
 from ..models.metadata import CollectionMetadata, CollectionMetadataList
 from ..models.parameters import Symbol, Unit, Category, ObservedProperty, Parameter
 from ..models.urls import EdrUrlResolver
-
-
-def json_encode_area_data_query(area_dq: AreaDataQuery, _encoder: "EdrJsonEncoder") -> Dict[str, Any]:
-    return area_dq.to_json()
 
 
 def json_encode_category(category: Category, encoder: "EdrJsonEncoder") -> Dict[str, Any]:
@@ -64,29 +60,6 @@ def json_encode_datetime(dt: datetime, _encoder: Optional["EdrJsonEncoder"] = No
     return dt.isoformat()  # Did I mention that if you're having timezone serialisation issues, this code is fine?
 
 
-def json_encode_data_query_link(dq_link: DataQueryLink, encoder: "EdrJsonEncoder") -> Dict[str, Any]:
-    encoded_link = {
-        "href": dq_link.href,
-        "rel": dq_link.rel,
-    }
-
-    # Optional stuff
-    if dq_link.variables:
-        encoded_link["variables"] = encoder.default(dq_link.variables)
-    if dq_link.title:
-        encoded_link["title"] = dq_link.title
-    if dq_link.type:
-        encoded_link["type"] = dq_link.type
-    if dq_link.hreflang:
-        encoded_link["hreflang"] = dq_link.hreflang
-    if dq_link.length:
-        encoded_link["length"] = dq_link.length
-    if dq_link.templated:
-        encoded_link["templated"] = dq_link.templated
-
-    return encoded_link
-
-
 def json_encode_extents(extents: Extents, encoder: "EdrJsonEncoder") -> Dict[str, Any]:
     encoded_extents = {}
 
@@ -99,10 +72,6 @@ def json_encode_extents(extents: Extents, encoder: "EdrJsonEncoder") -> Dict[str
         encoded_extents["vertical"] = encoder.default(extents.vertical)
 
     return encoded_extents
-
-
-def json_encode_language_map(language_map: LanguageMap, _encoder: Optional["EdrJsonEncoder"] = None):
-    return {k: v for k, v in language_map.items()}  # Make a copy so that we don't accidentally change the original data
 
 
 def json_encode_link(link: Link, _encoder: Optional["EdrJsonEncoder"] = None) -> Dict[str, Any]:
@@ -232,9 +201,7 @@ class EdrJsonEncoder(json.JSONEncoder):
         CollectionMetadata: json_encode_collection,
         CollectionMetadataList: json_encode_collection_metadata_list,
         datetime: json_encode_datetime,
-        DataQueryLink: json_encode_data_query_link,
         Extents: json_encode_extents,
-        LanguageMap: json_encode_language_map,
         Link: json_encode_link,
         ObservedProperty: json_encode_observed_property,
         Parameter: json_encode_parameter,
@@ -247,8 +214,11 @@ class EdrJsonEncoder(json.JSONEncoder):
 
     def default(self, obj: Any) -> Any:
         """Return a JSON encodable version of objects that can't otherwise be serialised, or raise a TypeError"""
-        try:
-            return self.ENCODER_MAP[type(obj)](obj, self)
-        except KeyError:
-            # Let the base class default method raise the TypeError
-            return super().default(obj)
+        if isinstance(obj, EdrModel):
+            return obj.to_json()
+        else:
+            try:
+                return self.ENCODER_MAP[type(obj)](obj, self)
+            except KeyError:
+                # Let the base class default method raise the TypeError
+                return super().default(obj)

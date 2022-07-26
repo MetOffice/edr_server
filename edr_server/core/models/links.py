@@ -6,7 +6,7 @@ from typing import List, Optional, Dict, Any, TypeVar, Set, Type
 from . import EdrModel, JsonDict
 from ._types_and_defaults import EdrDataQuery
 from .crs import CrsObject, DEFAULT_CRS
-from .i18n import IsoAlpha2LanguageCode
+from .i18n import Iso639Alpha2LanguageCode
 from .urls import URL
 from ..exceptions import InvalidEdrJsonError
 
@@ -54,7 +54,7 @@ class Link:
     type: Optional[MimeType] = None
     """MIME type of the linked resource. There's some more docs about MimeTypes in general where the type is defined."""
 
-    hreflang: Optional[IsoAlpha2LanguageCode] = None
+    hreflang: Optional[Iso639Alpha2LanguageCode] = None
     title: Optional[str] = None
     length: Optional[int] = None
 
@@ -519,7 +519,7 @@ class DataQueryLink(EdrModel):
 
         return json_dict
 
-    hreflang: Optional[IsoAlpha2LanguageCode] = None
+    hreflang: Optional[Iso639Alpha2LanguageCode] = None
     title: Optional[str] = None
     length: Optional[int] = None
 

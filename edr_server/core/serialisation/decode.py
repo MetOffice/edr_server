@@ -25,10 +25,10 @@ from ..models.urls import URL
 def json_decode_category(encoded_category: Dict[str, Any]) -> Category:
     kwargs = encoded_category
     if isinstance(kwargs["label"], dict):
-        kwargs["label"] = json_decode_language_map(kwargs["label"])
+        kwargs["label"] = LanguageMap.from_json(kwargs["label"])
 
     if "description" in encoded_category and isinstance(encoded_category["description"], dict):
-        kwargs["description"] = json_decode_language_map(encoded_category["description"])
+        kwargs["description"] = LanguageMap.from_json(encoded_category["description"])
 
     return Category(**kwargs)
 
@@ -78,12 +78,6 @@ def json_decode_extents(encoded_extents: Dict[str, Any]) -> Extents:
     return Extents(**kwargs)
 
 
-def json_decode_language_map(encoded_language_map: Dict[str, Any]) -> LanguageMap:
-    # Whilst LanguageMap is a subclass of a dict, so decoding isn't strictly required, doing this ensures LanguageMap's
-    # constraints are respected and will raise an exception if there's any invalid data
-    return LanguageMap(**encoded_language_map)
-
-
 def json_decode_link(encoded_link: Dict[str, Any]) -> Link:
     encoded_link["href"] = URL(encoded_link["href"])
 
@@ -92,7 +86,7 @@ def json_decode_link(encoded_link: Dict[str, Any]) -> Link:
 
 def json_decode_observed_property(encoded_observed_property: Dict[str, Any]) -> ObservedProperty:
     if isinstance(encoded_observed_property, dict):
-        encoded_observed_property["label"] = json_decode_language_map(encoded_observed_property["label"])
+        encoded_observed_property["label"] = LanguageMap.from_json(encoded_observed_property["label"])
 
     if "categories" in encoded_observed_property:
         encoded_observed_property["categories"] = [json_decode_category(cat)
@@ -169,7 +163,7 @@ def json_decode_unit(encoded_unit: Dict[str, Any]) -> Unit:
     if "labels" in encoded_unit:
         # Note, the field is called `label` in the serialised output, even though it can hold multiple values
         if isinstance(encoded_unit["label"], dict):
-            encoded_unit["label"] = json_decode_language_map(encoded_unit["label"])
+            encoded_unit["label"] = LanguageMap.from_json(encoded_unit["label"])
 
     return Unit(**encoded_unit)
 

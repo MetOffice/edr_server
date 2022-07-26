@@ -73,7 +73,10 @@ class EdrModel(ABC, Generic[T]):
             raise InvalidEdrJsonError(f"Unexpected keys in JSON dict: {invalid_keys!r}")
 
         prepared_dict = cls._prepare_json_for_init(json_dict)
-        return cls(**prepared_dict)
+        try:
+            return cls(**prepared_dict)
+        except Exception as exc:
+            raise InvalidEdrJsonError(f"Error during conversion from JSON: {str(exc)}") from exc
 
     @abstractmethod
     def to_json(self) -> Dict[str, Any]:
