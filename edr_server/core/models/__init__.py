@@ -62,6 +62,7 @@ class EdrModel(ABC, Generic[T]):
         Will raise an `InvalidEdrJsonError` if the provided dict has unexpected keys or otherwise can't be
         converted.
         """
+        # TODO deep copy via param toggle?
         # Subclasses may need different behaviour for converting from JSON, but implementors shouldn't need to modify
         # this method. `_prepare_json_for_init` can be overridden to control how the JSON dict is converted into a form
         # that can be passed to the __init__ method, and additional keys for validation can be added to

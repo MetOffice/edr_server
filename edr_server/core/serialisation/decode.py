@@ -9,7 +9,7 @@ from typing import Any, Dict
 from ..models.extents import Extents
 from ..models.links import DataQueryLink, Link
 from ..models.metadata import CollectionMetadata, CollectionMetadataList
-from ..models.parameters import ObservedProperty, Parameter, Unit
+from ..models.parameters import Parameter
 
 
 def json_decode_collection(encoded_collection: Dict[str, Any]) -> CollectionMetadata:
@@ -19,7 +19,7 @@ def json_decode_collection(encoded_collection: Dict[str, Any]) -> CollectionMeta
     kwargs["extent"] = Extents.from_json(kwargs["extent"])
     kwargs["data_queries"] = [DataQueryLink.from_json(encoded_dq) for encoded_dq in kwargs["data_queries"].values()]
     del kwargs["crs_details"]
-    kwargs["parameters"] = [json_decode_parameter(encoded_param) for encoded_param in kwargs["parameter_names"]]
+    kwargs["parameters"] = [Parameter.from_json(encoded_param) for encoded_param in kwargs["parameter_names"]]
     del kwargs["parameter_names"]
 
     return CollectionMetadata(**kwargs)
@@ -41,28 +41,3 @@ def json_decode_datetime(dt_str: str) -> datetime:
     # EdrJsondecoder.decodeR_MAP, so it gets hooked into the JSON decoder correctly. Also, it documents that datetime
     # objects should be decoded using the ISO 8601 datetime format.
     return datetime.fromisoformat(dt_str)
-
-
-def json_decode_parameter(encoded_param: Dict[str, Any]) -> Parameter:
-    del encoded_param["type"]
-
-    encoded_param["observed_property"] = ObservedProperty.from_json(encoded_param["observedProperty"])
-    del encoded_param["observedProperty"]
-
-    if "data-type" in encoded_param:
-        # This field holds a type, such as int, float, or str.
-        # The code below is converting the string name of the type to the actual type object
-        # Note replacement of `-` with `_` in key name
-        encoded_param["data_type"] = getattr(__builtins__, encoded_param["data-type"])
-        del encoded_param["data-type"]
-
-    if "unit" in encoded_param:
-        encoded_param["unit"] = Unit.from_json(encoded_param["unit"])
-
-    if "extent" in encoded_param:
-        encoded_param["extent"] = Extents.from_json(encoded_param["extent"])
-
-    # TODO deserialise measurementType once it's added to model
-    # TODO deserialise categoryEncoding, once it's added to model
-
-    return Parameter(**encoded_param)

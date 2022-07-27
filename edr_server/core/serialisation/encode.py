@@ -4,7 +4,6 @@ from typing import Any, Callable, Dict, Optional, Tuple, Type
 
 from ..models import EdrModel
 from ..models.metadata import CollectionMetadata, CollectionMetadataList
-from ..models.parameters import Parameter
 from ..models.urls import EdrUrlResolver
 
 
@@ -45,30 +44,6 @@ def json_encode_datetime(dt: datetime, _encoder: Optional["EdrJsonEncoder"] = No
     return dt.isoformat()  # Did I mention that if you're having timezone serialisation issues, this code is fine?
 
 
-def json_encode_parameter(param: Parameter, encoder: Optional["EdrJsonEncoder"] = None) -> Dict[str, Any]:
-    encoded_param = {
-        "type": "Parameter",
-        "observedProperty": encoder.default(param.observed_property),
-    }
-
-    if param.description:
-        encoded_param["description"] = param.description
-    if param.label:
-        encoded_param["label"] = param.label
-    if param.data_type:
-        encoded_param["data-type"] = param.data_type.__name__
-    if param.unit:
-        encoded_param["unit"] = encoder.default(param.unit)
-    # TODO serialise categoryEncoding, once it's added to model
-    if param.extent:
-        encoded_param["extent"] = encoder.default(param.extent)
-    if param.id:
-        encoded_param["id"] = param.id
-    # TODO serialise measurementType once it's added to model
-
-    return encoded_param
-
-
 class EdrJsonEncoder(json.JSONEncoder):
     def __init__(
             self, *, skipkeys: bool = False, ensure_ascii: bool = True, check_circular: bool = True,
@@ -84,7 +59,6 @@ class EdrJsonEncoder(json.JSONEncoder):
         CollectionMetadata: json_encode_collection,
         CollectionMetadataList: json_encode_collection_metadata_list,
         datetime: json_encode_datetime,
-        Parameter: json_encode_parameter,
     }
 
     def default(self, obj: Any) -> Any:

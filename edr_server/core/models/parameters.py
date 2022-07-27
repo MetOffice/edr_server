@@ -157,7 +157,7 @@ class ObservedProperty(EdrModel["ObservedProperty"]):
 
 
 @dataclass
-class Parameter:
+class Parameter(EdrModel["Parameter"]):
     """
     Based on
     https://github.com/opengeospatial/ogcapi-environmental-data-retrieval/blob/e8a78f9/standard/openapi/schemas/parameterNames.yaml
@@ -169,5 +169,59 @@ class Parameter:
     description: Optional[Union[LanguageMap, str]] = None
     label: Optional[str] = None
     extent: Optional[Extents] = None
+
     # TODO: measurement_type
     # TODO category_encoding
+
+    @classmethod
+    def _prepare_json_for_init(cls, json_dict: JsonDict) -> JsonDict:
+        del json_dict["type"]
+
+        json_dict["observed_property"] = ObservedProperty.from_json(json_dict["observedProperty"])
+        del json_dict["observedProperty"]
+
+        if "data-type" in json_dict:
+            # This field holds a type, such as int, float, or str.
+            # The code below is converting the string name of the type to the actual type object
+            # Note replacement of `-` with `_` in key name
+            json_dict["data_type"] = getattr(__builtins__, json_dict["data-type"])
+            del json_dict["data-type"]
+
+        if "unit" in json_dict:
+            json_dict["unit"] = Unit.from_json(json_dict["unit"])
+
+        if "extent" in json_dict:
+            json_dict["extent"] = Extents.from_json(json_dict["extent"])
+
+        # TODO deserialise measurementType once it's added to model
+        # TODO deserialise categoryEncoding, once it's added to model
+
+        return json_dict
+
+    @classmethod
+    def _get_allowed_json_keys(cls) -> Set[str]:
+        return {"type", "observedProperty", "description", "label", "data-type", "unit", "extent", "id",
+                "categoryEncoding", "measurementType"}
+
+    def to_json(self) -> Dict[str, Any]:
+        encoded_param = {
+            "type": "Parameter",
+            "observedProperty": self.observed_property.to_json(),
+        }
+
+        if self.description:
+            encoded_param["description"] = self.description
+        if self.label:
+            encoded_param["label"] = self.label
+        if self.data_type:
+            encoded_param["data-type"] = self.data_type.__name__
+        if self.unit:
+            encoded_param["unit"] = self.unit.to_json()
+        # TODO serialise categoryEncoding, once it's added to model
+        if self.extent:
+            encoded_param["extent"] = self.extent.to_json()
+        if self.id:
+            encoded_param["id"] = self.id
+        # TODO serialise measurementType once it's added to model
+
+        return encoded_param
