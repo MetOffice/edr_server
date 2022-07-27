@@ -4,21 +4,8 @@ from typing import Any, Callable, Dict, Optional, Tuple, Type
 
 from ..models import EdrModel
 from ..models.metadata import CollectionMetadata, CollectionMetadataList
-from ..models.parameters import Category, ObservedProperty, Parameter
+from ..models.parameters import ObservedProperty, Parameter
 from ..models.urls import EdrUrlResolver
-
-
-def json_encode_category(category: Category, encoder: "EdrJsonEncoder") -> Dict[str, Any]:
-    encoded_category = {
-        "id": category.id,
-        "label": category.label if isinstance(category.label, str) else encoder.default(category.label)
-    }
-
-    if category.description:
-        encoded_category["description"] = (
-            category.description if isinstance(category.description, str) else encoder.default(category.description))
-
-    return encoded_category
 
 
 def json_encode_collection(collection: CollectionMetadata, encoder: "EdrJsonEncoder") -> Dict[str, Any]:
@@ -111,7 +98,6 @@ class EdrJsonEncoder(json.JSONEncoder):
         self.urls = urls
 
     ENCODER_MAP: Dict[Type, Callable[[Any, "EdrJsonEncoder"], Dict[str, Any]]] = {
-        Category: json_encode_category,
         CollectionMetadata: json_encode_collection,
         CollectionMetadataList: json_encode_collection_metadata_list,
         datetime: json_encode_datetime,

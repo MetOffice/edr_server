@@ -10,18 +10,7 @@ from ..models.extents import Extents
 from ..models.i18n import LanguageMap
 from ..models.links import DataQueryLink, Link
 from ..models.metadata import CollectionMetadata, CollectionMetadataList
-from ..models.parameters import Category, ObservedProperty, Parameter, Unit
-
-
-def json_decode_category(encoded_category: Dict[str, Any]) -> Category:
-    kwargs = encoded_category
-    if isinstance(kwargs["label"], dict):
-        kwargs["label"] = LanguageMap.from_json(kwargs["label"])
-
-    if "description" in encoded_category and isinstance(encoded_category["description"], dict):
-        kwargs["description"] = LanguageMap.from_json(encoded_category["description"])
-
-    return Category(**kwargs)
+from ..models.parameters import ObservedProperty, Parameter, Unit, Category
 
 
 def json_decode_collection(encoded_collection: Dict[str, Any]) -> CollectionMetadata:
@@ -60,8 +49,9 @@ def json_decode_observed_property(encoded_observed_property: Dict[str, Any]) -> 
         encoded_observed_property["label"] = LanguageMap.from_json(encoded_observed_property["label"])
 
     if "categories" in encoded_observed_property:
-        encoded_observed_property["categories"] = [json_decode_category(cat)
-                                                   for cat in encoded_observed_property["categories"]]
+        encoded_observed_property["categories"] = [
+            Category.from_json(cat) for cat in encoded_observed_property["categories"]
+        ]
 
     return ObservedProperty(**encoded_observed_property)
 

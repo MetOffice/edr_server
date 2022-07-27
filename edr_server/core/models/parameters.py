@@ -48,7 +48,7 @@ class Unit(EdrModel["Unit"]):
     def _prepare_json_for_init(cls, json_dict: JsonDict) -> JsonDict:
         if "symbol" in json_dict and isinstance(json_dict["symbol"], dict):
             json_dict["symbol"] = Symbol.from_json(json_dict["symbol"])
-            
+
         if "labels" in json_dict and isinstance(json_dict["label"], dict):
             # Note, the field is called `label` in the serialised output, even though it can hold multiple values
             json_dict["label"] = LanguageMap.from_json(json_dict["label"])
@@ -79,7 +79,7 @@ class Unit(EdrModel["Unit"]):
 
 
 @dataclass
-class Category:
+class Category(EdrModel["Category"]):
     """
     Based on an except from
     https://github.com/opengeospatial/ogcapi-environmental-data-retrieval/blob/fa594ca/standard/openapi/schemas/observedPropertyCollection.yaml
@@ -87,6 +87,33 @@ class Category:
     id: URL
     label: Union[LanguageMap, str]
     description: Optional[Union[LanguageMap, str]] = None
+
+    @classmethod
+    def _prepare_json_for_init(cls, json_dict: JsonDict) -> JsonDict:
+        if isinstance(json_dict["label"], dict):
+            json_dict["label"] = LanguageMap.from_json(json_dict["label"])
+
+        if "description" in json_dict and isinstance(json_dict["description"], dict):
+            json_dict["description"] = LanguageMap.from_json(json_dict["description"])
+
+        return json_dict
+
+    @classmethod
+    def _get_allowed_json_keys(cls) -> Set[str]:
+        return {"id", "label", "description"}
+
+    def to_json(self) -> Dict[str, Any]:
+        j_dict = {
+            "id": self.id,
+            "label": self.label if isinstance(self.label, str) else self.label.to_json()
+        }
+
+        if self.description:
+            j_dict["description"] = (
+                self.description if isinstance(self.description, str) else self.description.to_json()
+            )
+
+        return j_dict
 
 
 @dataclass
