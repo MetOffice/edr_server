@@ -4,7 +4,7 @@ from typing import Any, Callable, Dict, Optional, Tuple, Type
 
 from ..models import EdrModel
 from ..models.metadata import CollectionMetadata, CollectionMetadataList
-from ..models.parameters import ObservedProperty, Parameter
+from ..models.parameters import Parameter
 from ..models.urls import EdrUrlResolver
 
 
@@ -43,23 +43,6 @@ def json_encode_datetime(dt: datetime, _encoder: Optional["EdrJsonEncoder"] = No
 
     # This code is fine and correctly handles both timezone aware and timezone naive datetimes.
     return dt.isoformat()  # Did I mention that if you're having timezone serialisation issues, this code is fine?
-
-
-def json_encode_observed_property(
-        observed_property: ObservedProperty, encoder: Optional["EdrJsonEncoder"] = None) -> Dict[str, Any]:
-    encoded_property = {
-        "label": (observed_property.label
-                  if isinstance(observed_property.label, str) else encoder.default(observed_property.label)),
-
-    }
-    if observed_property.id:
-        encoded_property["id"] = observed_property.id
-    if observed_property.description:
-        encoded_property["description"] = observed_property.description
-    if observed_property.categories:
-        encoded_property["categories"] = [encoder.default(cat) for cat in observed_property.categories]
-
-    return encoded_property
 
 
 def json_encode_parameter(param: Parameter, encoder: Optional["EdrJsonEncoder"] = None) -> Dict[str, Any]:
@@ -101,7 +84,6 @@ class EdrJsonEncoder(json.JSONEncoder):
         CollectionMetadata: json_encode_collection,
         CollectionMetadataList: json_encode_collection_metadata_list,
         datetime: json_encode_datetime,
-        ObservedProperty: json_encode_observed_property,
         Parameter: json_encode_parameter,
     }
 

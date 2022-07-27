@@ -7,10 +7,9 @@ from datetime import datetime
 from typing import Any, Dict
 
 from ..models.extents import Extents
-from ..models.i18n import LanguageMap
 from ..models.links import DataQueryLink, Link
 from ..models.metadata import CollectionMetadata, CollectionMetadataList
-from ..models.parameters import ObservedProperty, Parameter, Unit, Category
+from ..models.parameters import ObservedProperty, Parameter, Unit
 
 
 def json_decode_collection(encoded_collection: Dict[str, Any]) -> CollectionMetadata:
@@ -44,25 +43,15 @@ def json_decode_datetime(dt_str: str) -> datetime:
     return datetime.fromisoformat(dt_str)
 
 
-def json_decode_observed_property(encoded_observed_property: Dict[str, Any]) -> ObservedProperty:
-    if isinstance(encoded_observed_property, dict):
-        encoded_observed_property["label"] = LanguageMap.from_json(encoded_observed_property["label"])
-
-    if "categories" in encoded_observed_property:
-        encoded_observed_property["categories"] = [
-            Category.from_json(cat) for cat in encoded_observed_property["categories"]
-        ]
-
-    return ObservedProperty(**encoded_observed_property)
-
-
 def json_decode_parameter(encoded_param: Dict[str, Any]) -> Parameter:
     del encoded_param["type"]
 
-    encoded_param["observed_Property"] = json_decode_observed_property(encoded_param["observedProperty"])
+    encoded_param["observed_property"] = ObservedProperty.from_json(encoded_param["observedProperty"])
     del encoded_param["observedProperty"]
 
     if "data-type" in encoded_param:
+        # This field holds a type, such as int, float, or str.
+        # The code below is converting the string name of the type to the actual type object
         # Note replacement of `-` with `_` in key name
         encoded_param["data_type"] = getattr(__builtins__, encoded_param["data-type"])
         del encoded_param["data-type"]

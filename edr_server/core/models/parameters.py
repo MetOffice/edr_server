@@ -117,7 +117,7 @@ class Category(EdrModel["Category"]):
 
 
 @dataclass
-class ObservedProperty:
+class ObservedProperty(EdrModel["ObservedProperty"]):
     """
     Based on
     https://github.com/opengeospatial/ogcapi-environmental-data-retrieval/blob/fa594ca/standard/openapi/schemas/observedPropertyCollection.yaml
@@ -127,6 +127,33 @@ class ObservedProperty:
     id: Optional[URL] = None  # E.g. http://vocab.nerc.ac.uk/standard_name/sea_ice_area_fraction/
     description: Optional[str] = None
     categories: Optional[List[Category]] = None
+
+    @classmethod
+    def _prepare_json_for_init(cls, json_dict: JsonDict) -> JsonDict:
+        if isinstance(json_dict, dict):
+            json_dict["label"] = LanguageMap.from_json(json_dict["label"])
+
+        if "categories" in json_dict:
+            json_dict["categories"] = [Category.from_json(cat) for cat in json_dict["categories"]]
+
+        return json_dict
+
+    @classmethod
+    def _get_allowed_json_keys(cls) -> Set[str]:
+        return {"label", "id", "description", "categories"}
+
+    def to_json(self) -> Dict[str, Any]:
+        j_dict = {
+            "label": self.label if isinstance(self.label, str) else self.label.to_json(),
+        }
+        if self.id:
+            j_dict["id"] = self.id
+        if self.description:
+            j_dict["description"] = self.description
+        if self.categories:
+            j_dict["categories"] = [cat.to_json() for cat in self.categories]
+
+        return j_dict
 
 
 @dataclass
