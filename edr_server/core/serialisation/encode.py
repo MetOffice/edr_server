@@ -8,15 +8,23 @@ from ..models.urls import EdrUrlResolver
 
 
 def json_encode_collection(collection: CollectionMetadata, encoder: "EdrJsonEncoder") -> Dict[str, Any]:
+    links = CollectionMetadata.get_standard_links(encoder.urls, collection.id, collection.supported_data_queries)
+    links.extend(collection.extra_links)
+
     return {
-        "links": [encoder.default(link) for link in collection.get_links(encoder.urls)],
+        "links": [encoder.default(link) for link in links],
         "id": collection.id,
         "title": collection.title,
         "description": collection.description,
         "keywords": collection.keywords,
         "extent": encoder.default(collection.extent),
-        "data_queries": {dl.type: {"link": dl.to_json()}
-                         for dl in collection.get_data_query_links(encoder.urls)},
+        "data_queries": {
+            dl.type: {"link": dl.to_json()}
+            for dl in CollectionMetadata.get_data_query_links(
+                encoder.urls, collection.id, collection.supported_data_queries, collection.output_formats,
+                [collection.crs], collection.width_units, collection.height_units, collection.within_units
+            )
+        },
         "crs_details": [str(collection.extent.spatial.crs)],
         "output_formats": collection.output_formats,
         "parameter_names": {param.id: encoder.default(param) for param in collection.parameters},

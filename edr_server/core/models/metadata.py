@@ -31,7 +31,7 @@ class CollectionMetadata:
     within_units: List[str] = field(default_factory=list)
 
     def __post_init__(self):
-        pass  # TODO can I handle extra arguments I want to ignore from deserilisation here?
+        pass  # TODO can I handle extra arguments I want to ignore from deserialisation here?
 
     def __str__(self):
         return f"{self.id} metadata"
@@ -47,10 +47,14 @@ class CollectionMetadata:
     def crs(self) -> CrsObject:
         return self.extent.spatial.crs
 
-    def get_links(self, url_resolver: EdrUrlResolver) -> List[Link]:
+    @staticmethod
+    def get_standard_links(
+            url_resolver: EdrUrlResolver, collection_id: CollectionId, supported_data_queries: List[EdrDataQuery]
+    ) -> List[Link]:
+
         collection_links = [
             Link(
-                href=url_resolver.collection(self.id),
+                href=url_resolver.collection(collection_id),
                 rel="collection",
                 type="application/json",
                 hreflang="en",
@@ -59,26 +63,30 @@ class CollectionMetadata:
         ]
         collection_links.extend([
             Link(
-                href=url_resolver.COLLECTION_DATA_QUERY_MAP[query](self.id),
+                href=url_resolver.COLLECTION_DATA_QUERY_MAP[query](collection_id),
                 rel="data",
                 type=query.name.lower(),
                 hreflang="en",
                 title=query.name.title()
             )
-            for query in self.supported_data_queries
+            for query in supported_data_queries
         ])
-        collection_links.extend(self.extra_links)
         return collection_links
 
-    def get_data_query_links(self, url_resolver: EdrUrlResolver) -> List[DataQueryLink]:
+    @staticmethod
+    def get_data_query_links(
+            url_resolver: EdrUrlResolver, collection_id: CollectionId, supported_data_queries: List[EdrDataQuery],
+            output_formats: List[str] = None, crs_details: List[CrsObject] = None, width_units: List[str] = None,
+            height_units: List[str] = None, within_units: List[str] = None
+    ) -> List[DataQueryLink]:
         dql_list = []
-        for query_type in self.supported_data_queries:
+        for query_type in supported_data_queries:
             if query_type is EdrDataQuery.AREA:
                 dql_list.append(
                     DataQueryLink(
-                        href=url_resolver.COLLECTION_DATA_QUERY_MAP[query_type](self.id),
+                        href=url_resolver.COLLECTION_DATA_QUERY_MAP[query_type](collection_id),
                         rel="data",
-                        variables=AreaDataQuery(output_formats=self.output_formats, crs_details=[self.crs]),
+                        variables=AreaDataQuery(output_formats=output_formats, crs_details=crs_details),
                         type=query_type.name.lower(),
                         hreflang="en",
                         title=query_type.name.title(),
@@ -87,11 +95,11 @@ class CollectionMetadata:
             elif query_type is EdrDataQuery.CORRIDOR:
                 dql_list.append(
                     DataQueryLink(
-                        href=url_resolver.COLLECTION_DATA_QUERY_MAP[query_type](self.id),
+                        href=url_resolver.COLLECTION_DATA_QUERY_MAP[query_type](collection_id),
                         rel="data",
                         variables=CorridorDataQuery(
-                            output_formats=self.output_formats, crs_details=[self.crs], width_units=self.width_units,
-                            height_units=self.height_units
+                            output_formats=output_formats, crs_details=crs_details, width_units=width_units,
+                            height_units=height_units
                         ),
                         type=query_type.name.lower(),
                         hreflang="en",
@@ -101,10 +109,10 @@ class CollectionMetadata:
             elif query_type is EdrDataQuery.CUBE:
                 dql_list.append(
                     DataQueryLink(
-                        href=url_resolver.COLLECTION_DATA_QUERY_MAP[query_type](self.id),
+                        href=url_resolver.COLLECTION_DATA_QUERY_MAP[query_type](collection_id),
                         rel="data",
                         variables=CubeDataQuery(
-                            output_formats=self.output_formats, crs_details=[self.crs], height_units=self.height_units
+                            output_formats=output_formats, crs_details=crs_details, height_units=height_units
                         ),
                         type=query_type.name.lower(),
                         hreflang="en",
@@ -114,7 +122,7 @@ class CollectionMetadata:
             elif query_type is EdrDataQuery.ITEMS:
                 dql_list.append(
                     DataQueryLink(
-                        href=url_resolver.COLLECTION_DATA_QUERY_MAP[query_type](self.id),
+                        href=url_resolver.COLLECTION_DATA_QUERY_MAP[query_type](collection_id),
                         rel="data",
                         variables=ItemsDataQuery(),
                         type=query_type.name.lower(),
@@ -126,9 +134,9 @@ class CollectionMetadata:
             elif query_type is EdrDataQuery.LOCATIONS:
                 dql_list.append(
                     DataQueryLink(
-                        href=url_resolver.COLLECTION_DATA_QUERY_MAP[query_type](self.id),
+                        href=url_resolver.COLLECTION_DATA_QUERY_MAP[query_type](collection_id),
                         rel="data",
-                        variables=LocationsDataQuery(output_formats=self.output_formats, crs_details=[self.crs]),
+                        variables=LocationsDataQuery(output_formats=output_formats, crs_details=crs_details),
                         type=query_type.name.lower(),
                         hreflang="en",
                         title=query_type.name.title(),
@@ -137,9 +145,9 @@ class CollectionMetadata:
             elif query_type is EdrDataQuery.POSITION:
                 dql_list.append(
                     DataQueryLink(
-                        href=url_resolver.COLLECTION_DATA_QUERY_MAP[query_type](self.id),
+                        href=url_resolver.COLLECTION_DATA_QUERY_MAP[query_type](collection_id),
                         rel="data",
-                        variables=PositionDataQuery(output_formats=self.output_formats, crs_details=[self.crs]),
+                        variables=PositionDataQuery(output_formats=output_formats, crs_details=crs_details),
                         type=query_type.name.lower(),
                         hreflang="en",
                         title=query_type.name.title(),
@@ -148,10 +156,10 @@ class CollectionMetadata:
             elif query_type is EdrDataQuery.RADIUS:
                 dql_list.append(
                     DataQueryLink(
-                        href=url_resolver.COLLECTION_DATA_QUERY_MAP[query_type](self.id),
+                        href=url_resolver.COLLECTION_DATA_QUERY_MAP[query_type](collection_id),
                         rel="data",
                         variables=RadiusDataQuery(
-                            output_formats=self.output_formats, crs_details=[self.crs], within_units=self.within_units
+                            output_formats=output_formats, crs_details=crs_details, within_units=within_units
                         ),
                         type=query_type.name.lower(),
                         hreflang="en",
@@ -161,9 +169,9 @@ class CollectionMetadata:
             elif query_type is EdrDataQuery.TRAJECTORY:
                 dql_list.append(
                     DataQueryLink(
-                        href=url_resolver.COLLECTION_DATA_QUERY_MAP[query_type](self.id),
+                        href=url_resolver.COLLECTION_DATA_QUERY_MAP[query_type](collection_id),
                         rel="data",
-                        variables=TrajectoryDataQuery(output_formats=self.output_formats, crs_details=[self.crs]),
+                        variables=TrajectoryDataQuery(output_formats=output_formats, crs_details=crs_details),
                         type=query_type.name.lower(),
                         hreflang="en",
                         title=query_type.name.title(),
