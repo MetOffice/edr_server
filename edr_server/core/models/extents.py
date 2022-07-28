@@ -75,6 +75,9 @@ class TemporalExtent(EdrModel["TemporalExtent"]):
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}(values={self.values!r}, intervals={self.intervals!r}, trs={self.trs!r})"
 
+    def __str__(self):
+        return f"{self.bounds!r} ({len(self.values)} values; {len(self.intervals)} intervals)"
+
     @property
     def interval(self) -> "ScalarBounds[Optional[datetime]]":
         """
