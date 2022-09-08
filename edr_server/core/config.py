@@ -5,7 +5,7 @@ from typing import List, Union, Type
 import yaml
 from yaml.loader import SafeLoader
 
-from edr_server.core import EdrDataInterface
+from edr_server.core.interface import EdrDataInterface
 from edr_server.core.exceptions import EdrException
 from edr_server.utils.paths import app_relative_path_to_absolute
 

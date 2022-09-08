@@ -2,7 +2,7 @@ from tornado.web import Application, url
 
 from edr_server.utils.paths import app_relative_path_to_absolute
 
-from ...core import EdrDataInterface
+from ...core.interface import EdrDataInterface
 from . import admin, collection, handlers
 from edr_server.core.config import config
 

@@ -130,7 +130,7 @@ class ObservedProperty(EdrModel["ObservedProperty"]):
 
     @classmethod
     def _prepare_json_for_init(cls, json_dict: JsonDict) -> JsonDict:
-        if isinstance(json_dict, dict):
+        if "label" in json_dict and isinstance(json_dict["label"], dict):
             json_dict["label"] = LanguageMap.from_json(json_dict["label"])
 
         if "categories" in json_dict:

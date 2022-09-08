@@ -33,16 +33,16 @@ start-up boilerplate, such as what can be seen in the
 [tornado documentation](https://www.tornadoweb.org/en/stable/guide/structure.html)
 
 **start_my_edr_server.py**:
+
 ```python
 #!/usr/bin/env python
 
 import logging
 
-import edr_server.impl.tornado.server 
+import edr_server.impl.tornado.server
 import tornado.ioloop
-from edr_server.core import EdrDataInterface
+from edr_server.core.interface import EdrDataInterface
 from tornado.options import options, define
-
 
 APP_LOGGER = logging.getLogger("tornado.application")
 
@@ -62,11 +62,11 @@ def start_server():
     # EdrDataInterface is a container for  various abstract interfaces
     # instantiate your concrete implementations of the abstract interfaces and pass them as
     # arguments to the EdrDataInterface constructor
-    data_interface = EdrDataInterface(...) 
+    data_interface = EdrDataInterface(...)
 
     # Create the EDR Server tornado application
     app = edr_server.impl.tornado.server.make_app(data_interface)
-    
+
     # Tell it which port to listen on
     app.listen(options.port)
 
