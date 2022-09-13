@@ -12,7 +12,7 @@ from .urls import EdrUrlResolver
 
 
 @dataclass
-class CollectionMetadata(EdrModel):
+class CollectionMetadata(EdrModel["CollectionMetadata"]):
     """
     Based on
     https://github.com/opengeospatial/ogcapi-environmental-data-retrieval/blob/e8a78f9/standard/openapi/schemas/collection.yaml
@@ -222,12 +222,31 @@ class CollectionMetadata(EdrModel):
 
 
 @dataclass
-class CollectionMetadataList:
+class CollectionMetadataList(EdrModel["CollectionMetadataList"]):
     collections: List[CollectionMetadata]
-    extra_links: List[Link] = field(default_factory=list)  # TODO change this
+    links: List[Link] = field(default_factory=list)
 
-    def get_links(self, url_resolver: EdrUrlResolver) -> List[Link]:
-        return [Link(url_resolver.collections(), "self", "application/json")] + self.extra_links
+    @staticmethod
+    def get_standard_links(url_resolver: EdrUrlResolver) -> List[Link]:
+        """Create and return a list of link instances for links that all collection lists have"""
+        return [Link(url_resolver.collections(), "self", "application/json")]
+
+    @classmethod
+    def _prepare_json_for_init(cls, json_dict: JsonDict) -> JsonDict:
+        return {
+            "links": [Link.from_json(link) for link in json_dict["links"]],
+            "collections": [CollectionMetadata.from_json(m) for m in json_dict["collections"]],
+        }
+
+    @classmethod
+    def _get_allowed_json_keys(cls) -> Set[str]:
+        return {"collections", "links"}
+
+    def to_json(self) -> Dict[str, Any]:
+        return {
+            "links": [link.to_json() for link in self.links],
+            "collections": [collection.to_json() for collection in self.collections]
+        }
 
 
 @dataclass
