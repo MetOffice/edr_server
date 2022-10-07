@@ -5,7 +5,7 @@ from typing import AnyStr, Awaitable, Optional
 
 from tornado.web import removeslash
 
-from ...core import AbstractCollectionsMetadataDataInterface
+from ...core.interface import AbstractCollectionsMetadataDataInterface, EdrRequest
 from .handlers import BaseRequestHandler
 
 APP_LOGGER = logging.getLogger("tornado.application")
@@ -36,7 +36,7 @@ class RefreshCollectionsHandler(BaseRequestHandler):
     @removeslash
     def post(self):
         """Handle a refresh collections request."""
-        collections_metadata = self.collections_interface.all()
+        collections_metadata = self.collections_interface.all(self.edr_request)
 
         # # clear existing cached files
         for f in self.collections_cache_path.iterdir():

@@ -398,7 +398,7 @@ class Duration:
         elif isinstance(other, timedelta):
             return self._add_sub_durations(Duration.from_timedelta(other))
 
-        return NotImplemented
+        return NotImplementedError
 
     def __radd__(self, other):
         return self.__add__(other)
@@ -409,7 +409,7 @@ class Duration:
         elif isinstance(other, timedelta):
             return self._add_sub_durations(Duration.from_timedelta(other), operator.sub)
 
-        return NotImplemented
+        return NotImplementedError
 
     def __rsub__(self, other):
         if isinstance(other, datetime):
@@ -417,7 +417,7 @@ class Duration:
         elif isinstance(other, timedelta):
             return Duration.from_timedelta(other)._add_sub_durations(self, operator.sub)
 
-        return NotImplemented
+        return NotImplementedError
 
     def __str__(self) -> str:
         """

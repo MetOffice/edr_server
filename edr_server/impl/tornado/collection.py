@@ -11,8 +11,6 @@ APP_LOGGER = logging.getLogger("tornado.application")
 class CollectionsHandler(Handler):
     """Handle collections requests."""
 
-
-
     def _get_render_args(self):
         pass
 

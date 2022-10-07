@@ -8,7 +8,8 @@ from tornado.gen import coroutine
 from tornado.httpclient import AsyncHTTPClient
 from tornado.web import HTTPError, RequestHandler
 
-from edr_server.core.models.urls import EdrUrlResolver
+from edr_server.core.interface import EdrRequest
+from edr_server.core.models.urls import EdrUrlResolver, URL
 from edr_server.core.serialisation import EdrJsonEncoder
 
 
@@ -143,8 +144,9 @@ class BaseRequestHandler(RequestHandler):
     json_encoder: EdrJsonEncoder
 
     def initialize(self, **_kwargs):
-        self.url_resolver = EdrUrlResolver(f"{self.request.protocol}://{self.request.host}")
-        self.json_encoder = EdrJsonEncoder(urls=self.url_resolver)
+        self.url_resolver = EdrUrlResolver(URL(f"{self.request.protocol}://{self.request.host}"))
+        self.edr_request = EdrRequest(self.url_resolver)
+        self.json_encoder = EdrJsonEncoder()
 
     def get_template_namespace(self) -> Dict[str, Any]:
         """
