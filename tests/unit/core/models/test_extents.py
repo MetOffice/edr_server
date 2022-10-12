@@ -1,9 +1,8 @@
 import unittest
 from datetime import datetime, timedelta
 
-from edr_server.core.models.extents import TemporalExtent
+from edr_server.core.models.extents import TemporalExtent, SpatialExtent
 from edr_server.core.models.time import DateTimeInterval, Duration
-
 
 class TemporalExtentTest(unittest.TestCase):
 
@@ -329,3 +328,17 @@ class TemporalExtentTest(unittest.TestCase):
         extent = TemporalExtent(values=datetimes, intervals=[dti1, dti2, dti3])
 
         self.assertEqual(expected_bounds, extent.bounds)
+
+class SpatialExtentTest(unittest.TestCase):
+
+    def test_type_checking(self):
+        """
+        GIVEN a non-polygon input
+        WHEN passed to SpatialExtent
+        THEN a TypeError is returned
+        Added due to https://metoffice.atlassian.net/browse/CAP-361
+        """
+        input = "bad input"
+
+        with self.assertRaisesRegex(TypeError, "Expect polygon, received <class 'str'>"):
+            SpatialExtent(input)

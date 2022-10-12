@@ -136,6 +136,10 @@ class SpatialExtent(EdrModel["SpatialExtent"]):
     bbox: shapely.geometry.Polygon
     crs: CrsObject = DEFAULT_CRS
 
+    def __post_init__(self):
+        if not (isinstance(self.bbox, Polygon)):
+            raise(TypeError(f'Expect polygon, received {type(self.bbox)}'))
+
     @classmethod
     def _prepare_json_for_init(cls, json_dict: JsonDict) -> JsonDict:
         crs = CrsObject.from_wkt(json_dict["crs_details"])
