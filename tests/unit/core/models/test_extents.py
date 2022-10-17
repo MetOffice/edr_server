@@ -340,5 +340,5 @@ class SpatialExtentTest(unittest.TestCase):
         """
         input = "bad input"
 
-        with self.assertRaisesRegex(TypeError, "Expect polygon, received <class 'str'>"):
+        with self.assertRaisesRegex(TypeError, "Expected polygon, received <class 'str'>"):
             SpatialExtent(input)
