@@ -138,7 +138,9 @@ class SpatialExtent(EdrModel["SpatialExtent"]):
 
     def __post_init__(self):
         if not (isinstance(self.bbox, Polygon)):
-            raise(TypeError(f'Expect polygon, received {type(self.bbox)}'))
+            raise TypeError(f'Expected polygon, received {type(self.bbox)}')
+        if not (isinstance(self.crs, CrsObject)):
+            raise TypeError(f'Expected CrsObject, received {type(self.crs)}')
 
     @classmethod
     def _prepare_json_for_init(cls, json_dict: JsonDict) -> JsonDict:
