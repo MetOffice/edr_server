@@ -1,5 +1,6 @@
 import unittest
 from datetime import datetime, timedelta
+from shapely.geometry import Polygon
 
 from edr_server.core.models.extents import TemporalExtent, SpatialExtent
 from edr_server.core.models.time import DateTimeInterval, Duration
@@ -331,7 +332,7 @@ class TemporalExtentTest(unittest.TestCase):
 
 class SpatialExtentTest(unittest.TestCase):
 
-    def test_type_checking(self):
+    def test_type_checking_bbox(self):
         """
         GIVEN a non-polygon input
         WHEN passed to SpatialExtent
@@ -342,3 +343,16 @@ class SpatialExtentTest(unittest.TestCase):
 
         with self.assertRaisesRegex(TypeError, "Expected polygon, received <class 'str'>"):
             SpatialExtent(input)
+
+    def test_type_checking_crs(self):
+        """
+        GIVEN a non-CrsObject input
+        WHEN passed to SpatialExtent
+        THEN a TypeError is returned
+        Added due to https://metoffice.atlassian.net/browse/CAP-362
+        """
+        poly = Polygon([[0, 0], [1, 0], [1, 1]])
+        input = "bad input"
+
+        with self.assertRaisesRegex(TypeError, "Expected CrsObject, received <class 'str'>"):
+            SpatialExtent(poly, input)
