@@ -332,7 +332,7 @@ class TemporalExtentTest(unittest.TestCase):
 
 class SpatialExtentTest(unittest.TestCase):
 
-    def test_type_checking_bbox(self):
+    def test_init_type_checking_bbox(self):
         """
         GIVEN a non-polygon input
         WHEN passed to SpatialExtent
@@ -344,7 +344,7 @@ class SpatialExtentTest(unittest.TestCase):
         with self.assertRaisesRegex(TypeError, "Expected polygon, received <class 'str'>"):
             SpatialExtent(input)
 
-    def test_type_checking_crs(self):
+    def test_init_type_checking_crs(self):
         """
         GIVEN a non-CrsObject input
         WHEN passed to SpatialExtent
