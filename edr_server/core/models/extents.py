@@ -43,6 +43,20 @@ class TemporalExtent(EdrModel["TemporalExtent"]):
     intervals: List[DateTimeInterval] = dataclasses.field(default_factory=list)
     trs: CrsObject = DEFAULT_TRS
 
+    def __post_init__(self):
+        if not isinstance(self.values, List):
+            raise TypeError(f'Expected List of values, received {type(self.values)}')
+        for value in self.values:
+            if not isinstance(value, datetime):
+                raise TypeError(f"Expected all datetime values, received value '{value}' of type {type(value)}")
+        if not isinstance(self.intervals, List):
+            raise TypeError(f'Expected List of intervals, received {type(self.intervals)}')
+        for interval in self.intervals:
+            if not isinstance(interval, DateTimeInterval):
+                raise TypeError(f"Expected all DateTimeIntervals, received value '{interval}' of type {type(interval)}")
+        if not isinstance(self.trs, CrsObject):
+            raise TypeError(f'Expected CrsObject, received {type(self.trs)}')
+
     @classmethod
     def _prepare_json_for_init(cls, json_dict: JsonDict) -> JsonDict:
         json_dict["trs"] = CrsObject.from_wkt(json_dict["trs"])
@@ -137,9 +151,9 @@ class SpatialExtent(EdrModel["SpatialExtent"]):
     crs: CrsObject = DEFAULT_CRS
 
     def __post_init__(self):
-        if not (isinstance(self.bbox, Polygon)):
+        if not isinstance(self.bbox, Polygon):
             raise TypeError(f'Expected polygon, received {type(self.bbox)}')
-        if not (isinstance(self.crs, CrsObject)):
+        if not isinstance(self.crs, CrsObject):
             raise TypeError(f'Expected CrsObject, received {type(self.crs)}')
 
     @classmethod
