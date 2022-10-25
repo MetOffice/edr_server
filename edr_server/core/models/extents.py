@@ -45,15 +45,17 @@ class TemporalExtent(EdrModel["TemporalExtent"]):
 
     def __post_init__(self):
         if not isinstance(self.values, List):
-            raise TypeError(f'Expected List of values, received {type(self.values)}')
-        for value in self.values:
-            if not isinstance(value, datetime):
-                raise TypeError(f"Expected all datetime values, received value '{value}' of type {type(value)}")
+            raise TypeError(
+                f'Expected List of values, received {type(self.values)}')
+        if not all(isinstance((invalid_value := value), datetime) for value in self.values):
+            raise TypeError(
+                f"Expected all datetime values, received value '{invalid_value}' of type {type(invalid_value)}")
         if not isinstance(self.intervals, List):
-            raise TypeError(f'Expected List of intervals, received {type(self.intervals)}')
-        for interval in self.intervals:
-            if not isinstance(interval, DateTimeInterval):
-                raise TypeError(f"Expected all DateTimeIntervals, received value '{interval}' of type {type(interval)}")
+            raise TypeError(
+                f'Expected List of intervals, received {type(self.intervals)}')
+        if not all(isinstance((invalid_interval := interval), DateTimeInterval) for interval in self.intervals):
+            raise TypeError(
+                f"Expected all DateTimeIntervals, received value '{invalid_interval}' of type {type(invalid_interval)}")
         if not isinstance(self.trs, CrsObject):
             raise TypeError(f'Expected CrsObject, received {type(self.trs)}')
 
@@ -165,7 +167,8 @@ class SpatialExtent(EdrModel["SpatialExtent"]):
 
         if len(encoded_bbox) == 6:  # 3D bounding box
             min_x, min_y, min_z, max_x, max_y, max_z = encoded_bbox
-            coords = itertools.product((min_x, max_x), (min_y, max_y), (min_z, max_z))
+            coords = itertools.product(
+                (min_x, max_x), (min_y, max_y), (min_z, max_z))
             bbox = Polygon(coords)
 
         else:  # 2D bounding box
@@ -261,9 +264,11 @@ class Extents(EdrModel["Extents"]):
         if "spatial" in json_dict:
             kwargs["spatial"] = SpatialExtent.from_json(json_dict["spatial"])
         if "temporal" in json_dict:
-            kwargs["temporal"] = TemporalExtent.from_json(json_dict["temporal"])
+            kwargs["temporal"] = TemporalExtent.from_json(
+                json_dict["temporal"])
         if "vertical" in json_dict:
-            kwargs["vertical"] = VerticalExtent.from_json(json_dict["vertical"])
+            kwargs["vertical"] = VerticalExtent.from_json(
+                json_dict["vertical"])
 
         return kwargs
 
