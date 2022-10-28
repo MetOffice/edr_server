@@ -49,9 +49,12 @@ class Unit(EdrModel["Unit"]):
         if "symbol" in json_dict and isinstance(json_dict["symbol"], dict):
             json_dict["symbol"] = Symbol.from_json(json_dict["symbol"])
 
-        if "labels" in json_dict and isinstance(json_dict["label"], dict):
+        if "label" in json_dict and isinstance(json_dict["label"], dict):
             # Note, the field is called `label` in the serialised output, even though it can hold multiple values
             json_dict["label"] = LanguageMap.from_json(json_dict["label"])
+
+        if "label" in json_dict and isinstance(json_dict["label"], str):
+            json_dict["labels"] = json_dict.pop('label')
 
         return json_dict
 

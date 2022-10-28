@@ -252,7 +252,7 @@ class Extents(EdrModel["Extents"]):
     Based on
     https://github.com/opengeospatial/ogcapi-environmental-data-retrieval/blob/546c338/standard/openapi/schemas/extent.yaml
     """
-    spatial: SpatialExtent
+    spatial: Optional[SpatialExtent] = None
     temporal: Optional[TemporalExtent] = None
     vertical: Optional[VerticalExtent] = None
 
