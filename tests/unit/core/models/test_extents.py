@@ -5,6 +5,7 @@ from shapely.geometry import Polygon
 from edr_server.core.models.extents import TemporalExtent, SpatialExtent
 from edr_server.core.models.time import DateTimeInterval, Duration
 
+
 class TemporalExtentTest(unittest.TestCase):
 
     def test_bounds_no_values(self):
@@ -140,7 +141,8 @@ class TemporalExtentTest(unittest.TestCase):
 
         expected_bounds = None, dti1.end
 
-        extent = TemporalExtent(intervals=[dti1, dti2, dti3])  # There's deliberate overlap with the DateTimeIntervals
+        # There's deliberate overlap with the DateTimeIntervals
+        extent = TemporalExtent(intervals=[dti1, dti2, dti3])
 
         self.assertEqual(expected_bounds, extent.bounds)
 
@@ -151,7 +153,8 @@ class TemporalExtentTest(unittest.TestCase):
         WHEN TemporalExtent.bounds is accessed
         THEN the result contains the value of the earliest start date and None
         """
-        dti1 = DateTimeInterval(start=datetime(2020, 12, 30), duration=Duration(days=1))
+        dti1 = DateTimeInterval(start=datetime(
+            2020, 12, 30), duration=Duration(days=1))
         dti2 = DateTimeInterval(start=dti1.end, duration=Duration(days=2),
                                 recurrences=DateTimeInterval.INFINITE_RECURRENCES)
         dti3 = DateTimeInterval(datetime(2020, 1, 1), datetime(2020, 2, 1))
@@ -170,8 +173,10 @@ class TemporalExtentTest(unittest.TestCase):
         WHEN TemporalExtent.bounds is accessed
         THEN the result contains the values of those datetimes
         """
-        datetimes = [datetime(2019, 12, 1) + timedelta(weeks=n * 52) for n in range(5)]
-        dti1 = DateTimeInterval(start=datetime(2020, 12, 30), duration=Duration(days=1))
+        datetimes = [datetime(2019, 12, 1) + timedelta(weeks=n * 52)
+                     for n in range(5)]
+        dti1 = DateTimeInterval(start=datetime(
+            2020, 12, 30), duration=Duration(days=1))
         dti2 = DateTimeInterval(start=dti1.end, duration=Duration(days=2))
         dti3 = DateTimeInterval(datetime(2020, 1, 1), datetime(2020, 2, 1))
 
@@ -190,7 +195,8 @@ class TemporalExtentTest(unittest.TestCase):
         THEN the result contains the start value of the earliest DateTimeInterval and end value of the latest
              DateTimeInterval
         """
-        datetimes = [datetime(2019, 12, 1) + timedelta(weeks=n * 52) for n in range(5)]
+        datetimes = [datetime(2019, 12, 1) + timedelta(weeks=n * 52)
+                     for n in range(5)]
         dti1 = DateTimeInterval(end=datetimes[0], duration=Duration(days=1))
         dti2 = DateTimeInterval(start=datetimes[-1], duration=Duration(days=2))
         dti3 = DateTimeInterval(datetime(2020, 1, 1), datetime(2020, 2, 1))
@@ -211,8 +217,10 @@ class TemporalExtentTest(unittest.TestCase):
         THEN the result contains the earliest datetime and end value of the latest
              DateTimeInterval
         """
-        datetimes = [datetime(2019, 12, 1) + timedelta(weeks=n * 52) for n in range(5)]
-        dti1 = DateTimeInterval(start=datetime(2020, 12, 30), duration=Duration(days=1))
+        datetimes = [datetime(2019, 12, 1) + timedelta(weeks=n * 52)
+                     for n in range(5)]
+        dti1 = DateTimeInterval(start=datetime(
+            2020, 12, 30), duration=Duration(days=1))
         dti2 = DateTimeInterval(end=datetimes[-1], duration=Duration(days=2))
         dti3 = DateTimeInterval(datetime(2020, 1, 1), datetime(2020, 2, 1))
 
@@ -231,7 +239,8 @@ class TemporalExtentTest(unittest.TestCase):
         WHEN TemporalExtent.bounds is accessed
         THEN the result contains the earliest datetime and None
         """
-        datetimes = [datetime(2019, 12, 1) + timedelta(weeks=n * 52) for n in range(5)]
+        datetimes = [datetime(2019, 12, 1) + timedelta(weeks=n * 52)
+                     for n in range(5)]
         dti1 = DateTimeInterval(start=datetime(2020, 12, 30), duration=Duration(days=1),
                                 recurrences=DateTimeInterval.INFINITE_RECURRENCES)
         dti2 = DateTimeInterval(end=datetimes[-1], duration=Duration(days=2))
@@ -252,8 +261,10 @@ class TemporalExtentTest(unittest.TestCase):
         WHEN TemporalExtent.bounds is accessed
         THEN the result contains the start value of the earliest DateTimeInterval and the latest datetime
         """
-        datetimes = [datetime(2020, 12, 1) + timedelta(weeks=n * 52) for n in range(5)]
-        dti1 = DateTimeInterval(start=datetime(2020, 12, 30), duration=Duration(days=1))
+        datetimes = [datetime(2020, 12, 1) + timedelta(weeks=n * 52)
+                     for n in range(5)]
+        dti1 = DateTimeInterval(start=datetime(
+            2020, 12, 30), duration=Duration(days=1))
         dti2 = DateTimeInterval(start=dti1.end, duration=Duration(days=2))
         dti3 = DateTimeInterval(datetime(2020, 1, 1), datetime(2020, 2, 1))
 
@@ -272,7 +283,8 @@ class TemporalExtentTest(unittest.TestCase):
         WHEN TemporalExtent.bounds is accessed
         THEN the result contains None and the latest datetime
         """
-        datetimes = [datetime(2019, 12, 1) + timedelta(weeks=n * 52) for n in range(5)]
+        datetimes = [datetime(2019, 12, 1) + timedelta(weeks=n * 52)
+                     for n in range(5)]
         dti1 = DateTimeInterval(end=datetime(2020, 12, 30), duration=Duration(days=1),
                                 recurrences=DateTimeInterval.INFINITE_RECURRENCES)
         dti2 = DateTimeInterval(start=dti1.end, duration=Duration(days=2))
@@ -294,9 +306,11 @@ class TemporalExtentTest(unittest.TestCase):
 
         Explicitly testing the case where a single DateTimeInterval provides both the upper and lower bound
         """
-        datetimes = [datetime(2019, 12, 1) + timedelta(weeks=n * 52) for n in range(5)]
+        datetimes = [datetime(2019, 12, 1) + timedelta(weeks=n * 52)
+                     for n in range(5)]
         # DateTimeInterval with only a duration and infinite recurrences implies unbounded lower and upper bounds
-        dti1 = DateTimeInterval(duration=Duration(days=1), recurrences=DateTimeInterval.INFINITE_RECURRENCES)
+        dti1 = DateTimeInterval(duration=Duration(
+            days=1), recurrences=DateTimeInterval.INFINITE_RECURRENCES)
         dti2 = DateTimeInterval(start=dti1.end, duration=Duration(days=2))
         dti3 = DateTimeInterval(datetime(2020, 1, 1), datetime(2020, 2, 1))
 
@@ -316,11 +330,13 @@ class TemporalExtentTest(unittest.TestCase):
 
         Explicitly testing the case where a single DateTimeInterval provides both the upper and lower bound
         """
-        datetimes = [datetime(2019, 12, 1) + timedelta(weeks=n * 52) for n in range(5)]
+        datetimes = [datetime(2019, 12, 1) + timedelta(weeks=n * 52)
+                     for n in range(5)]
         # DateTimeInterval with only a duration and infinite recurrences implies unbounded lower and upper bounds
         dti1 = DateTimeInterval(start=datetimes[0] - timedelta(days=1),
                                 end=datetimes[-1] + timedelta(days=1))
-        dti2 = DateTimeInterval(start=datetimes[0] + timedelta(days=1), duration=Duration(days=2))
+        dti2 = DateTimeInterval(
+            start=datetimes[0] + timedelta(days=1), duration=Duration(days=2))
         dti3 = DateTimeInterval(datetime(2020, 1, 1), datetime(2020, 2, 1))
 
         expected_bounds = dti1.start, dti1.end
@@ -329,6 +345,77 @@ class TemporalExtentTest(unittest.TestCase):
         extent = TemporalExtent(values=datetimes, intervals=[dti1, dti2, dti3])
 
         self.assertEqual(expected_bounds, extent.bounds)
+
+    def test_init_type_checking_values(self):
+        """
+        GIVEN a non-list
+        WHEN passed to TemporalExtent.values
+        THEN a TypeError is returned
+        Added due to https://metoffice.atlassian.net/browse/CAP-364
+        """
+        datetimes = {"value": datetime(2019, 12, 1)}
+
+        with self.assertRaisesRegex(TypeError, "Expected List of values, received <class 'dict'>"):
+            TemporalExtent(values=datetimes)
+
+    def test_init_type_checking_intervals(self):
+        """
+        GIVEN a non-list
+        WHEN passed to TemporalExtent.intervals
+        THEN a TypeError is returned
+        Added due to https://metoffice.atlassian.net/browse/CAP-364
+        """
+        dti = DateTimeInterval(datetime(2020, 1, 1), datetime(2020, 12, 30))
+
+        with self.assertRaisesRegex(TypeError,
+                                    "Expected List of intervals, received <class 'edr_server.core.models.time.DateTimeInterval'>"):
+            TemporalExtent(intervals=dti)
+
+    def test_init_type_checking_values_entry(self):
+        """
+        GIVEN a list of datetimes with one bad entry
+        WHEN passed to TemporalExtent.values
+        THEN a TypeError is returned with value and type
+        Added due to https://metoffice.atlassian.net/browse/CAP-364
+        """
+        datetimes = [datetime(2019, 12, 1) + timedelta(weeks=n * 52)
+                     for n in range(5)]
+        dti = [DateTimeInterval(datetime(2020, 1, 1), datetime(2020, 12, 30))]
+        datetimes.append(1)
+
+        with self.assertRaisesRegex(TypeError, "Expected all datetime values, received value '1' of type <class 'int'>"):
+            TemporalExtent(values=datetimes, intervals=dti)
+
+    def test_init_type_checking_intervals_entry(self):
+        """
+        GIVEN a list of DatetimeIntervals with one bad entry
+        WHEN passed to TemporalExtent.intervals
+        THEN a TypeError is returned with value and type
+        Added due to https://metoffice.atlassian.net/browse/CAP-364
+        """
+        datetimes = [datetime(2019, 12, 1) + timedelta(weeks=n * 52)
+                     for n in range(5)]
+        dti1 = DateTimeInterval(datetime(2020, 1, 1), datetime(2020, 12, 30))
+        dti2 = datetime(2021, 1, 1)
+
+        with self.assertRaisesRegex(TypeError,
+                                    "Expected all DateTimeIntervals, received value '2021-01-01 00:00:00' of type <class 'datetime.datetime'>"):
+            TemporalExtent(values=datetimes, intervals=[dti1, dti2])
+
+    def test_init_type_checking_trs(self):
+        """
+        GIVEN a non-CrsObject input
+        WHEN passed to TemporalExtent
+        THEN a TypeError is returned
+        Added due to https://metoffice.atlassian.net/browse/CAP-364
+        """
+        datetimes = [datetime(2019, 12, 1) + timedelta(weeks=n * 52)
+                     for n in range(5)]
+        input = "bad input"
+
+        with self.assertRaisesRegex(TypeError, "Expected CrsObject, received <class 'str'>"):
+            TemporalExtent(values=datetimes, trs=input)
+
 
 class SpatialExtentTest(unittest.TestCase):
 

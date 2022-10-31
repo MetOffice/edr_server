@@ -43,6 +43,22 @@ class TemporalExtent(EdrModel["TemporalExtent"]):
     intervals: List[DateTimeInterval] = dataclasses.field(default_factory=list)
     trs: CrsObject = DEFAULT_TRS
 
+    def __post_init__(self):
+        if not isinstance(self.values, List):
+            raise TypeError(
+                f'Expected List of values, received {type(self.values)}')
+        if not all(isinstance((invalid_value := value), datetime) for value in self.values):
+            raise TypeError(
+                f"Expected all datetime values, received value '{invalid_value}' of type {type(invalid_value)}")
+        if not isinstance(self.intervals, List):
+            raise TypeError(
+                f'Expected List of intervals, received {type(self.intervals)}')
+        if not all(isinstance((invalid_interval := interval), DateTimeInterval) for interval in self.intervals):
+            raise TypeError(
+                f"Expected all DateTimeIntervals, received value '{invalid_interval}' of type {type(invalid_interval)}")
+        if not isinstance(self.trs, CrsObject):
+            raise TypeError(f'Expected CrsObject, received {type(self.trs)}')
+
     @classmethod
     def _prepare_json_for_init(cls, json_dict: JsonDict) -> JsonDict:
         json_dict["trs"] = CrsObject.from_wkt(json_dict["trs"])
@@ -137,9 +153,9 @@ class SpatialExtent(EdrModel["SpatialExtent"]):
     crs: CrsObject = DEFAULT_CRS
 
     def __post_init__(self):
-        if not (isinstance(self.bbox, Polygon)):
+        if not isinstance(self.bbox, Polygon):
             raise TypeError(f'Expected polygon, received {type(self.bbox)}')
-        if not (isinstance(self.crs, CrsObject)):
+        if not isinstance(self.crs, CrsObject):
             raise TypeError(f'Expected CrsObject, received {type(self.crs)}')
 
     @classmethod
@@ -151,7 +167,8 @@ class SpatialExtent(EdrModel["SpatialExtent"]):
 
         if len(encoded_bbox) == 6:  # 3D bounding box
             min_x, min_y, min_z, max_x, max_y, max_z = encoded_bbox
-            coords = itertools.product((min_x, max_x), (min_y, max_y), (min_z, max_z))
+            coords = itertools.product(
+                (min_x, max_x), (min_y, max_y), (min_z, max_z))
             bbox = Polygon(coords)
 
         else:  # 2D bounding box
@@ -235,7 +252,7 @@ class Extents(EdrModel["Extents"]):
     Based on
     https://github.com/opengeospatial/ogcapi-environmental-data-retrieval/blob/546c338/standard/openapi/schemas/extent.yaml
     """
-    spatial: SpatialExtent
+    spatial: Optional[SpatialExtent] = None
     temporal: Optional[TemporalExtent] = None
     vertical: Optional[VerticalExtent] = None
 
@@ -247,9 +264,11 @@ class Extents(EdrModel["Extents"]):
         if "spatial" in json_dict:
             kwargs["spatial"] = SpatialExtent.from_json(json_dict["spatial"])
         if "temporal" in json_dict:
-            kwargs["temporal"] = TemporalExtent.from_json(json_dict["temporal"])
+            kwargs["temporal"] = TemporalExtent.from_json(
+                json_dict["temporal"])
         if "vertical" in json_dict:
-            kwargs["vertical"] = VerticalExtent.from_json(json_dict["vertical"])
+            kwargs["vertical"] = VerticalExtent.from_json(
+                json_dict["vertical"])
 
         return kwargs
 
