@@ -211,9 +211,25 @@ class VerticalExtent(EdrModel["VerticalExtent"]):
     #       * list of vertical levels (e.g. "2",10,"80","100"}
     #       The value `null` is supported and indicates an open vertical interval.
 
+    def __post_init__(self):
+        if not isinstance(self.values, List):
+            raise TypeError(
+                f'Expected List of values, received {type(self.values)}')
+        if not all(isinstance((invalid_value := value), float) for value in self.values):
+            raise TypeError(
+                f"Expected all float values, received value '{invalid_value}' of type {type(invalid_value)}")
+        if not isinstance(self.vrs, CrsObject):
+            raise TypeError(f'Expected CrsObject, received {type(self.vrs)}')
+
     @classmethod
     def _prepare_json_for_init(cls, json_dict: JsonDict) -> JsonDict:
         json_dict["vrs"] = CrsObject.from_wkt(json_dict["vrs"])
+
+        with suppress(KeyError):  # Remove things not required by __init__
+            # 'interval' stores the bounds, which is different from the 'intervals' argument to the __init__ method
+            del json_dict["interval"]
+            del json_dict["name"]
+
         return json_dict
 
     @classmethod
