@@ -484,9 +484,9 @@ class VerticalExtentTest(unittest.TestCase):
         THEN a TypeError is returned with value and type
         """
         vals = list(np.arange(0, 1, 0.2))
-        vals.append('1')
+        vals.append([1])
 
-        with self.assertRaisesRegex(TypeError, "Expected all float values, received value '1' of type <class 'str'>"):
+        with self.assertRaisesRegex(TypeError, r"Expected all float or string values, received value '\[1\]' of type <class 'list'>"):
             VerticalExtent(values=vals)
 
     def test_init_type_checking_vrs(self):
