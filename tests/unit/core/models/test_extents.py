@@ -1,9 +1,11 @@
 import unittest
 from datetime import datetime, timedelta
 from shapely.geometry import Polygon
+import numpy as np
 
-from edr_server.core.models.extents import TemporalExtent, SpatialExtent
+from edr_server.core.models.extents import TemporalExtent, SpatialExtent, VerticalExtent
 from edr_server.core.models.time import DateTimeInterval, Duration
+from edr_server.core.models.crs import CrsObject
 
 
 class TemporalExtentTest(unittest.TestCase):
@@ -443,3 +445,58 @@ class SpatialExtentTest(unittest.TestCase):
 
         with self.assertRaisesRegex(TypeError, "Expected CrsObject, received <class 'str'>"):
             SpatialExtent(poly, input)
+
+
+class VerticalExtentTest(unittest.TestCase):
+
+    def test_from_json(self):
+        """
+        GIVEN a typical json_dict
+        WHEN from_json is called
+        THEN a VerticalExtent is returned
+        """
+        expected = VerticalExtent([1.65])
+
+        json_dict = {'interval': ['ScalarBounds(lower=1.65, upper=1.65)'],
+                     'values': [1.65],
+                     'vrs': 'VERTCRS["WGS_1984",VDATUM["World Geodetic System 1984"],CS[vertical,1],AXIS["ellipsoidal height (h)",up,LENGTHUNIT["metre",1,ID["EPSG",9001]]]]',
+                     'name': 'WGS_1984'}
+
+        actual = VerticalExtent.from_json(json_dict)
+
+        self.assertEqual(actual, expected)
+
+    def test_init_type_checking_values(self):
+        """
+        GIVEN a non-list
+        WHEN passed to VerticalExtent.values
+        THEN a TypeError is returned
+        """
+        heights = {"value": 4}
+
+        with self.assertRaisesRegex(TypeError, "Expected List of values, received <class 'dict'>"):
+            VerticalExtent(values=heights)
+
+    def test_init_type_checking_values_entry(self):
+        """
+        GIVEN a list of floats with one bad entry
+        WHEN passed to VerticalExtent.values
+        THEN a TypeError is returned with value and type
+        """
+        vals = list(np.arange(0, 1, 0.2))
+        vals.append([1])
+
+        with self.assertRaisesRegex(TypeError, r"Expected all float or string values, received value '\[1\]' of type <class 'list'>"):
+            VerticalExtent(values=vals)
+
+    def test_init_type_checking_vrs(self):
+        """
+        GIVEN a non-CrsObject input
+        WHEN passed to VerticalExtent
+        THEN a TypeError is returned
+        """
+        vals = list(np.arange(0, 1, 0.2))
+        input = "bad input"
+
+        with self.assertRaisesRegex(TypeError, "Expected CrsObject, received <class 'str'>"):
+            VerticalExtent(values=vals, vrs=input)
