@@ -215,9 +215,9 @@ class VerticalExtent(EdrModel["VerticalExtent"]):
         if not isinstance(self.values, List):
             raise TypeError(
                 f'Expected List of values, received {type(self.values)}')
-        if not all(isinstance((invalid_value := value), float) for value in self.values):
+        if not all(isinstance((invalid_value := value), (float, str)) for value in self.values):
             raise TypeError(
-                f"Expected all float values, received value '{invalid_value}' of type {type(invalid_value)}")
+                f"Expected all float or string values, received value '{invalid_value}' of type {type(invalid_value)}")
         if not isinstance(self.vrs, CrsObject):
             raise TypeError(f'Expected CrsObject, received {type(self.vrs)}')
 
